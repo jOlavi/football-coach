@@ -1,0 +1,59 @@
+Add TODO LIST.
+
+### Viestintä ###
+- Viestintään pohjan muutos. Viestintä tapahtuu yleisesti. Lisää pohja viesti ja siihen täytettävät aukot.
+    - Milloin, Missä, Ketä vastan, Mitä päälle, Osoite, Ketkä pelaa -> Ota kokoonpanoista.
+    - Voiko tehdä niin, että voi valita kaksi joukkuetta esim Reds ja Blacks.
+
+
+### Ottelut ###
+- Haluan lisätä otteluihin myös pelaavan joukkueen nimen. Esim reds, blacks ja whites. Ja niin, että se näkyy myös ottelu
+listauksissa.
+
+
+
+### Harjoitukset ###
+
+- Piirrä kuvat harjoituksista. Ja tee niistä valmiita. Lämmittelyt ja venyttely sekä tietyt perus pien/isot pelit
+voi olla ilman kuvaa.
+
+- Tehdään jonkinlainen indikaattori esimerkiksi asetuksiin, jossa määritetään mitä lajia pelataan. Esim jalkapallo. 
+Silloin piirtotyökalu näyttää vain jalkapalloon liittyvät pohjat.
+- Poista valinta kun klikataan uutta toolbarilta
+- Uuden harjoituksen esikatselu, avaa esim suurempana modaalina harjoituksen.
+- nuolia ei voi muokata
+- 
+### Harjoitussuunnitelma ###
+- Harjoitussuunnitelman teon yhteyteen muistiinpanojen lisäys harjoituksen kohdalle. esim alkulämmittelyihin ehdotukset.
+
+### Muistutukset ###
+- Mieti mistä asioista olisi hyvä olla muistutukset etusivulla myös. 
+- 
+
+### Tilastot ###
+- Korjaa style määrityksiä, tekstin väri.
+
+### Ottelusuunnittelu ###
+- Mieti vielä sen järkeistämistä, miten se olisi loogisin hoitaa. Onko tällä hetkellä epäselvän näköinen?
+- Voisi tehdä jonkin erottavan viivan esim Peelajien ja kokoonpano listauksen välille. 
+
+### Yleistä ###
+- Tee navigaatiosta sellainen, että se näkyy kokoajan. Eikä karkaa rullatessa alas päin. Myös otsikosta/ylä divistä.
+- Voisiko tehdä nappulan, josta navin saa myös halutessaan piilotettua?
+- Keksi joku parempi nimi sovellukselle. 
+
+
+### Landing page ###
+- Olisi hyvä tehdä landingpage appille. 
+
+### Login/Logout ###
+- Joukkue valitsin, jos yhdellä useampi joukkue hallittavana/pyöritettävänä. Sähly/futis ym. Voisi 
+valita joukkueen.
+
+
+### Tietokannat ###
+-  Firebase ja firestorage yhteyden luonti.
+
+### Domain ###
+- Selvittele miten domain hankitaan ja miten sovelluksen saa sellaiselle pyörimään parhaiten.
+    -> AI auttaa varmasti.

@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Session Builder Mockup</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; color: #111827; font-size: 14px; padding: 24px; }
+  h1 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .page-sub { color: #6b7280; font-size: 13px; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 12px; border: 1px solid #e5e7eb; padding: 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: #111827; }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; font-weight: 500; color: #6b7280; }
+  .field input, .field textarea, .field select { border: 1px solid #d1d5db; border-radius: 8px; padding: 7px 10px; font-size: 13px; color: #111827; background: #f9fafb; width: 100%; }
+  .field textarea { resize: vertical; min-height: 60px; }
+  .section-divider { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+
+  /* Exercises */
+  .exercise-item { display: flex; align-items: center; gap: 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+  .exercise-drag { color: #9ca3af; font-size: 16px; cursor: grab; }
+  .exercise-body { flex: 1; }
+  .exercise-name { font-weight: 500; font-size: 13px; }
+  .exercise-meta { font-size: 12px; color: #6b7280; margin-top: 2px; }
+  .exercise-remove { color: #9ca3af; cursor: pointer; font-size: 16px; padding: 2px 6px; border-radius: 4px; }
+  .exercise-remove:hover { background: #fee2e2; color: #dc2626; }
+  .add-exercise-btn { display: flex; align-items: center; gap-6px; gap: 6px; border: 1.5px dashed #d1d5db; border-radius: 8px; padding: 9px 14px; font-size: 13px; color: #6b7280; cursor: pointer; width: 100%; background: transparent; justify-content: center; }
+  .add-exercise-btn:hover { border-color: #6366f1; color: #6366f1; background: #f5f3ff; }
+
+  /* Groups section */
+  .groups-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .groups-header h2 { font-size: 15px; font-weight: 600; color: #111827; }
+  .add-gen-btn { display: flex; align-items: center; gap: 5px; background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 500; cursor: pointer; }
+
+  .generator-block { border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 14px; background: #fafafa; }
+  .gen-block-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .gen-block-title { font-weight: 600; font-size: 13px; color: #374151; }
+  .gen-controls { display: flex; align-items: center; gap: 8px; }
+  .gen-label { font-size: 12px; color: #6b7280; }
+  .gen-count { display: flex; align-items: center; gap: 4px; }
+  .gen-count button { width: 24px; height: 24px; border-radius: 6px; border: 1px solid #d1d5db; background: #fff; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #374151; }
+  .gen-count span { font-weight: 600; font-size: 13px; min-width: 18px; text-align: center; }
+  .regen-btn { background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 7px; padding: 4px 10px; font-size: 12px; cursor: pointer; color: #374151; }
+  .regen-btn:hover { background: #e5e7eb; }
+  .remove-gen { color: #9ca3af; cursor: pointer; font-size: 13px; padding: 3px 7px; border-radius: 5px; }
+  .remove-gen:hover { background: #fee2e2; color: #dc2626; }
+
+  /* Player pool */
+  .player-pool-label { font-size: 11px; font-weight: 500; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 7px; }
+  .player-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+  .player-chip { display: flex; align-items: center; gap: 4px; background: #ede9fe; color: #4f46e5; border-radius: 20px; padding: 3px 10px 3px 8px; font-size: 12px; font-weight: 500; }
+  .player-chip .remove-chip { color: #a78bfa; cursor: pointer; font-size: 13px; line-height: 1; margin-left: 2px; }
+  .player-chip .remove-chip:hover { color: #dc2626; }
+  .player-chip.absent { background: #f3f4f6; color: #9ca3af; text-decoration: line-through; }
+
+  /* Generated groups */
+  .groups-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .group-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px; }
+  .group-card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+  .group-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .group-name-input { border: none; border-bottom: 1.5px solid transparent; font-weight: 600; font-size: 13px; color: #111827; background: transparent; flex: 1; }
+  .group-name-input:focus { outline: none; border-bottom-color: #6366f1; }
+  .group-players { display: flex; flex-direction: column; gap: 4px; }
+  .group-player { font-size: 12px; color: #374151; padding: 2px 0; }
+
+  /* Bottom actions */
+  .actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
+  .btn-save { background: #6366f1; color: #fff; border: none; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .btn-cancel { background: #f3f4f6; color: #374151; border: 1px solid #d1d5db; border-radius: 8px; padding: 9px 16px; font-size: 13px; cursor: pointer; }
+
+  /* PDF note */
+  .pdf-note { display: flex; align-items: center; gap: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #166534; margin-bottom: 16px; }
+
+  .tag { display: inline-block; background: #ede9fe; color: #6366f1; border-radius: 4px; padding: 1px 7px; font-size: 11px; font-weight: 600; margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<h1>Harjoitussuunnittelija — Session Builder</h1>
+<p class="page-sub">Mockup: how the updated builder looks with the group generator section</p>
+
+<!-- Basic info -->
+<div class="card">
+  <h2>Harjoituksen tiedot</h2>
+  <div class="field-row">
+    <div class="field"><label>Otsikko</label><input value="Harjoitus 2026-04-28" /></div>
+    <div class="field"><label>Päivämäärä</label><input type="date" value="2026-04-28" /></div>
+  </div>
+  <div class="field-row">
+    <div class="field"><label>Alkaa</label><input type="time" value="17:00" /></div>
+    <div class="field"><label>Kesto (min)</label><input type="number" value="90" /></div>
+  </div>
+  <div class="field" style="margin-top:10px"><label>Muistiinpanot</label><textarea>Lämmittely 10 min. Huomioi pelaajien kunto.</textarea></div>
+</div>
+
+<!-- Exercises -->
+<div class="card">
+  <h2>Harjoitteet</h2>
+  <div class="exercise-item">
+    <span class="exercise-drag">⠿</span>
+    <div class="exercise-body">
+      <div class="exercise-name">Lämmittely – pariharjoittelu</div>
+      <div class="exercise-meta">10 min · Fyysinen</div>
+    </div>
+    <span class="exercise-remove">✕</span>
+  </div>
+  <div class="exercise-item">
+    <span class="exercise-drag">⠿</span>
+    <div class="exercise-body">
+      <div class="exercise-name">Passausharjoitus kolmioissa</div>
+      <div class="exercise-meta">15 min · Tekniikka</div>
+    </div>
+    <span class="exercise-remove">✕</span>
+  </div>
+  <div class="exercise-item">
+    <span class="exercise-drag">⠿</span>
+    <div class="exercise-body">
+      <div class="exercise-name">Maalintekoharjoitus</div>
+      <div class="exercise-meta">20 min · Tekniikka</div>
+    </div>
+    <span class="exercise-remove">✕</span>
+  </div>
+  <button class="add-exercise-btn">＋ Lisää harjoite</button>
+</div>
+
+<!-- Groups & Teams -->
+<div class="card">
+  <div class="groups-header">
+    <h2>Ryhmät &amp; Joukkueet <span class="tag">UUSI</span></h2>
+    <button class="add-gen-btn">＋ Lisää ryhmäjako</button>
+  </div>
+
+  <!-- Generator block 1: training groups -->
+  <div class="generator-block">
+    <div class="gen-block-header">
+      <span class="gen-block-title">Harjoitusryhmät</span>
+      <div class="gen-controls">
+        <span class="gen-label">Ryhmiä:</span>
+        <div class="gen-count">
+          <button>−</button>
+          <span>2</span>
+          <button>＋</button>
+        </div>
+        <button class="regen-btn">↻ Arvo uudelleen</button>
+        <span class="remove-gen">✕</span>
+      </div>
+    </div>
+
+    <div class="player-pool-label">Pelaajat mukana (klikkaa poistaaksesi)</div>
+    <div class="player-chips">
+      <div class="player-chip">Mikko T. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Eetu L. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Juhani K. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Aleksi V. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Petteri H. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Oskari M. <span class="remove-chip">✕</span></div>
+      <div class="player-chip absent">Lauri P. (ei paikalla)</div>
+    </div>
+
+    <div class="groups-grid">
+      <div class="group-card">
+        <div class="group-card-header">
+          <div class="group-dot" style="background:#6366f1"></div>
+          <input class="group-name-input" value="Ryhmä 1" />
+        </div>
+        <div class="group-players">
+          <div class="group-player">Mikko T.</div>
+          <div class="group-player">Aleksi V.</div>
+          <div class="group-player">Oskari M.</div>
+        </div>
+      </div>
+      <div class="group-card">
+        <div class="group-card-header">
+          <div class="group-dot" style="background:#f59e0b"></div>
+          <input class="group-name-input" value="Ryhmä 2" />
+        </div>
+        <div class="group-players">
+          <div class="group-player">Eetu L.</div>
+          <div class="group-player">Juhani K.</div>
+          <div class="group-player">Petteri H.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Generator block 2: end game teams -->
+  <div class="generator-block">
+    <div class="gen-block-header">
+      <span class="gen-block-title">Loppupelin joukkueet</span>
+      <div class="gen-controls">
+        <span class="gen-label">Ryhmiä:</span>
+        <div class="gen-count">
+          <button>−</button>
+          <span>2</span>
+          <button>＋</button>
+        </div>
+        <button class="regen-btn">↻ Arvo uudelleen</button>
+        <span class="remove-gen">✕</span>
+      </div>
+    </div>
+
+    <div class="player-pool-label">Pelaajat mukana</div>
+    <div class="player-chips">
+      <div class="player-chip">Mikko T. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Eetu L. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Juhani K. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Aleksi V. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Petteri H. <span class="remove-chip">✕</span></div>
+      <div class="player-chip">Oskari M. <span class="remove-chip">✕</span></div>
+    </div>
+
+    <div class="groups-grid">
+      <div class="group-card">
+        <div class="group-card-header">
+          <div class="group-dot" style="background:#10b981"></div>
+          <input class="group-name-input" value="Joukkue A" />
+        </div>
+        <div class="group-players">
+          <div class="group-player">Eetu L.</div>
+          <div class="group-player">Juhani K.</div>
+          <div class="group-player">Oskari M.</div>
+        </div>
+      </div>
+      <div class="group-card">
+        <div class="group-card-header">
+          <div class="group-dot" style="background:#ef4444"></div>
+          <input class="group-name-input" value="Joukkue B" />
+        </div>
+        <div class="group-players">
+          <div class="group-player">Mikko T.</div>
+          <div class="group-player">Aleksi V.</div>
+          <div class="group-player">Petteri H.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- PDF note -->
+<div class="pdf-note">
+  📄 Kun tallennat harjoituksen, voit ladata sen PDF-tiedostona — sisältää harjoitteet, muistiinpanot ja ryhmäjaot.
+</div>
+
+<!-- Actions -->
+<div class="actions">
+  <button class="btn-cancel">Peruuta</button>
+  <button class="btn-save">💾 Tallenna harjoitus</button>
+</div>
+
+</body>
+</html>
