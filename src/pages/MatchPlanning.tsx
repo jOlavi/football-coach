@@ -24,13 +24,6 @@ type Assignments = Record<string, string | "absent">;
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function teamColor(name: string) {
-  const n = name.toLowerCase();
-  if (n.includes("black")) return { active: "bg-gray-800 text-white border-gray-800", inactive: "border-gray-300 text-gray-500 hover:bg-gray-100 dark:border-slate-600 dark:text-slate-400" };
-  if (n.includes("red"))   return { active: "bg-red-600 text-white border-red-600",   inactive: "border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900 dark:text-red-400" };
-  if (n.includes("white")) return { active: "bg-blue-600 text-white border-blue-600", inactive: "border-blue-200 text-blue-500 hover:bg-blue-50 dark:border-blue-900 dark:text-blue-400" };
-  return { active: "bg-brand-600 text-white border-brand-600", inactive: "border-brand-200 text-brand-600 hover:bg-brand-50 dark:border-brand-800 dark:text-brand-400" };
-}
 
 // ── Main component ─────────────────────────────────────────────────────────
 
@@ -165,9 +158,24 @@ export function MatchPlanning() {
       {teams.length > 1 && (
         <div className="sticky top-0 z-10 -mt-6 -mx-6 px-6 pt-4 pb-3 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 flex flex-wrap gap-2">
           <button onClick={() => setFilterTeamId(null)} className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${filterTeamId === null ? "bg-brand-600 text-white border-brand-600" : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400"}`}>Kaikki</button>
-          {teams.map((t) => (
-            <button key={t.id} onClick={() => setFilterTeamId(filterTeamId === t.id ? null : t.id)} className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${filterTeamId === t.id ? "bg-brand-600 text-white border-brand-600" : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400"}`}>{t.name}</button>
-          ))}
+          {teams.map((t) => {
+            const active = filterTeamId === t.id;
+            const teamCol = t.color ?? '#64748b';
+            return (
+              <button
+                key={t.id}
+                onClick={() => setFilterTeamId(active ? null : t.id)}
+                className="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
+                style={
+                  active
+                    ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
+                    : { backgroundColor: 'transparent', borderColor: '#e2e8f0', color: '#64748b' }
+                }
+              >
+                {t.name}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -273,9 +281,17 @@ export function MatchPlanning() {
             <div className="flex flex-wrap gap-3">
               {selectedEvent.teams.map((team) => {
                 const count = eventPlayers.filter((p) => assignments[p.id] === team.id).length;
-                const colors = teamColor(team.name);
+                const teamCol = teams.find((t) => t.id === team.id)?.color ?? '#64748b';
                 return (
-                  <span key={team.id} className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${count > 0 ? colors.active : "bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-400"}`}>
+                  <span
+                    key={team.id}
+                    className="px-2.5 py-1 rounded-full text-xs font-semibold border"
+                    style={
+                      count > 0
+                        ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
+                        : { backgroundColor: '#f3f4f6', borderColor: '#e5e7eb', color: '#9ca3af' }
+                    }
+                  >
                     {team.name}: {count}
                   </span>
                 );
@@ -323,13 +339,18 @@ export function MatchPlanning() {
                     {/* Team buttons */}
                     <div className="flex flex-wrap gap-1">
                       {selectedEvent.teams.map((team) => {
-                        const colors = teamColor(team.name);
                         const active = assignments[p.id] === team.id;
+                        const teamCol = teams.find((t) => t.id === team.id)?.color ?? '#64748b';
                         return (
                           <button
                             key={team.id}
                             onClick={() => assign(p.id, team.id)}
-                            className={`px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors ${active ? colors.active : colors.inactive}`}
+                            className="px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors"
+                            style={
+                              active
+                                ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
+                                : { backgroundColor: 'transparent', borderColor: '#e2e8f0', color: '#64748b' }
+                            }
                           >
                             {team.name}
                           </button>
