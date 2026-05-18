@@ -468,11 +468,17 @@ export function Training() {
                       className="w-full text-left"
                       onClick={() => setPreviewDrill(d)}
                     >
-                      <img
-                        src={d.canvasDataUrl}
-                        alt={d.name}
-                        className="w-full aspect-video object-cover"
-                      />
+                      {(d.imageUrl || d.canvasDataUrl) ? (
+                        <img
+                          src={d.imageUrl || d.canvasDataUrl}
+                          alt={d.name}
+                          className="w-full aspect-video object-cover"
+                        />
+                      ) : (
+                        <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+                          <BookOpen size={24} className="text-gray-300 dark:text-slate-600" />
+                        </div>
+                      )}
                       <div className="px-2 pt-2 pb-1">
                         <p className="font-medium text-sm text-gray-900 dark:text-slate-100 truncate">
                           {d.name}
@@ -903,7 +909,7 @@ export function Training() {
         >
           <div className="flex flex-col gap-4">
             <img
-              src={previewDrill.canvasDataUrl}
+              src={previewDrill.imageUrl || previewDrill.canvasDataUrl}
               alt={previewDrill.name}
               className="w-full rounded-lg border border-gray-100 dark:border-slate-700"
             />

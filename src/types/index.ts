@@ -153,6 +153,7 @@ export interface Drill {
   canvasDataUrl: string;
   shapes: Shape[];
   tags?: string[];
+  imageUrl?: string;
   createdAt: string;
 }
 

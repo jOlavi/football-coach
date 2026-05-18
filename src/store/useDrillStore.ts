@@ -3,6 +3,7 @@ import type { Drill } from '../types';
 import { useAuthStore } from './useAuthStore';
 import { writeUserDoc, removeUserDoc, getActiveSport } from '../lib/firestore/userData';
 import { serializeDrill } from '../lib/firestore/serialize';
+import { uploadDrillImage } from '../lib/storage';
 
 interface DrillStore {
   drills: Drill[];
@@ -18,7 +19,20 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
   addDrill: (drill) => {
     const { user } = useAuthStore.getState();
     const sport = getActiveSport();
-    if (user) writeUserDoc(user.uid, sport, 'drills', serializeDrill(drill));
+    if (user) {
+      writeUserDoc(user.uid, sport, 'drills', serializeDrill(drill));
+      if (drill.canvasDataUrl) {
+        const uid = user.uid;
+        uploadDrillImage(uid, drill.id, drill.canvasDataUrl)
+          .then((imageUrl) => {
+            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...drill, imageUrl }));
+            set((s) => ({
+              drills: s.drills.map((d) => (d.id === drill.id ? { ...d, imageUrl } : d)),
+            }));
+          })
+          .catch(console.error);
+      }
+    }
     set((s) => ({ drills: [...s.drills, drill] }));
   },
   updateDrill: (id, patch) => {
@@ -27,7 +41,20 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
     const updated = { ...drill, ...patch };
     const { user } = useAuthStore.getState();
     const sport = getActiveSport();
-    if (user) writeUserDoc(user.uid, sport, 'drills', serializeDrill(updated));
+    if (user) {
+      writeUserDoc(user.uid, sport, 'drills', serializeDrill(updated));
+      if (patch.canvasDataUrl) {
+        const uid = user.uid;
+        uploadDrillImage(uid, id, patch.canvasDataUrl)
+          .then((imageUrl) => {
+            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...updated, imageUrl }));
+            set((s) => ({
+              drills: s.drills.map((d) => (d.id === id ? { ...d, imageUrl } : d)),
+            }));
+          })
+          .catch(console.error);
+      }
+    }
     set((s) => ({ drills: s.drills.map((d) => (d.id === id ? updated : d)) }));
   },
   deleteDrill: (id) => {
