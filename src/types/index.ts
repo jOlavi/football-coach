@@ -146,3 +146,19 @@ export interface Drill {
   shapes: Shape[];
   createdAt: string;
 }
+
+export interface FirebaseTeam {
+  id: string;
+  name: string;
+  sport: string;
+  season: string;
+  headCoachId: string;
+  coaches: string[];
+}
+
+export interface FirebaseUser {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL: string | null;
+}
