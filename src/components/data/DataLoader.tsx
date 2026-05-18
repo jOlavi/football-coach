@@ -67,7 +67,7 @@ export function DataLoader() {
     }
 
     loadData().catch(console.error);
-  }, [activeTeamId, user?.uid]);
+  }, [activeTeamId, user?.uid, teams]);
 
   return null;
 }
