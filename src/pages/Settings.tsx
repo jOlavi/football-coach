@@ -74,6 +74,8 @@ export function Settings() {
   const { addSession } = useTrainingStore();
   const { teams, addTeam, deleteTeam } = useTeamStore();
   const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamColor, setNewTeamColor] = useState('#1d4ed8');
+  const colorInputRef = useRef<HTMLInputElement>(null);
 
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
@@ -190,6 +192,8 @@ export function Settings() {
     localStorage.removeItem('football-training');
     window.location.reload();
   }
+
+  const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#16a34a', '#0f172a', '#ca8a04'];
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -314,31 +318,69 @@ export function Settings() {
               )}
               {teams.map((t) => (
                 <div key={t.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
-                  <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: t.color ?? '#64748b' }}
+                    />
+                    <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                  </div>
                   <button onClick={() => deleteTeam(t.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
                     <X size={14} />
                   </button>
                 </div>
               ))}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap items-center">
               <input
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && newTeamName.trim()) {
-                    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
                     setNewTeamName('');
+                    setNewTeamColor('#1d4ed8');
                   }
                 }}
                 placeholder="Joukkueen nimi, esim. Valkoiset"
-                className="flex-1 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
               />
+              <div className="flex items-center gap-1.5">
+                {PRESET_COLORS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setNewTeamColor(c)}
+                    className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                    style={{
+                      backgroundColor: c,
+                      outline: newTeamColor === c ? `2px solid ${c}` : 'none',
+                      outlineOffset: '2px',
+                    }}
+                  />
+                ))}
+                <button
+                  type="button"
+                  onClick={() => colorInputRef.current?.click()}
+                  className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300 text-xs font-bold flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors"
+                  title="Valitse oma väri"
+                >
+                  ···
+                </button>
+                <input
+                  ref={colorInputRef}
+                  type="color"
+                  value={newTeamColor}
+                  onChange={(e) => setNewTeamColor(e.target.value)}
+                  className="sr-only"
+                />
+              </div>
               <button
                 onClick={() => {
                   if (!newTeamName.trim()) return;
-                  addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                  addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
                   setNewTeamName('');
+                  setNewTeamColor('#1d4ed8');
                 }}
                 disabled={!newTeamName.trim()}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
