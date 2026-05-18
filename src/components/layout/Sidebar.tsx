@@ -125,7 +125,7 @@ export function Sidebar() {
               <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" />
             ) : (
               <div className="w-6 h-6 rounded-full bg-brand-600 flex items-center justify-center text-white text-xs font-bold">
-                {user.displayName.charAt(0)}
+                {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
               </div>
             )}
             <span className="text-xs text-gray-400 truncate flex-1">{user.displayName}</span>
