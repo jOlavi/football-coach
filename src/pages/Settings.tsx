@@ -1,10 +1,11 @@
 import { useRef, useState, useEffect } from 'react';
 import type { TeamFormat } from '../types';
-import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useTrainingStore } from '../store/useTrainingStore';
+import { useTeamStore } from '../store/useTeamStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
@@ -66,6 +67,8 @@ export function Settings() {
   const { addPlayer } = usePlayerStore();
   const { addMatch } = useMatchStore();
   const { addSession } = useTrainingStore();
+  const { teams, addTeam, deleteTeam } = useTeamStore();
+  const [newTeamName, setNewTeamName] = useState('');
 
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
@@ -153,6 +156,48 @@ export function Settings() {
               onChange={(e) => setDraft({ ...draft, coachName: e.target.value })}
               placeholder="Oma nimesi"
             />
+          </div>
+
+          <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Joukkueet</p>
+            <div className="space-y-1.5 mb-2">
+              {teams.length === 0 && (
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic">Ei joukkueita vielä.</p>
+              )}
+              {teams.map((t) => (
+                <div key={t.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
+                  <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                  <button onClick={() => deleteTeam(t.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTeamName.trim()) {
+                    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                    setNewTeamName('');
+                  }
+                }}
+                placeholder="Joukkueen nimi, esim. Valkoiset"
+                className="flex-1 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <button
+                onClick={() => {
+                  if (!newTeamName.trim()) return;
+                  addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                  setNewTeamName('');
+                }}
+                disabled={!newTeamName.trim()}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Plus size={13} /> Lisää
+              </button>
+            </div>
           </div>
         </div>
       </CollapsibleCard>

@@ -51,6 +51,7 @@ export interface Match {
   availability: PlayerAvailability[];
   lineupConfirmed?: boolean;
   result?: MatchResult;
+  ownTeamId?: string;
   notes: string;
   createdAt: string;
 }
@@ -85,6 +86,7 @@ export interface TrainingSession {
   exercises: Exercise[];
   notes: string;
   groupSets?: GroupSet[];
+  uncertainPlayerIds?: string[];
   createdAt: string;
 }
 
@@ -130,9 +132,15 @@ export type Shape =
   | { type: 'cone';     id: string; x: number; y: number; color: string; size: SizeKey }
   | { type: 'ball';     id: string; x: number; y: number; size: SizeKey }
   | { type: 'goal';     id: string; x: number; y: number; color: string; size: SizeKey; rotation: number }
-  | { type: 'arrow';    id: string; points: [number, number][]; dashed: boolean; curved: boolean; color: string }
+  | { type: 'arrow';    id: string; points: [number, number][]; dashed: boolean; curved: boolean; color: string; size: SizeKey }
   | { type: 'zone';     id: string; x: number; y: number; w: number; h: number; color: string }
   | { type: 'text';     id: string; x: number; y: number; text: string; color: string; size: SizeKey };
+
+export interface OwnTeam {
+  id: string;
+  name: string;
+  createdAt: string;
+}
 
 export interface Drill {
   id: string;
@@ -144,6 +152,7 @@ export interface Drill {
   fieldType: FieldType;
   canvasDataUrl: string;
   shapes: Shape[];
+  tags?: string[];
   createdAt: string;
 }
 

@@ -101,6 +101,8 @@ export function TrainingBuilder() {
   const [movingPlayer, setMovingPlayer] = useState<{ setId: string; playerId: string; fromGroup: number } | null>(null);
   const [playerSelectOpen, setPlayerSelectOpen] = useState(false);
   const [pendingPlayerIds, setPendingPlayerIds] = useState<Set<string>>(new Set());
+  const [pendingUncertainIds, setPendingUncertainIds] = useState<Set<string>>(new Set());
+  const [sessionUncertainIds, setSessionUncertainIds] = useState<Set<string>>(new Set());
   const [newPlayerName, setNewPlayerName] = useState('');
   const [colorPickerFor, setColorPickerFor] = useState<string | null>(null);
   const [sessionPlayerIds, setSessionPlayerIds] = useState<string[]>([]);
@@ -123,6 +125,9 @@ export function TrainingBuilder() {
         return drill ? { ...ex, canvasDataUrl: drill.canvasDataUrl } : ex;
       })
     );
+    if ((s.uncertainPlayerIds ?? []).length > 0) {
+      setSessionUncertainIds(new Set(s.uncertainPlayerIds));
+    }
     if ((s.groupSets ?? []).length > 0) {
       const allIds = Array.from(new Set((s.groupSets ?? []).flatMap((gs) => gs.playerIds.flat())));
       setSessionPlayerIds(allIds);
@@ -182,6 +187,7 @@ export function TrainingBuilder() {
       ? new Set(sessionPlayerIds)
       : new Set(players.map((p) => p.id));
     setPendingPlayerIds(preselect);
+    setPendingUncertainIds(new Set(sessionUncertainIds));
     setNewPlayerName('');
     setPlayerSelectOpen(true);
   }
@@ -238,6 +244,8 @@ export function TrainingBuilder() {
         })
       );
     }
+    // Only keep uncertain flags for players that remain selected
+    setSessionUncertainIds(new Set([...pendingUncertainIds].filter((id) => pendingPlayerIds.has(id))));
     setPlayerSelectOpen(false);
   }
 
@@ -372,6 +380,7 @@ export function TrainingBuilder() {
       exercises,
       duration: sessionDuration,
       groupSets: savedGroupSets,
+      uncertainPlayerIds: sessionUncertainIds.size > 0 ? Array.from(sessionUncertainIds) : undefined,
     };
     if (editId) {
       updateSession(editId, payload);
@@ -736,7 +745,7 @@ export function TrainingBuilder() {
                                     : 'border-gray-300 dark:border-slate-600 text-gray-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:border-indigo-400 dark:hover:border-indigo-500'
                                 }`}
                               >
-                                {shortName(p.name)}
+                                {shortName(p.name)}{sessionUncertainIds.has(p.id) && <span className="ml-0.5 text-amber-500 font-bold">?</span>}
                               </button>
                             );
                           })}
@@ -804,7 +813,7 @@ export function TrainingBuilder() {
                                           setMovingPlayer({ setId: gs.id, playerId: pid, fromGroup: gi });
                                         }}
                                       >
-                                        {shortName(player.name)}
+                                        {shortName(player.name)}{sessionUncertainIds.has(pid) && !isSelected && <span className="ml-0.5 text-amber-500 font-bold">?</span>}
                                         {isSelected && <span className="ml-1 text-indigo-400">✕</span>}
                                       </button>
                                       <button
@@ -904,27 +913,55 @@ export function TrainingBuilder() {
             <div className="grid grid-cols-2 gap-1.5 max-h-72 overflow-y-auto pr-1">
               {players.map((p) => {
                 const selected = pendingPlayerIds.has(p.id);
+                const uncertain = pendingUncertainIds.has(p.id);
                 return (
-                  <button
-                    key={p.id}
-                    onClick={() => {
-                      const next = new Set(pendingPlayerIds);
-                      if (selected) next.delete(p.id); else next.add(p.id);
-                      setPendingPlayerIds(next);
-                    }}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm text-left transition-colors ${
-                      selected
-                        ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600 text-indigo-700 dark:text-indigo-300'
-                        : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 text-gray-500 dark:text-slate-400'
-                    }`}
-                  >
-                    <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
-                      selected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 dark:border-slate-600'
-                    }`}>
-                      {selected && <span className="text-white text-xs leading-none">✓</span>}
-                    </span>
-                    {p.name}
-                  </button>
+                  <div key={p.id} className={`flex items-center rounded-lg border text-sm transition-colors ${
+                    selected
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600'
+                      : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700'
+                  }`}>
+                    <button
+                      onClick={() => {
+                        const next = new Set(pendingPlayerIds);
+                        if (selected) {
+                          next.delete(p.id);
+                          const nextU = new Set(pendingUncertainIds);
+                          nextU.delete(p.id);
+                          setPendingUncertainIds(nextU);
+                        } else {
+                          next.add(p.id);
+                        }
+                        setPendingPlayerIds(next);
+                      }}
+                      className={`flex items-center gap-2 flex-1 px-3 py-2 text-left ${
+                        selected ? 'text-indigo-700 dark:text-indigo-300' : 'text-gray-500 dark:text-slate-400'
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
+                        selected ? 'bg-indigo-600 border-indigo-600' : 'border-gray-300 dark:border-slate-600'
+                      }`}>
+                        {selected && <span className="text-white text-xs leading-none">✓</span>}
+                      </span>
+                      {p.name}
+                    </button>
+                    {selected && (
+                      <button
+                        onClick={() => {
+                          const next = new Set(pendingUncertainIds);
+                          if (uncertain) next.delete(p.id); else next.add(p.id);
+                          setPendingUncertainIds(next);
+                        }}
+                        title="Merkitse epävarma"
+                        className={`px-2 py-2 text-sm font-bold shrink-0 transition-colors ${
+                          uncertain
+                            ? 'text-amber-600 dark:text-amber-400'
+                            : 'text-gray-300 dark:text-slate-600 hover:text-amber-500'
+                        }`}
+                      >
+                        ?
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>
