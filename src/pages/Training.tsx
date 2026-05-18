@@ -908,11 +908,17 @@ export function Training() {
           wide
         >
           <div className="flex flex-col gap-4">
-            <img
-              src={previewDrill.imageUrl || previewDrill.canvasDataUrl}
-              alt={previewDrill.name}
-              className="w-full rounded-lg border border-gray-100 dark:border-slate-700"
-            />
+            {(previewDrill.imageUrl || previewDrill.canvasDataUrl) ? (
+              <img
+                src={previewDrill.imageUrl || previewDrill.canvasDataUrl}
+                alt={previewDrill.name}
+                className="w-full rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                <BookOpen size={32} className="text-gray-300 dark:text-slate-600" />
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-slate-400">
               <span>⏱ {previewDrill.duration} min</span>
               {previewDrill.repetitions > 1 && (

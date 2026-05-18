@@ -25,6 +25,8 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
         const uid = user.uid;
         uploadDrillImage(uid, drill.id, drill.canvasDataUrl)
           .then((imageUrl) => {
+            const stillExists = get().drills.some((d) => d.id === drill.id);
+            if (!stillExists) return;
             writeUserDoc(uid, sport, 'drills', serializeDrill({ ...drill, imageUrl }));
             set((s) => ({
               drills: s.drills.map((d) => (d.id === drill.id ? { ...d, imageUrl } : d)),
@@ -47,6 +49,8 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
         const uid = user.uid;
         uploadDrillImage(uid, id, patch.canvasDataUrl)
           .then((imageUrl) => {
+            const stillExists = get().drills.some((d) => d.id === id);
+            if (!stillExists) return;
             writeUserDoc(uid, sport, 'drills', serializeDrill({ ...updated, imageUrl }));
             set((s) => ({
               drills: s.drills.map((d) => (d.id === id ? { ...d, imageUrl } : d)),
