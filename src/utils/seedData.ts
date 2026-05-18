@@ -293,14 +293,19 @@ export const SEED_PLAYERS: Player[] = [
 
 export const SEED_TEAMS: OwnTeam[] = [
   {
-    id: "t1",
-    name: "Main Team",
-    createdAt: "2024-01-10T10:00:00Z",
+    id: "29de5833-ec6e-45c2-bc3c-db68718eb5c5",
+    name: "Blacks",
+    createdAt: "2026-05-09T10:40:45.163Z",
   },
   {
-    id: "t2",
-    name: "Reserve Team",
-    createdAt: "2024-01-10T10:00:00Z",
+    id: "d3e153ad-45a9-4ae5-ad10-fc89a7471d14",
+    name: "Whites",
+    createdAt: "2026-05-09T10:40:47.581Z",
+  },
+  {
+    id: "faae7590-e2e7-4007-bfcb-f022e10a6d7e",
+    name: "Reds",
+    createdAt: "2026-05-09T10:40:59.163Z",
   },
 ];
 
