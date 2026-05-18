@@ -82,9 +82,10 @@ export function Settings() {
   useEffect(() => { setDraft(settings); }, [settings]);
 
   const authUser = useAuthStore((s) => s.user);
-  const authTeams = useAuthStore((s) => s.teams);
   const activeTeamId = useAppStore((s) => s.activeTeamId);
-  const activeTeam = authTeams.find((t) => t.id === activeTeamId) ?? null;
+  const activeTeam = useAuthStore(
+    (s) => s.teams.find((t) => t.id === activeTeamId) ?? null
+  );
   const isHeadCoach = activeTeam?.headCoachId === authUser?.uid;
 
   const [coachProfiles, setCoachProfiles] = useState<
@@ -94,19 +95,23 @@ export function Settings() {
   const [inviteUrl, setInviteUrl] = useState<string | null>(null);
   const [inviteLoading, setInviteLoading] = useState(false);
 
+  const coachIdsKey = activeTeam?.coaches?.join(',') ?? '';
+
   useEffect(() => {
-    if (!activeTeam?.coaches?.length) {
-      setCoachProfiles([]);
-      return;
-    }
-    getCoachProfiles(activeTeam.coaches).then(setCoachProfiles).catch(console.error);
-  }, [activeTeam?.coaches?.join(',')]);
+    if (!coachIdsKey) { setCoachProfiles([]); return; }
+    getCoachProfiles(coachIdsKey.split(',')).then(setCoachProfiles).catch(console.error);
+  }, [coachIdsKey]);
 
   async function handleRemoveCoach(coachId: string) {
     if (!activeTeam) return;
-    await removeCoachFromTeam(activeTeam.id, coachId);
-    setCoachProfiles((prev) => prev.filter((c) => c.uid !== coachId));
-    setConfirmRemoveId(null);
+    try {
+      await removeCoachFromTeam(activeTeam.id, coachId);
+      setCoachProfiles((prev) => prev.filter((c) => c.uid !== coachId));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmRemoveId(null);
+    }
   }
 
   async function handleCreateInvite() {
