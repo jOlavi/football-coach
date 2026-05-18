@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../../lib/firebase';
+import { setDoc, doc } from 'firebase/firestore';
+import { auth, db } from '../../lib/firebase';
 import { getTeamsForUser } from '../../lib/firestore/teams';
 import { useAuthStore } from '../../store/useAuthStore';
 import { useAppStore } from '../../store/useAppStore';
@@ -19,6 +20,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           photoURL: firebaseUser.photoURL,
         };
         setUser(user);
+        setDoc(
+          doc(db, 'users', firebaseUser.uid),
+          { displayName: user.displayName, email: user.email, photoURL: user.photoURL },
+          { merge: true }
+        ).catch(console.error);
         try {
           const teams = await getTeamsForUser(firebaseUser.uid);
           setTeams(teams);
