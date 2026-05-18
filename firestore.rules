@@ -12,7 +12,10 @@ service cloud.firestore {
     }
 
     match /teams/{teamId} {
-      allow read, write: if isCoach(teamId);
+      allow read, update, delete: if isCoach(teamId);
+      allow create: if request.auth != null
+        && request.auth.uid == request.resource.data.headCoachId
+        && request.resource.data.coaches.hasAll([request.auth.uid]);
 
       match /{subcollection}/{docId} {
         allow read, write: if isCoach(teamId);

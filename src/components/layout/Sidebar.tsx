@@ -128,7 +128,7 @@ export function Sidebar() {
                 {(user.displayName || user.email || '?').charAt(0).toUpperCase()}
               </div>
             )}
-            <span className="text-xs text-gray-400 truncate flex-1">{user.displayName}</span>
+            <span className="text-xs text-gray-400 truncate flex-1">{user.displayName || user.email}</span>
             <button
               onClick={handleSignOut}
               className="text-gray-500 hover:text-white transition-colors"
