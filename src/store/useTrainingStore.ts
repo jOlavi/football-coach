@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { TrainingSession } from '../types';
 import { useAppStore } from './useAppStore';
 import { writeTeamDoc, removeTeamDoc } from '../lib/firestore/teamData';
+import { serializeSession } from '../lib/firestore/serialize';
 
 interface TrainingStore {
   sessions: TrainingSession[];
@@ -17,7 +18,7 @@ export const useTrainingStore = create<TrainingStore>()((set, get) => ({
   setAll: (sessions) => set({ sessions }),
   addSession: (session) => {
     const { activeTeamId } = useAppStore.getState();
-    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', session);
+    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', serializeSession(session));
     set((s) => ({ sessions: [...s.sessions, session] }));
   },
   updateSession: (id, updates) => {
@@ -25,7 +26,7 @@ export const useTrainingStore = create<TrainingStore>()((set, get) => ({
     if (!session) return;
     const updated = { ...session, ...updates };
     const { activeTeamId } = useAppStore.getState();
-    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', updated);
+    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', serializeSession(updated));
     set((s) => ({ sessions: s.sessions.map((t) => (t.id === id ? updated : t)) }));
   },
   deleteSession: (id) => {

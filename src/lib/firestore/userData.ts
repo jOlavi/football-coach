@@ -14,11 +14,12 @@ export async function getUserSubcollection<T>(
   return snap.docs.map((d) => d.data() as T);
 }
 
-export function writeUserDoc<T extends { id: string }>(
+export function writeUserDoc(
   userId: string,
   sport: string,
   sub: string,
-  data: T
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: { id: string } & Record<string, any>
 ): void {
   setDoc(doc(db, 'users', userId, 'sports', sport, sub, data.id), data).catch(
     console.error
@@ -36,8 +37,6 @@ export function removeUserDoc(
   );
 }
 
-// Returns the sport of the currently active team.
-// Used by exercise/drill stores to scope writes per sport.
 export function getActiveSport(): string {
   const { teams } = useAuthStore.getState();
   const { activeTeamId } = useAppStore.getState();

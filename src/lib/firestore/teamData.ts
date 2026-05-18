@@ -9,10 +9,11 @@ export async function getSubcollection<T>(
   return snap.docs.map((d) => d.data() as T);
 }
 
-export function writeTeamDoc<T extends { id: string }>(
+export function writeTeamDoc(
   teamId: string,
   sub: string,
-  data: T
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  data: { id: string } & Record<string, any>
 ): void {
   setDoc(doc(db, 'teams', teamId, sub, data.id), data).catch(console.error);
 }

@@ -9,8 +9,9 @@ import { useExerciseStore } from '../../store/useExerciseStore';
 import { useDrillStore } from '../../store/useDrillStore';
 import { getSubcollection } from '../../lib/firestore/teamData';
 import { getUserSubcollection } from '../../lib/firestore/userData';
+import { deserializeSession, deserializeDrill } from '../../lib/firestore/serialize';
 import { runMigration, runSeed } from '../../lib/migration';
-import type { Player, Match, OwnTeam, TrainingSession, Exercise, Drill } from '../../types';
+import type { Player, Match, OwnTeam, Exercise } from '../../types';
 
 function clearAllStores() {
   usePlayerStore.getState().setAll([]);
@@ -48,22 +49,22 @@ export function DataLoader() {
         setPendingImport(null);
       }
 
-      const [players, matches, ownTeams, sessions, exercises, drills] =
+      const [players, matches, ownTeams, rawSessions, exercises, rawDrills] =
         await Promise.all([
           getSubcollection<Player>(teamId, 'players'),
           getSubcollection<Match>(teamId, 'matches'),
           getSubcollection<OwnTeam>(teamId, 'ownTeams'),
-          getSubcollection<TrainingSession>(teamId, 'trainingSessions'),
+          getSubcollection<Record<string, unknown>>(teamId, 'trainingSessions'),
           getUserSubcollection<Exercise>(uid, sport, 'exercises'),
-          getUserSubcollection<Drill>(uid, sport, 'drills'),
+          getUserSubcollection<Record<string, unknown>>(uid, sport, 'drills'),
         ]);
 
       usePlayerStore.getState().setAll(players);
       useMatchStore.getState().setAll(matches);
       useTeamStore.getState().setAll(ownTeams);
-      useTrainingStore.getState().setAll(sessions);
+      useTrainingStore.getState().setAll(rawSessions.map(deserializeSession));
       useExerciseStore.getState().setAll(exercises);
-      useDrillStore.getState().setAll(drills);
+      useDrillStore.getState().setAll(rawDrills.map(deserializeDrill));
     }
 
     loadData().catch(console.error);

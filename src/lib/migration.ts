@@ -1,6 +1,7 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { SEED_PLAYERS, SEED_TEAMS, SEED_MATCHES } from '../utils/seedData';
+import { serializeSession, serializeDrill } from './firestore/serialize';
 import type { Player, Match, OwnTeam, TrainingSession, Exercise, Drill } from '../types';
 
 export interface LocalStorageSnapshot {
@@ -57,13 +58,13 @@ export async function runMigration(
     writes.push(setDoc(doc(db, 'teams', teamId, 'ownTeams', t.id), t))
   );
   snap.sessions.forEach((s) =>
-    writes.push(setDoc(doc(db, 'teams', teamId, 'trainingSessions', s.id), s))
+    writes.push(setDoc(doc(db, 'teams', teamId, 'trainingSessions', s.id), serializeSession(s) as any))
   );
   snap.exercises.forEach((e) =>
     writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'exercises', e.id), e))
   );
   snap.drills.forEach((d) =>
-    writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'drills', d.id), d))
+    writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'drills', d.id), serializeDrill(d) as any))
   );
 
   await Promise.all(writes);

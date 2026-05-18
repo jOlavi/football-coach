@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Drill } from '../types';
 import { useAuthStore } from './useAuthStore';
 import { writeUserDoc, removeUserDoc, getActiveSport } from '../lib/firestore/userData';
+import { serializeDrill } from '../lib/firestore/serialize';
 
 interface DrillStore {
   drills: Drill[];
@@ -17,7 +18,7 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
   addDrill: (drill) => {
     const { user } = useAuthStore.getState();
     const sport = getActiveSport();
-    if (user) writeUserDoc(user.uid, sport, 'drills', drill);
+    if (user) writeUserDoc(user.uid, sport, 'drills', serializeDrill(drill));
     set((s) => ({ drills: [...s.drills, drill] }));
   },
   updateDrill: (id, patch) => {
@@ -26,7 +27,7 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
     const updated = { ...drill, ...patch };
     const { user } = useAuthStore.getState();
     const sport = getActiveSport();
-    if (user) writeUserDoc(user.uid, sport, 'drills', updated);
+    if (user) writeUserDoc(user.uid, sport, 'drills', serializeDrill(updated));
     set((s) => ({ drills: s.drills.map((d) => (d.id === id ? updated : d)) }));
   },
   deleteDrill: (id) => {
