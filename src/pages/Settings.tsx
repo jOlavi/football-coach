@@ -1,14 +1,19 @@
 import { useRef, useState, useEffect } from 'react';
 import type { TeamFormat } from '../types';
-import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useTrainingStore } from '../store/useTrainingStore';
 import { useTeamStore } from '../store/useTeamStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
+import { getCoachProfiles } from '../lib/firestore/userData';
+import { createInvitation } from '../lib/firestore/invitations';
+import { removeCoachFromTeam } from '../lib/firestore/teams';
 
 function CollapsibleCard({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -76,6 +81,47 @@ export function Settings() {
 
   useEffect(() => { setDraft(settings); }, [settings]);
 
+  const authUser = useAuthStore((s) => s.user);
+  const authTeams = useAuthStore((s) => s.teams);
+  const activeTeamId = useAppStore((s) => s.activeTeamId);
+  const activeTeam = authTeams.find((t) => t.id === activeTeamId) ?? null;
+  const isHeadCoach = activeTeam?.headCoachId === authUser?.uid;
+
+  const [coachProfiles, setCoachProfiles] = useState<
+    { uid: string; displayName: string; email: string }[]
+  >([]);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  useEffect(() => {
+    if (!activeTeam?.coaches?.length) {
+      setCoachProfiles([]);
+      return;
+    }
+    getCoachProfiles(activeTeam.coaches).then(setCoachProfiles).catch(console.error);
+  }, [activeTeam?.coaches?.join(',')]);
+
+  async function handleRemoveCoach(coachId: string) {
+    if (!activeTeam) return;
+    await removeCoachFromTeam(activeTeam.id, coachId);
+    setCoachProfiles((prev) => prev.filter((c) => c.uid !== coachId));
+    setConfirmRemoveId(null);
+  }
+
+  async function handleCreateInvite() {
+    if (!activeTeam || !authUser) return;
+    setInviteLoading(true);
+    try {
+      const token = await createInvitation(activeTeam.id, authUser.uid);
+      setInviteUrl(`${window.location.origin}/join?token=${token}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInviteLoading(false);
+    }
+  }
+
   function handleSave() {
     updateSettings(draft);
     setSaved(true);
@@ -134,6 +180,95 @@ export function Settings() {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+
+      <CollapsibleCard title="Valmentajat">
+        {!activeTeam ? (
+          <p className="text-sm text-gray-400 dark:text-slate-500">Ei aktiivista joukkuetta.</p>
+        ) : (
+          <div className="space-y-2">
+            {coachProfiles.length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-slate-500 italic">Ladataan valmentajia…</p>
+            )}
+            {coachProfiles.map((coach) => (
+              <div
+                key={coach.uid}
+                className="flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50 dark:bg-slate-900"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
+                      {(coach.displayName || coach.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
+                      {coach.displayName || '—'}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{coach.email}</p>
+                  </div>
+                  {coach.uid === activeTeam.headCoachId && (
+                    <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300">
+                      Päävalmentaja
+                    </span>
+                  )}
+                </div>
+
+                {isHeadCoach && coach.uid !== authUser?.uid && (
+                  confirmRemoveId === coach.uid ? (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Vahvistetaanko poisto?</span>
+                      <Button variant="danger" size="sm" onClick={() => handleRemoveCoach(coach.uid)}>
+                        Kyllä
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => setConfirmRemoveId(null)}>
+                        Peruuta
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setConfirmRemoveId(coach.uid)}
+                    >
+                      Poista
+                    </Button>
+                  )
+                )}
+              </div>
+            ))}
+
+            {isHeadCoach && (
+              <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Link size={14} />}
+                  onClick={handleCreateInvite}
+                >
+                  {inviteLoading ? 'Luodaan…' : 'Luo kutsulinkki'}
+                </Button>
+                {inviteUrl && (
+                  <div className="flex gap-2 items-center mt-2">
+                    <input
+                      readOnly
+                      value={inviteUrl}
+                      className="flex-1 text-xs border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 rounded-lg px-2 py-1.5 focus:outline-none"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Copy size={13} />}
+                      onClick={() => navigator.clipboard.writeText(inviteUrl)}
+                    >
+                      Kopioi
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </CollapsibleCard>
 
       <CollapsibleCard title="Joukkueen tiedot">
         <div className="space-y-3">

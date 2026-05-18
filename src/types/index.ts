@@ -136,12 +136,6 @@ export type Shape =
   | { type: 'zone';     id: string; x: number; y: number; w: number; h: number; color: string }
   | { type: 'text';     id: string; x: number; y: number; text: string; color: string; size: SizeKey };
 
-export interface OwnTeam {
-  id: string;
-  name: string;
-  createdAt: string;
-}
-
 export interface Drill {
   id: string;
   name: string;
