@@ -7,6 +7,7 @@ import { uploadDrillImage } from '../lib/storage';
 
 interface DrillStore {
   drills: Drill[];
+  imageUploadError: string | null;
   setAll: (drills: Drill[]) => void;
   addDrill: (drill: Drill) => void;
   updateDrill: (id: string, patch: Partial<Omit<Drill, 'id' | 'createdAt'>>) => void;
@@ -15,24 +16,29 @@ interface DrillStore {
 
 export const useDrillStore = create<DrillStore>()((set, get) => ({
   drills: [],
+  imageUploadError: null,
   setAll: (drills) => set({ drills }),
   addDrill: (drill) => {
     const { user } = useAuthStore.getState();
-    const sport = getActiveSport();
     if (user) {
-      writeUserDoc(user.uid, sport, 'drills', serializeDrill(drill));
+      const uid = user.uid;
+      writeUserDoc(uid, getActiveSport(), 'drills', serializeDrill(drill));
       if (drill.canvasDataUrl) {
-        const uid = user.uid;
+        set({ imageUploadError: null });
         uploadDrillImage(uid, drill.id, drill.canvasDataUrl)
           .then((imageUrl) => {
-            const stillExists = get().drills.some((d) => d.id === drill.id);
-            if (!stillExists) return;
-            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...drill, imageUrl }));
+            const sport = getActiveSport();
+            const current = get().drills.find((d) => d.id === drill.id);
+            if (!current) return;
+            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...current, imageUrl }));
             set((s) => ({
               drills: s.drills.map((d) => (d.id === drill.id ? { ...d, imageUrl } : d)),
             }));
           })
-          .catch(console.error);
+          .catch((err) => {
+            console.error(err);
+            set({ imageUploadError: err instanceof Error ? err.message : String(err) });
+          });
       }
     }
     set((s) => ({ drills: [...s.drills, drill] }));
@@ -42,21 +48,25 @@ export const useDrillStore = create<DrillStore>()((set, get) => ({
     if (!drill) return;
     const updated = { ...drill, ...patch };
     const { user } = useAuthStore.getState();
-    const sport = getActiveSport();
     if (user) {
-      writeUserDoc(user.uid, sport, 'drills', serializeDrill(updated));
+      const uid = user.uid;
+      writeUserDoc(uid, getActiveSport(), 'drills', serializeDrill(updated));
       if (patch.canvasDataUrl) {
-        const uid = user.uid;
+        set({ imageUploadError: null });
         uploadDrillImage(uid, id, patch.canvasDataUrl)
           .then((imageUrl) => {
-            const stillExists = get().drills.some((d) => d.id === id);
-            if (!stillExists) return;
-            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...updated, imageUrl }));
+            const sport = getActiveSport();
+            const current = get().drills.find((d) => d.id === id);
+            if (!current) return;
+            writeUserDoc(uid, sport, 'drills', serializeDrill({ ...current, imageUrl }));
             set((s) => ({
               drills: s.drills.map((d) => (d.id === id ? { ...d, imageUrl } : d)),
             }));
           })
-          .catch(console.error);
+          .catch((err) => {
+            console.error(err);
+            set({ imageUploadError: err instanceof Error ? err.message : String(err) });
+          });
       }
     }
     set((s) => ({ drills: s.drills.map((d) => (d.id === id ? updated : d)) }));
