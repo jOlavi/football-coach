@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Users, Calendar, Trophy, AlertCircle, ChevronRight } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
+import { useTeamStore } from '../store/useTeamStore';
 import { Card, StatCard } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { getTeamRecord } from '../utils/stats';
@@ -11,6 +12,7 @@ export function Dashboard() {
   const navigate = useNavigate();
   const players = usePlayerStore((s) => s.players);
   const matches = useMatchStore((s) => s.matches);
+  const teams = useTeamStore((s) => s.teams);
 
   const activePlayers = players.filter((p) => p.active);
 
@@ -102,7 +104,16 @@ export function Dashboard() {
                           <p className="text-xs text-gray-500 dark:text-slate-400">{format(new Date(m.date), 'MMM')}</p>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-slate-100">vs {m.opponent}</p>
+                          <p className="font-medium text-gray-900 dark:text-slate-100">
+                            {(() => {
+                              const team = m.ownTeamId ? teams.find((t) => t.id === m.ownTeamId) : null;
+                              const own = team ? <span className="text-brand-600 dark:text-brand-400">{team.name}</span> : null;
+                              const opp = <span>{m.opponent}</span>;
+                              const sep = <span className="text-gray-400 dark:text-slate-500 font-normal mx-1">–</span>;
+                              if (!own) return <>vs {m.opponent}</>;
+                              return m.location === 'home' ? <>{own}{sep}{opp}</> : <>{opp}{sep}{own}</>;
+                            })()}
+                          </p>
                           <p className="text-xs text-gray-500 dark:text-slate-400">
                             {m.location === 'home' ? '🏠 Koti' : '✈️ Vieras'} · {format(new Date(m.date), 'HH:mm')}
                             {m.venue ? ` · ${m.venue}` : ''}

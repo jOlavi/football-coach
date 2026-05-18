@@ -303,9 +303,10 @@ export function Training() {
                 const player = players.find((p) => p.id === pid);
                 if (!player) return "";
                 const color = gs.playerColors?.[pid];
+                const uncertain = (s.uncertainPlayerIds ?? []).includes(pid);
                 return `<div class="group-player${
                   color ? ` color-${color}` : ""
-                }">${player.name}</div>`;
+                }">${player.name}${uncertain ? ' <span class="uncertain">?</span>' : ""}</div>`;
               })
               .join("")}
           </div>
@@ -336,12 +337,14 @@ export function Training() {
     .ex-desc { color: #4b5563; font-size: 13px; margin-top: 4px; line-height: 1.5; }
     .ex-goals { color: #15803d; font-size: 12px; margin-top: 6px; }
     .ex-dur { color: #6b7280; font-size: 12px; margin-top: 6px; }
-    .group-set { margin-bottom: 16px; }
+    .groups-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .group-set { margin-bottom: 0; break-inside: avoid; }
     .group-set h3 { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; }
     .groups-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .group-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; min-width: 120px; }
+    .group-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; min-width: 100px; flex: 1; }
     .group-heading { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: #16a34a; text-transform: uppercase; letter-spacing: 0.04em; }
     .group-player { font-size: 12px; color: #374151; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; }
+    .uncertain { color: #d97706; font-weight: 700; }
     .color-red { background: #fee2e2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .color-yellow { background: #fef9c3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     .color-green { background: #dcfce7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
@@ -389,7 +392,7 @@ export function Training() {
 
   ${
     (s.groupSets ?? []).length > 0
-      ? `<div class="section-title">Ryhmät &amp; Joukkueet</div>${groupSetsHtml}`
+      ? `<div class="section-title">Ryhmät &amp; Joukkueet</div><div class="groups-grid">${groupSetsHtml}</div>`
       : ""
   }
 
@@ -465,11 +468,17 @@ export function Training() {
                       className="w-full text-left"
                       onClick={() => setPreviewDrill(d)}
                     >
-                      <img
-                        src={d.canvasDataUrl}
-                        alt={d.name}
-                        className="w-full aspect-video object-cover"
-                      />
+                      {(d.imageUrl || d.canvasDataUrl) ? (
+                        <img
+                          src={d.imageUrl || d.canvasDataUrl}
+                          alt={d.name}
+                          className="w-full aspect-video object-cover"
+                        />
+                      ) : (
+                        <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+                          <BookOpen size={24} className="text-gray-300 dark:text-slate-600" />
+                        </div>
+                      )}
                       <div className="px-2 pt-2 pb-1">
                         <p className="font-medium text-sm text-gray-900 dark:text-slate-100 truncate">
                           {d.name}
@@ -759,9 +768,10 @@ export function Training() {
                                       : color === 'green' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
                                       : color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
                                       : 'bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300';
+                                    const uncertain = (s.uncertainPlayerIds ?? []).includes(pid);
                                     return (
                                       <span key={pid} className={`text-xs px-1.5 py-0.5 rounded ${cls}`}>
-                                        {player.name}
+                                        {player.name}{uncertain && <span className="ml-0.5 text-amber-500 font-bold">?</span>}
                                       </span>
                                     );
                                   })}
@@ -898,11 +908,17 @@ export function Training() {
           wide
         >
           <div className="flex flex-col gap-4">
-            <img
-              src={previewDrill.canvasDataUrl}
-              alt={previewDrill.name}
-              className="w-full rounded-lg border border-gray-100 dark:border-slate-700"
-            />
+            {(previewDrill.imageUrl || previewDrill.canvasDataUrl) ? (
+              <img
+                src={previewDrill.imageUrl || previewDrill.canvasDataUrl}
+                alt={previewDrill.name}
+                className="w-full rounded-lg object-cover"
+              />
+            ) : (
+              <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+                <BookOpen size={32} className="text-gray-300 dark:text-slate-600" />
+              </div>
+            )}
             <div className="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-slate-400">
               <span>⏱ {previewDrill.duration} min</span>
               {previewDrill.repetitions > 1 && (

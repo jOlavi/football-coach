@@ -11,6 +11,7 @@ import {
 import { useMatchStore } from "../store/useMatchStore";
 import { usePlayerStore } from "../store/usePlayerStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useTeamStore } from "../store/useTeamStore";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
@@ -23,7 +24,6 @@ import type {
   MatchLocation,
   MatchResult,
   TeamFormat,
-  TeamLevel,
 } from "../types";
 
 function getLineupThresholds(format?: TeamFormat): { low: number; max: number } {
@@ -66,11 +66,14 @@ export function Matches() {
     useMatchStore();
   const players = usePlayerStore((s) => s.players);
   const defaultTeamFormat = useSettingsStore((s) => s.settings.defaultTeamFormat);
+  const teams = useTeamStore((s) => s.teams);
 
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Match | null>(null);
   const [form, setForm] = useState(emptyMatch());
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [resultModal, setResultModal] = useState<Match | null>(null);
   const [resultForm, setResultForm] = useState<MatchResult>({
     goalsFor: 0,
@@ -78,7 +81,11 @@ export function Matches() {
     scorers: [],
   });
 
-  const sorted = [...matches].sort(
+  const filtered = selectedTeamId
+    ? matches.filter((m) => m.ownTeamId === selectedTeamId)
+    : matches;
+
+  const sorted = [...filtered].sort(
     (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
   );
   const past = sorted.filter((m) => m.result);
@@ -162,7 +169,17 @@ export function Matches() {
               </p>
             </div>
             <div>
-              <p className="font-semibold text-gray-900 dark:text-slate-100">vs {m.opponent}</p>
+              <p className="font-semibold text-gray-900 dark:text-slate-100">
+                {(() => {
+                  const ownTeam = m.ownTeamId ? teams.find((t) => t.id === m.ownTeamId) : null;
+                  const vs = <span className="text-gray-400 dark:text-slate-500 font-normal mx-1">–</span>;
+                  if (!ownTeam) return <>vs {m.opponent}</>;
+                  const own = <span className="text-brand-600 dark:text-brand-400">{ownTeam.name}</span>;
+                  const opp = <span>{m.opponent}</span>;
+                  if (m.location === 'home') return <>{own}{vs}{opp}</>;
+                  return <>{opp}{vs}{own}</>;
+                })()}
+              </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Badge label={levelLabels[m.level]} color={levelColors[m.level]} />
                 {m.teamLevel && (
@@ -192,7 +209,9 @@ export function Matches() {
                     : "text-gray-600 dark:text-slate-300"
                 }`}
               >
-                {m.result.goalsFor} – {m.result.goalsAgainst}
+                {m.location === 'home'
+                  ? `${m.result.goalsFor} – ${m.result.goalsAgainst}`
+                  : `${m.result.goalsAgainst} – ${m.result.goalsFor}`}
               </span>
             ) : (
               <div className="flex items-center gap-1.5">
@@ -218,7 +237,7 @@ export function Matches() {
                 variant="ghost"
                 size="sm"
                 icon={<Trash2 size={13} />}
-                onClick={() => deleteMatch(m.id)}
+                onClick={() => setConfirmDeleteId(m.id)}
               />
             </div>
             {open ? (
@@ -326,10 +345,39 @@ export function Matches() {
 
   return (
     <div className="space-y-5">
-      <div className="flex justify-end">
-        <Button icon={<Plus size={15} />} onClick={openAdd}>
-          Lisää ottelu
-        </Button>
+      <div className="sticky top-0 z-10 -mt-6 -mx-6 px-6 pt-4 pb-3 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-3">
+        {teams.length > 0 && (
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedTeamId(null)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                selectedTeamId === null
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+              }`}
+            >
+              Kaikki
+            </button>
+            {teams.map((t) => (
+              <button
+                key={t.id}
+                onClick={() => setSelectedTeamId(selectedTeamId === t.id ? null : t.id)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  selectedTeamId === t.id
+                    ? 'bg-brand-600 text-white border-brand-600'
+                    : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                }`}
+              >
+                {t.name}
+              </button>
+            ))}
+          </div>
+        )}
+        <div className="ml-auto">
+          <Button icon={<Plus size={15} />} onClick={openAdd}>
+            Lisää ottelu
+          </Button>
+        </div>
       </div>
 
       {upcoming.length > 0 && (
@@ -358,7 +406,7 @@ export function Matches() {
         </section>
       )}
 
-      {matches.length === 0 && (
+      {filtered.length === 0 && (
         <Card>
           <p className="text-center text-gray-400 dark:text-slate-500 py-8">
             Ei otteluita vielä. Lisää ensimmäinen ottelu!
@@ -433,12 +481,12 @@ export function Matches() {
                   </div>
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Joukkuetaso</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Taso</p>
                   <div className="flex gap-2">
                     {([['taso1','Taso 1'],['taso2','Taso 2']] as const).map(([val, label]) => (
                       <button
                         key={val}
-                        onClick={() => setForm({ ...form, teamLevel: val as TeamLevel })}
+                        onClick={() => setForm({ ...form, teamLevel: val })}
                         className={`flex-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
                           (form.teamLevel ?? 'taso1') === val
                             ? 'bg-brand-600 text-white border-brand-600'
@@ -451,6 +499,26 @@ export function Matches() {
                   </div>
                 </div>
               </div>
+              {teams.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Oma joukkue</p>
+                  <div className="flex flex-wrap gap-2">
+                    {teams.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => setForm({ ...form, ownTeamId: form.ownTeamId === t.id ? undefined : t.id })}
+                        className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                          form.ownTeamId === t.id
+                            ? 'bg-brand-600 text-white border-brand-600'
+                            : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                        }`}
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Formaatti</p>
                 <div className="flex gap-2">
@@ -593,6 +661,27 @@ export function Matches() {
           </div>
         </Modal>
       )}
+
+      {confirmDeleteId && (() => {
+        const m = matches.find((x) => x.id === confirmDeleteId);
+        if (!m) return null;
+        return (
+          <Modal title="Poista ottelu" onClose={() => setConfirmDeleteId(null)}>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-slate-300">
+                Haluatko varmasti poistaa ottelun <span className="font-semibold text-gray-900 dark:text-slate-100">vs {m.opponent}</span> ({format(new Date(m.date), 'dd.MM.yyyy')})?
+              </p>
+              <p className="text-xs text-red-500">Tätä toimintoa ei voi peruuttaa.</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>Peruuta</Button>
+                <Button variant="danger" icon={<Trash2 size={13} />} onClick={() => { deleteMatch(confirmDeleteId); setConfirmDeleteId(null); }}>
+                  Poista
+                </Button>
+              </div>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

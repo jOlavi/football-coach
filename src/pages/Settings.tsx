@@ -1,13 +1,19 @@
 import { useRef, useState, useEffect } from 'react';
 import type { TeamFormat } from '../types';
-import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useTrainingStore } from '../store/useTrainingStore';
+import { useTeamStore } from '../store/useTeamStore';
+import { useAuthStore } from '../store/useAuthStore';
+import { useAppStore } from '../store/useAppStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
+import { getCoachProfiles } from '../lib/firestore/userData';
+import { createInvitation } from '../lib/firestore/invitations';
+import { removeCoachFromTeam } from '../lib/firestore/teams';
 
 function CollapsibleCard({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -66,12 +72,68 @@ export function Settings() {
   const { addPlayer } = usePlayerStore();
   const { addMatch } = useMatchStore();
   const { addSession } = useTrainingStore();
+  const { teams, addTeam, deleteTeam } = useTeamStore();
+  const [newTeamName, setNewTeamName] = useState('');
 
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
   const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
 
   useEffect(() => { setDraft(settings); }, [settings]);
+
+  const authUser = useAuthStore((s) => s.user);
+  const activeTeamId = useAppStore((s) => s.activeTeamId);
+  const activeTeam = useAuthStore(
+    (s) => s.teams.find((t) => t.id === activeTeamId) ?? null
+  );
+  const isHeadCoach = activeTeam?.headCoachId === authUser?.uid;
+
+  const [coachProfiles, setCoachProfiles] = useState<
+    { uid: string; displayName: string; email: string }[]
+  >([]);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
+  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
+  const [inviteLoading, setInviteLoading] = useState(false);
+
+  const coachIdsKey = activeTeam?.coaches?.join(',') ?? '';
+
+  useEffect(() => {
+    if (!coachIdsKey) { setCoachProfiles([]); return; }
+    getCoachProfiles(coachIdsKey.split(',')).then(setCoachProfiles).catch(console.error);
+  }, [coachIdsKey]);
+
+  async function handleRemoveCoach(coachId: string) {
+    if (!activeTeam) return;
+    try {
+      await removeCoachFromTeam(activeTeam.id, coachId);
+      const { teams, setTeams } = useAuthStore.getState();
+      setTeams(
+        teams.map((t) =>
+          t.id === activeTeam.id
+            ? { ...t, coaches: t.coaches.filter((c) => c !== coachId) }
+            : t
+        )
+      );
+      setCoachProfiles((prev) => prev.filter((c) => c.uid !== coachId));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmRemoveId(null);
+    }
+  }
+
+  async function handleCreateInvite() {
+    if (!activeTeam || !authUser) return;
+    setInviteLoading(true);
+    try {
+      const token = await createInvitation(activeTeam.id, authUser.uid);
+      setInviteUrl(`${window.location.origin}/join?token=${token}`);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setInviteLoading(false);
+    }
+  }
 
   function handleSave() {
     updateSettings(draft);
@@ -132,6 +194,95 @@ export function Settings() {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
+      <CollapsibleCard title="Valmentajat">
+        {!activeTeam ? (
+          <p className="text-sm text-gray-400 dark:text-slate-500">Ei aktiivista joukkuetta.</p>
+        ) : (
+          <div className="space-y-2">
+            {coachProfiles.length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-slate-500 italic">Ladataan valmentajia…</p>
+            )}
+            {coachProfiles.map((coach) => (
+              <div
+                key={coach.uid}
+                className="flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50 dark:bg-slate-900"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
+                      {(coach.displayName || coach.email).charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
+                      {coach.displayName || '—'}
+                    </p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{coach.email}</p>
+                  </div>
+                  {coach.uid === activeTeam.headCoachId && (
+                    <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300">
+                      Päävalmentaja
+                    </span>
+                  )}
+                </div>
+
+                {isHeadCoach && coach.uid !== authUser?.uid && (
+                  confirmRemoveId === coach.uid ? (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="text-xs text-gray-500 dark:text-slate-400">Vahvistetaanko poisto?</span>
+                      <Button variant="danger" size="sm" onClick={() => handleRemoveCoach(coach.uid)}>
+                        Kyllä
+                      </Button>
+                      <Button variant="secondary" size="sm" onClick={() => setConfirmRemoveId(null)}>
+                        Peruuta
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setConfirmRemoveId(coach.uid)}
+                    >
+                      Poista
+                    </Button>
+                  )
+                )}
+              </div>
+            ))}
+
+            {isHeadCoach && (
+              <div className="pt-3 border-t border-gray-100 dark:border-slate-700 space-y-2">
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<Link size={14} />}
+                  onClick={handleCreateInvite}
+                >
+                  {inviteLoading ? 'Luodaan…' : 'Luo kutsulinkki'}
+                </Button>
+                {inviteUrl && (
+                  <div className="flex gap-2 items-center mt-2">
+                    <input
+                      readOnly
+                      value={inviteUrl}
+                      className="flex-1 text-xs border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-700 dark:text-slate-300 rounded-lg px-2 py-1.5 focus:outline-none"
+                    />
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      icon={<Copy size={13} />}
+                      onClick={() => navigator.clipboard.writeText(inviteUrl)}
+                    >
+                      Kopioi
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+      </CollapsibleCard>
+
       <CollapsibleCard title="Joukkueen tiedot">
         <div className="space-y-3">
           <Input
@@ -153,6 +304,48 @@ export function Settings() {
               onChange={(e) => setDraft({ ...draft, coachName: e.target.value })}
               placeholder="Oma nimesi"
             />
+          </div>
+
+          <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Joukkueet</p>
+            <div className="space-y-1.5 mb-2">
+              {teams.length === 0 && (
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic">Ei joukkueita vielä.</p>
+              )}
+              {teams.map((t) => (
+                <div key={t.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
+                  <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                  <button onClick={() => deleteTeam(t.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                value={newTeamName}
+                onChange={(e) => setNewTeamName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && newTeamName.trim()) {
+                    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                    setNewTeamName('');
+                  }
+                }}
+                placeholder="Joukkueen nimi, esim. Valkoiset"
+                className="flex-1 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <button
+                onClick={() => {
+                  if (!newTeamName.trim()) return;
+                  addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), createdAt: new Date().toISOString() });
+                  setNewTeamName('');
+                }}
+                disabled={!newTeamName.trim()}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <Plus size={13} /> Lisää
+              </button>
+            </div>
           </div>
         </div>
       </CollapsibleCard>

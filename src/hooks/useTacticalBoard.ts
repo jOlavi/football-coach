@@ -344,7 +344,10 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolea
     }
     case 'arrow': {
       if (shape.points.length < 2) break;
-      ctx.strokeStyle = shape.color; ctx.lineWidth = 2.5;
+      const lw = (shape.size ?? 'normal') === 'small' ? 1.5 : (shape.size ?? 'normal') === 'large' ? 4.5 : 2.5;
+      const hl = lw * 5;
+      ctx.strokeStyle = shape.color;
+      ctx.lineWidth = selected ? lw + 1.5 : lw;
       ctx.setLineDash(shape.dashed ? [8, 5] : []);
       ctx.beginPath();
       if (shape.curved && shape.points.length >= 3) {
@@ -363,15 +366,24 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolea
       ctx.setLineDash([]);
       // Arrowhead
       const last = shape.points[shape.points.length - 1];
-      const prev = shape.points.length >= 2 ? shape.points[shape.points.length - 2] : shape.points[0];
-      const angle = Math.atan2(last[1] - prev[1], last[0] - prev[0]);
-      const hl = 12;
+      const prev2 = shape.points.length >= 2 ? shape.points[shape.points.length - 2] : shape.points[0];
+      const angle = Math.atan2(last[1] - prev2[1], last[0] - prev2[0]);
       ctx.beginPath();
       ctx.moveTo(last[0], last[1]);
       ctx.lineTo(last[0] - hl * Math.cos(angle - Math.PI / 6), last[1] - hl * Math.sin(angle - Math.PI / 6));
       ctx.moveTo(last[0], last[1]);
       ctx.lineTo(last[0] - hl * Math.cos(angle + Math.PI / 6), last[1] - hl * Math.sin(angle + Math.PI / 6));
       ctx.stroke();
+      // Endpoint handles when selected
+      if (selected) {
+        const first = shape.points[0];
+        ctx.shadowBlur = 0;
+        [first, last].forEach((pt) => {
+          ctx.beginPath(); ctx.arc(pt[0], pt[1], 7, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff'; ctx.fill();
+          ctx.strokeStyle = shape.color; ctx.lineWidth = 2; ctx.stroke();
+        });
+      }
       break;
     }
     case 'goal': {
@@ -414,6 +426,18 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolea
       ctx.setLineDash([5, 4]);
       ctx.strokeRect(shape.x, shape.y, shape.w, shape.h);
       ctx.setLineDash([]);
+      if (selected) {
+        const handles = [
+          [shape.x, shape.y], [shape.x + shape.w, shape.y],
+          [shape.x, shape.y + shape.h], [shape.x + shape.w, shape.y + shape.h],
+        ];
+        ctx.shadowBlur = 0;
+        handles.forEach(([hx, hy]) => {
+          ctx.beginPath(); ctx.arc(hx, hy, 6, 0, Math.PI * 2);
+          ctx.fillStyle = '#fff'; ctx.fill();
+          ctx.strokeStyle = shape.color; ctx.lineWidth = 2; ctx.stroke();
+        });
+      }
       break;
     }
     case 'text': {
@@ -470,6 +494,15 @@ function hitTest(shape: Shape, x: number, y: number): boolean {
   }
 }
 
+function hitZoneHandle(shape: Extract<Shape, { type: 'zone' }>, x: number, y: number): 'nw' | 'ne' | 'sw' | 'se' | null {
+  const r = 10;
+  if (Math.hypot(x - shape.x, y - shape.y) <= r) return 'nw';
+  if (Math.hypot(x - (shape.x + shape.w), y - shape.y) <= r) return 'ne';
+  if (Math.hypot(x - shape.x, y - (shape.y + shape.h)) <= r) return 'sw';
+  if (Math.hypot(x - (shape.x + shape.w), y - (shape.y + shape.h)) <= r) return 'se';
+  return null;
+}
+
 // ── Canvas coordinate helper ───────────────────────────────────────────────
 
 function getCanvasPos(
@@ -509,6 +542,8 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     startY: 0,
     tempId: '',
     dragOffX: 0,
+    arrowEndpoint: null as null | 'start' | 'end',
+    zoneHandle: null as null | 'nw' | 'ne' | 'sw' | 'se',
     dragOffY: 0,
     curvedPoints: [] as [number, number][],
   });
@@ -585,7 +620,7 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
 
   const loadShapes = useCallback((newShapes: Shape[], newFieldType: FieldType) => {
     historyRef.current = [];
-    drawing.current = { active: false, startX: 0, startY: 0, tempId: '', dragOffX: 0, dragOffY: 0, curvedPoints: [] };
+    drawing.current = { active: false, startX: 0, startY: 0, tempId: '', dragOffX: 0, dragOffY: 0, arrowEndpoint: null, zoneHandle: null, curvedPoints: [] };
     setSelectedId(null);
     setFieldType(newFieldType);
     setShapes(newShapes);
@@ -676,7 +711,22 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
         d.tempId = hit.id;
         d.startX = x;
         d.startY = y;
-        if ('x' in hit) {
+        d.arrowEndpoint = null;
+        d.zoneHandle = null;
+        if (hit.type === 'arrow') {
+          const first = hit.points[0];
+          const last = hit.points[hit.points.length - 1];
+          if (Math.hypot(x - last[0], y - last[1]) <= 14) d.arrowEndpoint = 'end';
+          else if (Math.hypot(x - first[0], y - first[1]) <= 14) d.arrowEndpoint = 'start';
+        } else if (hit.type === 'zone') {
+          const handle = hitZoneHandle(hit, x, y);
+          if (handle) {
+            d.zoneHandle = handle;
+          } else {
+            d.dragOffX = x - hit.x;
+            d.dragOffY = y - hit.y;
+          }
+        } else if ('x' in hit) {
           d.dragOffX = x - (hit as { x: number }).x;
           d.dragOffY = y - (hit as { y: number }).y;
         }
@@ -704,10 +754,10 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     } else if (tool === 'goal') {
       setShapes((prev) => [...prev, { type: 'goal', id, x, y, color, size, rotation: 0 }]);
     } else if (tool === 'arrow' || tool === 'dashed') {
-      setShapes((prev) => [...prev, { type: 'arrow', id, points: [[x, y], [x, y]], dashed: tool === 'dashed', curved: false, color }]);
+      setShapes((prev) => [...prev, { type: 'arrow', id, points: [[x, y], [x, y]], dashed: tool === 'dashed', curved: false, color, size }]);
     } else if (tool === 'curved') {
       d.curvedPoints = [[x, y]];
-      setShapes((prev) => [...prev, { type: 'arrow', id, points: [[x, y]], dashed: false, curved: true, color }]);
+      setShapes((prev) => [...prev, { type: 'arrow', id, points: [[x, y]], dashed: false, curved: true, color, size }]);
     } else if (tool === 'zone') {
       setShapes((prev) => [...prev, { type: 'zone', id, x, y, w: 0, h: 0, color }]);
     }
@@ -724,9 +774,26 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
       setShapes((prev) => prev.map((s) => {
         if (s.id !== d.tempId) return s;
         if (s.type === 'arrow') {
+          if (d.arrowEndpoint === 'end') {
+            const pts = [...s.points] as [number, number][];
+            pts[pts.length - 1] = [x, y];
+            return { ...s, points: pts };
+          }
+          if (d.arrowEndpoint === 'start') {
+            const pts = [...s.points] as [number, number][];
+            pts[0] = [x, y];
+            return { ...s, points: pts };
+          }
           const dx = x - d.startX, dy = y - d.startY;
           d.startX = x; d.startY = y;
           return { ...s, points: s.points.map(([px, py]) => [px + dx, py + dy] as [number, number]) };
+        }
+        if (s.type === 'zone' && d.zoneHandle) {
+          const r2x = s.x + s.w, r2y = s.y + s.h;
+          if (d.zoneHandle === 'se') return { ...s, w: x - s.x, h: y - s.y };
+          if (d.zoneHandle === 'nw') return { ...s, x, y, w: r2x - x, h: r2y - y };
+          if (d.zoneHandle === 'ne') return { ...s, y, w: x - s.x, h: r2y - y };
+          if (d.zoneHandle === 'sw') return { ...s, x, w: r2x - x, h: y - s.y };
         }
         if ('x' in s) return { ...s, x: x - d.dragOffX, y: y - d.dragOffY } as Shape;
         return s;
@@ -754,8 +821,18 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
   }, [canvasRef]);
 
   const handlePointerUp = useCallback(() => {
-    drawing.current.active = false;
-    drawing.current.curvedPoints = [];
+    const d = drawing.current;
+    d.active = false;
+    d.curvedPoints = [];
+    if (d.zoneHandle) {
+      d.zoneHandle = null;
+      setShapes((prev) => prev.map((s) => {
+        if (s.type !== 'zone') return s;
+        const x = s.w < 0 ? s.x + s.w : s.x;
+        const y = s.h < 0 ? s.y + s.h : s.y;
+        return { ...s, x, y, w: Math.abs(s.w), h: Math.abs(s.h) };
+      }));
+    }
   }, []);
 
   return {

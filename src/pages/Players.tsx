@@ -46,6 +46,7 @@ export function Players() {
   const [editing, setEditing] = useState<Player | null>(null);
   const [form, setForm] = useState(emptyPlayer());
   const [viewPlayer, setViewPlayer] = useState<Player | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filtered = players
     .filter((p) => p.active)
@@ -187,7 +188,7 @@ export function Players() {
                   </div>
                   <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button variant="ghost" size="sm" icon={<Pencil size={13} />} onClick={() => openEdit(p)} />
-                    <Button variant="ghost" size="sm" icon={<Trash2 size={13} />} onClick={() => deletePlayer(p.id)} />
+                    <Button variant="ghost" size="sm" icon={<Trash2 size={13} />} onClick={() => setConfirmDeleteId(p.id)} />
                   </div>
                 </div>
 
@@ -260,7 +261,7 @@ export function Players() {
                     <td className="px-3 py-3" onClick={(e) => e.stopPropagation()}>
                       <div className="flex items-center gap-1 justify-end">
                         <Button variant="ghost" size="sm" icon={<Pencil size={13} />} onClick={() => openEdit(p)} />
-                        <Button variant="ghost" size="sm" icon={<Trash2 size={13} />} onClick={() => deletePlayer(p.id)} />
+                        <Button variant="ghost" size="sm" icon={<Trash2 size={13} />} onClick={() => setConfirmDeleteId(p.id)} />
                       </div>
                     </td>
                   </tr>
@@ -335,6 +336,23 @@ export function Players() {
           </div>
         </Modal>
       )}
+
+      {confirmDeleteId && (() => {
+        const player = players.find((p) => p.id === confirmDeleteId);
+        return (
+          <Modal title="Poistetaanko pelaaja?" onClose={() => setConfirmDeleteId(null)}>
+            <p className="text-sm text-gray-600 dark:text-slate-300 mb-6">
+              Haluatko varmasti poistaa pelaajan <strong>{player?.name}</strong>? Tätä toimintoa ei voi peruuttaa.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>Peruuta</Button>
+              <Button variant="danger" icon={<Trash2 size={14} />} onClick={() => { deletePlayer(confirmDeleteId); setConfirmDeleteId(null); }}>
+                Poista
+              </Button>
+            </div>
+          </Modal>
+        );
+      })()}
     </div>
   );
 }

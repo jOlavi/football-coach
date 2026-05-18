@@ -76,8 +76,23 @@ export function NewDrillPage() {
   const [goals, setGoals] = useState(drill?.goals ?? '');
   const [duration, setDuration] = useState(drill?.duration ?? 15);
   const [repetitions, setRepetitions] = useState(drill?.repetitions ?? 1);
+  const [tags, setTags] = useState<string[]>(drill?.tags ?? []);
+  const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [textInput, setTextInput] = useState('');
+
+  const PRESET_TAGS = ['Lämmittely', '1v1', '2v1', '2v2', '3v2', 'Syöttäminen', 'Laukaus', 'Puolustaminen', 'Hyökkääminen', 'Maalivahti', 'Nopeus', 'Kondis', 'Yhteistyö', 'Koordinaatio'];
+
+  function toggleTag(tag: string) {
+    setTags((prev) => prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]);
+  }
+
+  function addCustomTag() {
+    const t = tagInput.trim();
+    if (!t || tags.includes(t)) return;
+    setTags((prev) => [...prev, t]);
+    setTagInput('');
+  }
 
   // Redirect if drill ID given but not found in store
   useEffect(() => {
@@ -112,6 +127,7 @@ export function NewDrillPage() {
           goals,
           duration,
           repetitions,
+          tags,
           fieldType: board.fieldType,
           canvasDataUrl,
           shapes: board.shapes,
@@ -123,6 +139,7 @@ export function NewDrillPage() {
           goals,
           duration,
           repetitions,
+          tags,
           fieldType: board.fieldType,
           canvasDataUrl,
           shapes: board.shapes,
@@ -406,6 +423,53 @@ export function NewDrillPage() {
               placeholder="Mitä harjoitteella tavoitellaan..."
               className="w-full border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide block mb-2">Tagit</label>
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {PRESET_TAGS.map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => toggleTag(t)}
+                  className={`px-2 py-0.5 rounded-full text-xs border transition-colors ${
+                    tags.includes(t)
+                      ? 'bg-brand-600 text-white border-brand-600'
+                      : 'bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                  }`}
+                >
+                  {t}
+                </button>
+              ))}
+            </div>
+            {tags.filter((t) => !PRESET_TAGS.includes(t)).length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-2">
+                {tags.filter((t) => !PRESET_TAGS.includes(t)).map((t) => (
+                  <span key={t} className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs bg-brand-600 text-white">
+                    {t}
+                    <button onClick={() => toggleTag(t)} className="hover:text-red-200 leading-none">×</button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-1.5">
+              <input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCustomTag(); } }}
+                placeholder="Oma tagi..."
+                className="flex-1 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-brand-500"
+              />
+              <button
+                type="button"
+                onClick={addCustomTag}
+                disabled={!tagInput.trim()}
+                className="px-2.5 py-1 text-xs font-medium bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-lg hover:bg-gray-200 dark:hover:bg-slate-600 disabled:opacity-40 transition-colors"
+              >
+                + Lisää
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-3">
