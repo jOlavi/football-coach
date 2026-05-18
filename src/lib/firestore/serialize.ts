@@ -10,10 +10,11 @@ export function serializeSession(s: TrainingSession): { id: string } & Record<st
 
 export function deserializeSession(data: Record<string, unknown>): TrainingSession {
   const { groupSetsJson, ...rest } = data as { groupSetsJson?: string | null } & Record<string, unknown>;
-  return {
-    ...rest,
-    groupSets: groupSetsJson ? JSON.parse(groupSetsJson) : undefined,
-  } as TrainingSession;
+  let groupSets: unknown;
+  if (groupSetsJson) {
+    try { groupSets = JSON.parse(groupSetsJson); } catch { groupSets = undefined; }
+  }
+  return { ...rest, groupSets } as TrainingSession;
 }
 
 export function serializeDrill(d: Drill): { id: string } & Record<string, unknown> {
@@ -26,9 +27,9 @@ export function serializeDrill(d: Drill): { id: string } & Record<string, unknow
 
 export function deserializeDrill(data: Record<string, unknown>): Drill {
   const { shapesJson, ...rest } = data as { shapesJson?: string } & Record<string, unknown>;
-  return {
-    ...rest,
-    shapes: shapesJson ? JSON.parse(shapesJson) : [],
-    canvasDataUrl: '',
-  } as Drill;
+  let shapes: unknown[] = [];
+  if (shapesJson) {
+    try { shapes = JSON.parse(shapesJson); } catch { shapes = []; }
+  }
+  return { ...rest, shapes, canvasDataUrl: '' } as Drill;
 }
