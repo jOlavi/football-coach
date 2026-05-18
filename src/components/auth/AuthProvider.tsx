@@ -19,10 +19,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           photoURL: firebaseUser.photoURL,
         };
         setUser(user);
-        const teams = await getTeamsForUser(firebaseUser.uid);
-        setTeams(teams);
-        if (teams.length > 0 && !activeTeamId) {
-          setActiveTeamId(teams[0].id);
+        try {
+          const teams = await getTeamsForUser(firebaseUser.uid);
+          setTeams(teams);
+          if (teams.length > 0 && !activeTeamId) {
+            setActiveTeamId(teams[0].id);
+          }
+        } catch (err) {
+          console.error('Failed to load teams:', err);
+          setTeams([]);
         }
       } else {
         setUser(null);
