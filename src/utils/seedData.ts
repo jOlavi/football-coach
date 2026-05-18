@@ -1,4 +1,4 @@
-import type { Player, Match } from "../types";
+import type { Player, Match, OwnTeam } from "../types";
 
 export const SEED_PLAYERS: Player[] = [
   {
@@ -287,6 +287,19 @@ export const SEED_PLAYERS: Player[] = [
     parentName: "",
     parentContact: "",
     active: true,
+    createdAt: "2024-01-10T10:00:00Z",
+  },
+];
+
+export const SEED_TEAMS: OwnTeam[] = [
+  {
+    id: "t1",
+    name: "Main Team",
+    createdAt: "2024-01-10T10:00:00Z",
+  },
+  {
+    id: "t2",
+    name: "Reserve Team",
     createdAt: "2024-01-10T10:00:00Z",
   },
 ];
