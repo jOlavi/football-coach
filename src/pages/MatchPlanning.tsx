@@ -22,9 +22,6 @@ type EventGroup = {
 // playerId → teamId (assigned) | 'absent' (not coming) | undefined (unset)
 type Assignments = Record<string, string | "absent">;
 
-// ── Helpers ────────────────────────────────────────────────────────────────
-
-
 // ── Main component ─────────────────────────────────────────────────────────
 
 export function MatchPlanning() {
@@ -165,12 +162,10 @@ export function MatchPlanning() {
               <button
                 key={t.id}
                 onClick={() => setFilterTeamId(active ? null : t.id)}
-                className="px-3 py-1.5 rounded-full text-sm font-medium border transition-colors"
-                style={
-                  active
-                    ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
-                    : { backgroundColor: 'transparent', borderColor: '#e2e8f0', color: '#64748b' }
-                }
+                className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                  active ? '' : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                }`}
+                style={active ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' } : undefined}
               >
                 {t.name}
               </button>
@@ -285,12 +280,10 @@ export function MatchPlanning() {
                 return (
                   <span
                     key={team.id}
-                    className="px-2.5 py-1 rounded-full text-xs font-semibold border"
-                    style={
-                      count > 0
-                        ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
-                        : { backgroundColor: '#f3f4f6', borderColor: '#e5e7eb', color: '#9ca3af' }
-                    }
+                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                      count > 0 ? '' : 'bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500'
+                    }`}
+                    style={count > 0 ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' } : undefined}
                   >
                     {team.name}: {count}
                   </span>
@@ -345,12 +338,10 @@ export function MatchPlanning() {
                           <button
                             key={team.id}
                             onClick={() => assign(p.id, team.id)}
-                            className="px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors"
-                            style={
-                              active
-                                ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' }
-                                : { backgroundColor: 'transparent', borderColor: '#e2e8f0', color: '#64748b' }
-                            }
+                            className={`px-2 py-0.5 rounded-full text-xs font-semibold border transition-colors ${
+                              active ? '' : 'bg-transparent dark:bg-transparent text-slate-500 dark:text-slate-400 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                            }`}
+                            style={active ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' } : undefined}
                           >
                             {team.name}
                           </button>
