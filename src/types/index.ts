@@ -147,6 +147,12 @@ export interface Drill {
   createdAt: string;
 }
 
+export interface OwnTeam {
+  id: string;
+  name: string;
+  createdAt: string;
+}
+
 export interface FirebaseTeam {
   id: string;
   name: string;

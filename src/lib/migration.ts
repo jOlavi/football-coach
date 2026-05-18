@@ -1,9 +1,9 @@
-import type { Player, Match, FirebaseTeam, TrainingSession, Exercise, Drill } from '../types';
+import type { Player, Match, OwnTeam, TrainingSession, Exercise, Drill } from '../types';
 
 export interface LocalStorageSnapshot {
   players: Player[];
   matches: Match[];
-  ownTeams: FirebaseTeam[];
+  ownTeams: OwnTeam[];
   sessions: TrainingSession[];
   exercises: Exercise[];
   drills: Drill[];
@@ -24,7 +24,7 @@ export function readLocalStorageSnapshot(): LocalStorageSnapshot {
   return {
     players: readStore<Player>('football-players', 'players'),
     matches: readStore<Match>('football-matches', 'matches'),
-    ownTeams: readStore<FirebaseTeam>('football-teams', 'teams'),
+    ownTeams: readStore<OwnTeam>('football-teams', 'teams'),
     sessions: readStore<TrainingSession>('football-training', 'sessions'),
     exercises: readStore<Exercise>('football-exercises', 'exercises'),
     drills: readStore<Drill>('drill-store', 'drills'),
