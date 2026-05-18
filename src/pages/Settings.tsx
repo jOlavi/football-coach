@@ -64,6 +64,8 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   );
 }
 
+const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#16a34a', '#0f172a', '#ca8a04'];
+
 export function Settings() {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
   const players = usePlayerStore((s) => s.players);
@@ -74,7 +76,7 @@ export function Settings() {
   const { addSession } = useTrainingStore();
   const { teams, addTeam, deleteTeam } = useTeamStore();
   const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamColor, setNewTeamColor] = useState('#1d4ed8');
+  const [newTeamColor, setNewTeamColor] = useState(PRESET_COLORS[0]);
   const colorInputRef = useRef<HTMLInputElement>(null);
 
   const [draft, setDraft] = useState(settings);
@@ -193,7 +195,12 @@ export function Settings() {
     window.location.reload();
   }
 
-  const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#16a34a', '#0f172a', '#ca8a04'];
+  function handleAddTeam() {
+    if (!newTeamName.trim()) return;
+    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
+    setNewTeamName('');
+    setNewTeamColor(PRESET_COLORS[0]);
+  }
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -336,10 +343,8 @@ export function Settings() {
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && newTeamName.trim()) {
-                    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
-                    setNewTeamName('');
-                    setNewTeamColor('#1d4ed8');
+                  if (e.key === 'Enter') {
+                    handleAddTeam();
                   }
                 }}
                 placeholder="Joukkueen nimi, esim. Valkoiset"
@@ -376,12 +381,7 @@ export function Settings() {
                 />
               </div>
               <button
-                onClick={() => {
-                  if (!newTeamName.trim()) return;
-                  addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
-                  setNewTeamName('');
-                  setNewTeamColor('#1d4ed8');
-                }}
+                onClick={handleAddTeam}
                 disabled={!newTeamName.trim()}
                 className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
