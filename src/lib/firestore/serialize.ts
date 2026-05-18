@@ -2,8 +2,10 @@ import type { TrainingSession, Drill } from '../../types';
 
 export function serializeSession(s: TrainingSession): { id: string } & Record<string, unknown> {
   const { groupSets, ...rest } = s;
+  const exercises = s.exercises?.map(({ canvasDataUrl: _canvas, ...ex }) => ex) ?? [];
   return {
     ...rest,
+    exercises,
     groupSetsJson: groupSets != null ? JSON.stringify(groupSets) : null,
   };
 }

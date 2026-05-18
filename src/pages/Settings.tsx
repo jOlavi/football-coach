@@ -106,6 +106,14 @@ export function Settings() {
     if (!activeTeam) return;
     try {
       await removeCoachFromTeam(activeTeam.id, coachId);
+      const { teams, setTeams } = useAuthStore.getState();
+      setTeams(
+        teams.map((t) =>
+          t.id === activeTeam.id
+            ? { ...t, coaches: t.coaches.filter((c) => c !== coachId) }
+            : t
+        )
+      );
       setCoachProfiles((prev) => prev.filter((c) => c.uid !== coachId));
     } catch (err) {
       console.error(err);
