@@ -25,7 +25,7 @@ Silloin piirtotyökalu näyttää vain jalkapalloon liittyvät pohjat.
 - 
 ### Harjoitussuunnitelma ###
 - Harjoitussuunnitelman teon yhteyteen muistiinpanojen lisäys harjoituksen kohdalle. esim alkulämmittelyihin ehdotukset.I
-
+- PDF:ssä voisi tulla ryhmien nimen viereen ryhmän määrä(esim 6)
 ### Muistutukset ###
 - Mieti mistä asioista olisi hyvä olla muistutukset etusivulla myös. 
 - Mahdollisuus poistaa muistutus listasta 
@@ -36,7 +36,7 @@ Silloin piirtotyökalu näyttää vain jalkapalloon liittyvät pohjat.
 ### Ottelusuunnittelu ###
 - Mieti vielä sen järkeistämistä, miten se olisi loogisin hoitaa. Onko tällä hetkellä epäselvän näköinen?
 - Voisi tehdä jonkin erottavan viivan esim Peelajien ja kokoonpano listauksen välille. 
-
+- Pelaaja korteista pienemmät, että saa paremman kuvan pelaajista yhdellä vilkaisulla. eikä tarvitse siirrellä katsetta.
 ### Yleistä ###
 
 - Keksi joku parempi nimi sovellukselle. 

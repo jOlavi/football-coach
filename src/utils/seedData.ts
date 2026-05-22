@@ -329,7 +329,7 @@ export const SEED_TEAMS: OwnTeam[] = [
   {
     id: "faae7590-e2e7-4007-bfcb-f022e10a6d7e",
     name: "Reds",
-    createdAt: "2026-05-09T10:40:59.165Z",
+    createdAt: "2026-05-09T10:40:59.163Z",
   },
 ];
 
