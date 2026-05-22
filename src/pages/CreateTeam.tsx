@@ -4,7 +4,6 @@ import { v4 as uuidv4 } from 'uuid';
 import { createTeam } from '../lib/firestore/teams';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { hasLocalStorageData } from '../lib/migration';
 
 const SPORTS = [
   { value: 'football', label: 'Jalkapallo' },
@@ -16,17 +15,12 @@ export function CreateTeam() {
   const [name, setName] = useState('');
   const [sport, setSport] = useState('football');
   const [season, setSeason] = useState('2026');
-  const [importData, setImportData] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
-  const teams = useAuthStore((s) => s.teams);
   const addTeam = useAuthStore((s) => s.addTeam);
-  const { setActiveTeamId, setPendingImport } = useAppStore();
-
-  const isFirstTeam = teams.length === 0;
-  const hasExistingData = isFirstTeam && hasLocalStorageData();
+  const { setActiveTeamId } = useAppStore();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -45,7 +39,6 @@ export function CreateTeam() {
       }, id);
       addTeam(team);
       setActiveTeamId(team.id);
-      if (importData) setPendingImport(hasExistingData ? 'migrate' : 'seed');
       navigate('/');
     } catch {
       setError('Joukkueen luonti epäonnistui. Yritä uudelleen.');
@@ -98,23 +91,7 @@ export function CreateTeam() {
             />
           </div>
 
-          {isFirstTeam && (
-            <label className="flex items-start gap-3 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={importData}
-                onChange={(e) => setImportData(e.target.checked)}
-                className="mt-0.5 rounded border-gray-300 text-brand-600 focus:ring-brand-500"
-              />
-              <span className="text-sm text-gray-700 dark:text-slate-300">
-                {hasExistingData
-                  ? 'Tuo olemassa olevat pelaajat ja ottelut tähän joukkueeseen'
-                  : 'Aloita esimerkkidatalla (demo-pelaajat ja ottelut)'}
-              </span>
-            </label>
-          )}
-
-          {error && <p className="text-sm text-red-500">{error}</p>}
+{error && <p className="text-sm text-red-500">{error}</p>}
           <button
             type="submit"
             disabled={loading}
