@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import type { TeamFormat } from '../types';
 import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy, Pencil } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -106,6 +107,7 @@ export function Settings() {
 
   useEffect(() => { setDraft(settings); }, [settings]);
 
+  const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
   const activeTeamId = useAppStore((s) => s.activeTeamId);
   const activeTeam = useAuthStore(
@@ -222,6 +224,7 @@ export function Settings() {
     useAuthStore.getState().removeTeam(activeTeamId!);
     const remaining = useAuthStore.getState().teams;
     useAppStore.getState().setActiveTeamId(remaining[0]?.id ?? null);
+    navigate('/');
   }
 
   function handleAddTeam() {
