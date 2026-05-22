@@ -13,7 +13,7 @@ import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
 import { getCoachProfiles } from '../lib/firestore/userData';
 import { createInvitation } from '../lib/firestore/invitations';
-import { removeCoachFromTeam } from '../lib/firestore/teams';
+import { removeCoachFromTeam, deleteFirebaseTeam } from '../lib/firestore/teams';
 
 function CollapsibleCard({ title, children }: { title: string; children: React.ReactNode }) {
   const [open, setOpen] = useState(true);
@@ -206,11 +206,13 @@ export function Settings() {
     e.target.value = '';
   }
 
-  function clearAllData() {
-    localStorage.removeItem('football-players');
-    localStorage.removeItem('football-matches');
-    localStorage.removeItem('football-training');
-    window.location.reload();
+  async function deleteCurrentTeam() {
+    if (!activeTeamId) return;
+    await deleteFirebaseTeam(activeTeamId);
+    useAuthStore.getState().removeTeam(activeTeamId);
+    const remaining = useAuthStore.getState().teams;
+    useAppStore.getState().setActiveTeamId(remaining[0]?.id ?? null);
+    setClearConfirm(false);
   }
 
   function handleAddTeam() {
@@ -576,23 +578,25 @@ export function Settings() {
             <p className="text-xs text-red-500 px-1">{importError}</p>
           )}
 
-          <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
-            <div>
-              <p className="text-sm font-medium text-red-700 dark:text-red-400">Tyhjennä kaikki data</p>
-              <p className="text-xs text-red-400 dark:text-red-500">Poistaa pelaajat, ottelut ja harjoitukset pysyvästi</p>
-            </div>
-            {clearConfirm ? (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-red-600 font-medium">Oletko varma?</span>
-                <Button variant="danger" size="sm" onClick={clearAllData}>Kyllä, tyhjennä</Button>
-                <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Peruuta</Button>
+          {isHeadCoach && (
+            <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
+              <div>
+                <p className="text-sm font-medium text-red-700 dark:text-red-400">Poista joukkue</p>
+                <p className="text-xs text-red-400 dark:text-red-500">Poistaa joukkueen ja kaiken sen datan pysyvästi</p>
               </div>
-            ) : (
-              <Button variant="danger" size="sm" icon={<Trash2 size={14} />} onClick={() => setClearConfirm(true)}>
-                Tyhjennä
-              </Button>
-            )}
-          </div>
+              {clearConfirm ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-red-600 font-medium">Oletko varma?</span>
+                  <Button variant="danger" size="sm" onClick={deleteCurrentTeam}>Kyllä, poista</Button>
+                  <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Peruuta</Button>
+                </div>
+              ) : (
+                <Button variant="danger" size="sm" icon={<Trash2 size={14} />} onClick={() => setClearConfirm(true)}>
+                  Poista
+                </Button>
+              )}
+            </div>
+          )}
         </div>
       </CollapsibleCard>
 

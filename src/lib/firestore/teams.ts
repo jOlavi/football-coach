@@ -1,6 +1,6 @@
 import {
   collection, doc, getDoc, getDocs,
-  setDoc, updateDoc, arrayUnion, arrayRemove, query, where,
+  setDoc, updateDoc, deleteDoc, arrayUnion, arrayRemove, query, where,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import type { FirebaseTeam } from '../../types';
@@ -32,4 +32,15 @@ export async function addCoachToTeam(teamId: string, userId: string): Promise<vo
 
 export async function removeCoachFromTeam(teamId: string, userId: string): Promise<void> {
   await updateDoc(doc(db, 'teams', teamId), { coaches: arrayRemove(userId) });
+}
+
+export async function deleteFirebaseTeam(teamId: string): Promise<void> {
+  const subcollections = ['players', 'matches', 'ownTeams', 'trainingSessions'];
+  await Promise.all(
+    subcollections.map(async (sub) => {
+      const snap = await getDocs(collection(db, 'teams', teamId, sub));
+      await Promise.all(snap.docs.map((d) => deleteDoc(d.ref)));
+    })
+  );
+  await deleteDoc(doc(db, 'teams', teamId));
 }

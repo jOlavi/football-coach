@@ -9,6 +9,7 @@ interface AuthStore {
   setTeams: (teams: FirebaseTeam[]) => void;
   setAuthLoading: (loading: boolean) => void;
   addTeam: (team: FirebaseTeam) => void;
+  removeTeam: (id: string) => void;
 }
 
 export const useAuthStore = create<AuthStore>()((set) => ({
@@ -19,4 +20,5 @@ export const useAuthStore = create<AuthStore>()((set) => ({
   setTeams: (teams) => set({ teams }),
   setAuthLoading: (authLoading) => set({ authLoading }),
   addTeam: (team) => set((s) => ({ teams: [...s.teams, team] })),
+  removeTeam: (id) => set((s) => ({ teams: s.teams.filter((t) => t.id !== id) })),
 }));
