@@ -27,3 +27,4 @@ docs/superpowers
 *.njsproj
 *.sln
 *.sw?
+.worktrees/
