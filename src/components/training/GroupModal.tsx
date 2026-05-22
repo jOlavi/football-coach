@@ -427,7 +427,7 @@ export function GroupModal({
                         const isTarget = isSelecting && movingPlayer!.fromGroup !== gi;
                         return (
                           <div
-                            key={gi}
+                            key={`${gs.id}-${gi}`}
                             onClick={() => { if (isTarget) assignPlayerToGroup(gs.id, selectedId!, gi); }}
                             className={`bg-white dark:bg-slate-800 rounded-lg p-2 border-t-2 transition-all ${
                               isTarget ? 'ring-2 ring-indigo-300 dark:ring-indigo-600 cursor-pointer' : ''
