@@ -7,6 +7,7 @@ interface TeamStore {
   teams: OwnTeam[];
   setAll: (teams: OwnTeam[]) => void;
   addTeam: (team: OwnTeam) => void;
+  updateTeam: (id: string, patch: Partial<Pick<OwnTeam, 'name' | 'color'>>) => void;
   deleteTeam: (id: string) => void;
 }
 
@@ -17,6 +18,15 @@ export const useTeamStore = create<TeamStore>()((set) => ({
     const { activeTeamId } = useAppStore.getState();
     if (activeTeamId) writeTeamDoc(activeTeamId, 'ownTeams', team);
     set((s) => ({ teams: [...s.teams, team] }));
+  },
+  updateTeam: (id, patch) => {
+    set((s) => {
+      const updated = s.teams.map((t) => t.id === id ? { ...t, ...patch } : t);
+      const { activeTeamId } = useAppStore.getState();
+      const team = updated.find((t) => t.id === id);
+      if (activeTeamId && team) writeTeamDoc(activeTeamId, 'ownTeams', team);
+      return { teams: updated };
+    });
   },
   deleteTeam: (id) => {
     const { activeTeamId } = useAppStore.getState();
