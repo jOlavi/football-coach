@@ -77,6 +77,7 @@ export function Settings() {
   const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamColor, setNewTeamColor] = useState(PRESET_COLORS[0]);
+  const [showAddTeam, setShowAddTeam] = useState(false);
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ name: string; color: string }>({ name: '', color: '' });
 
@@ -217,6 +218,7 @@ export function Settings() {
     addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
     setNewTeamName('');
     setNewTeamColor(PRESET_COLORS[0]);
+    setShowAddTeam(false);
   }
 
   return (
@@ -420,41 +422,58 @@ export function Settings() {
                 </div>
               ))}
             </div>
-            <div className="flex gap-2 flex-wrap items-center">
-              <input
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    handleAddTeam();
-                  }
-                }}
-                placeholder="Joukkueen nimi, esim. Valkoiset"
-                className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-              />
-              <div className="flex items-center gap-1.5">
-                {PRESET_COLORS.map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => setNewTeamColor(c)}
-                    className="w-5 h-5 rounded-full transition-transform hover:scale-110"
-                    style={{
-                      backgroundColor: c,
-                      outline: newTeamColor === c ? `2px solid ${c}` : 'none',
-                      outlineOffset: '2px',
-                    }}
-                  />
-                ))}
+            {showAddTeam ? (
+              <div className="flex gap-2 flex-wrap items-center">
+                <input
+                  autoFocus
+                  value={newTeamName}
+                  onChange={(e) => setNewTeamName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleAddTeam();
+                    if (e.key === 'Escape') { setShowAddTeam(false); setNewTeamName(''); }
+                  }}
+                  placeholder="Joukkueen nimi, esim. Valkoiset"
+                  className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <div className="flex items-center gap-1.5">
+                  {PRESET_COLORS.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setNewTeamColor(c)}
+                      className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                      style={{
+                        backgroundColor: c,
+                        outline: newTeamColor === c ? `2px solid ${c}` : 'none',
+                        outlineOffset: '2px',
+                      }}
+                    />
+                  ))}
+                </div>
+                <button
+                  onClick={handleAddTeam}
+                  disabled={!newTeamName.trim()}
+                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                >
+                  <Plus size={13} /> Lisää
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setShowAddTeam(false); setNewTeamName(''); }}
+                  className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                >
+                  Peruuta
+                </button>
               </div>
+            ) : (
               <button
-                onClick={handleAddTeam}
-                disabled={!newTeamName.trim()}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                type="button"
+                onClick={() => setShowAddTeam(true)}
+                className="flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
               >
-                <Plus size={13} /> Lisää
+                <Plus size={14} /> Lisää joukkue
               </button>
-            </div>
+            )}
           </div>
         </div>
       </CollapsibleCard>
