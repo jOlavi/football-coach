@@ -64,7 +64,7 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   );
 }
 
-const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#16a34a', '#0f172a', '#ca8a04'];
+const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#eab308', '#64748b', '#0f172a'];
 
 export function Settings() {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
@@ -77,11 +77,8 @@ export function Settings() {
   const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamColor, setNewTeamColor] = useState(PRESET_COLORS[0]);
-  const colorInputRef = useRef<HTMLInputElement>(null);
-
   const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<{ name: string; color: string }>({ name: '', color: '' });
-  const editColorRef = useRef<HTMLInputElement>(null);
 
   function startEdit(t: { id: string; name: string; color?: string }) {
     setEditingTeamId(t.id);
@@ -349,11 +346,8 @@ export function Settings() {
                     /* ── Edit row ── */
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        {/* Clickable color dot */}
-                        <button
-                          type="button"
-                          onClick={() => editColorRef.current?.click()}
-                          className="w-5 h-5 rounded-full flex-shrink-0 hover:ring-2 hover:ring-offset-1 hover:ring-gray-400 transition-all"
+                        <div
+                          className="w-5 h-5 rounded-full flex-shrink-0"
                           style={{ backgroundColor: editDraft.color }}
                         />
                         {/* Name input */}
@@ -395,14 +389,6 @@ export function Settings() {
                             }}
                           />
                         ))}
-                        <button
-                          type="button"
-                          onClick={() => editColorRef.current?.click()}
-                          className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300 text-xs font-bold flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors"
-                          title="Valitse oma väri"
-                        >
-                          ···
-                        </button>
                       </div>
                     </div>
                   ) : (
@@ -433,14 +419,6 @@ export function Settings() {
                   )}
                 </div>
               ))}
-              {/* Hidden native color picker for edit mode */}
-              <input
-                ref={editColorRef}
-                type="color"
-                value={editDraft.color}
-                onChange={(e) => setEditDraft({ ...editDraft, color: e.target.value })}
-                className="sr-only"
-              />
             </div>
             <div className="flex gap-2 flex-wrap items-center">
               <input
@@ -468,21 +446,6 @@ export function Settings() {
                     }}
                   />
                 ))}
-                <button
-                  type="button"
-                  onClick={() => colorInputRef.current?.click()}
-                  className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300 text-xs font-bold flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors"
-                  title="Valitse oma väri"
-                >
-                  ···
-                </button>
-                <input
-                  ref={colorInputRef}
-                  type="color"
-                  value={newTeamColor}
-                  onChange={(e) => setNewTeamColor(e.target.value)}
-                  className="sr-only"
-                />
               </div>
               <button
                 onClick={handleAddTeam}

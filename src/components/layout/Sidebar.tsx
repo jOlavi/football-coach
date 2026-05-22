@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, Calendar, BarChart2,
@@ -24,7 +24,19 @@ const navItems = [
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const [teamMenuOpen, setTeamMenuOpen] = useState(false);
+  const teamMenuRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!teamMenuOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (teamMenuRef.current && !teamMenuRef.current.contains(e.target as Node)) {
+        setTeamMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [teamMenuOpen]);
   const user = useAuthStore((s) => s.user);
   const teams = useAuthStore((s) => s.teams);
   const { activeTeamId, setActiveTeamId } = useAppStore();
@@ -40,7 +52,7 @@ export function Sidebar() {
       {/* Team switcher */}
       <div className="border-b border-gray-700 dark:border-slate-800 px-2 py-2">
         {!collapsed ? (
-          <div className="relative">
+          <div className="relative" ref={teamMenuRef}>
             <button
               onClick={() => setTeamMenuOpen((v) => !v)}
               className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-800 transition-colors text-left"
@@ -50,7 +62,7 @@ export function Sidebar() {
                 <p className="text-white font-semibold text-sm truncate leading-tight">
                   {activeTeam?.name ?? 'Valitse joukkue'}
                 </p>
-                <p className="text-gray-400 text-xs">{activeTeam?.sport ?? ''}</p>
+                <p className="text-gray-400 text-xs">{{ football: 'Jalkapallo', floorball: 'Salibandy', basketball: 'Koripallo', icehockey: 'Jääkiekko' }[activeTeam?.sport ?? ''] ?? activeTeam?.sport ?? ''}</p>
               </div>
               <ChevronDown size={14} className={`text-gray-400 shrink-0 transition-transform ${teamMenuOpen ? 'rotate-180' : ''}`} />
             </button>
