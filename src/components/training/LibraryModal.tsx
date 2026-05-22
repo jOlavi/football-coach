@@ -29,21 +29,17 @@ interface Props {
 
 export function LibraryModal({ items, onAdd, onClose }: Props) {
   const [filter, setFilter] = useState<ExerciseCategory | 'all'>('all');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<Exercise | null>(null);
 
   const filtered = useMemo(
     () => (filter === 'all' ? items : items.filter((e) => e.category === filter)),
     [items, filter]
   );
 
-  function toggle(id: string) {
-    setExpandedId((prev) => (prev === id ? null : id));
-  }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-2xl max-h-[80vh] flex flex-col shadow-2xl"
+        className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -73,88 +69,101 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
 
         {/* Grid */}
         <div className="overflow-y-auto flex-1 px-4 py-3">
-          <div className="grid grid-cols-3 gap-2">
-            {filtered.map((e) => {
-              const isExpanded = expandedId === e.id;
-              return (
+          <div className="grid grid-cols-4 gap-2">
+            {filtered.map((e) => (
+              <div
+                key={e.id}
+                onClick={() => setDetail(e)}
+                className="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden cursor-pointer flex flex-col hover:border-gray-400 dark:hover:border-slate-400 transition-colors"
+              >
+                {/* Thumbnail */}
                 <div
-                  key={e.id}
-                  onClick={() => toggle(e.id)}
-                  className={`border rounded-xl overflow-hidden cursor-pointer transition-all ${
-                    isExpanded
-                      ? 'col-span-3 border-green-500 flex flex-row items-stretch'
-                      : 'border-gray-200 dark:border-slate-600 flex flex-col hover:border-gray-300 dark:hover:border-slate-500'
-                  }`}
+                  className="bg-gray-50 dark:bg-slate-900 w-full flex items-center justify-center border-b border-gray-100 dark:border-slate-700"
+                  style={{ aspectRatio: '3/4' }}
                 >
-                  {/* Thumbnail */}
-                  <div
-                    className={`bg-gray-50 dark:bg-slate-900 flex items-center justify-center shrink-0 ${
-                      isExpanded ? 'w-40 border-r border-gray-100 dark:border-slate-700' : 'w-full border-b border-gray-100 dark:border-slate-700'
-                    }`}
-                    style={!isExpanded ? { aspectRatio: '3/4' } : undefined}
-                  >
-                    {e.canvasDataUrl ? (
-                      <img
-                        src={e.canvasDataUrl}
-                        alt={e.name}
-                        className="w-full h-full object-contain p-1"
-                      />
-                    ) : (
-                      <span className={isExpanded ? 'text-4xl' : 'text-3xl'}>{CAT_EMOJIS[e.category]}</span>
-                    )}
-                  </div>
-
-                  {/* Collapsed info */}
-                  {!isExpanded && (
-                    <div className="p-1.5">
-                      <div className="text-xs font-semibold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2 leading-tight">{e.name}</div>
-                      <div className="flex items-center gap-1 flex-wrap">
-                        <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
-                        <span className="text-xs text-gray-400 dark:text-slate-500">{e.duration} min</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Expanded detail */}
-                  {isExpanded && (
-                    <div className="flex-1 p-3 flex flex-col min-w-0" onClick={(ev) => ev.stopPropagation()}>
-                      <div className="text-sm font-bold text-gray-900 dark:text-slate-100 mb-1">{e.name}</div>
-                      <div className="flex items-center gap-1.5 mb-2">
-                        <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
-                        <span className="text-xs text-gray-400 dark:text-slate-500">{e.duration} min</span>
-                      </div>
-                      {e.description && (
-                        <p className="text-xs text-gray-500 dark:text-slate-400 leading-relaxed flex-1 mb-2">{e.description}</p>
-                      )}
-                      {e.goals && (
-                        <p className="text-xs text-gray-400 dark:text-slate-500 italic mb-2">{e.goals}</p>
-                      )}
-                      <div className="flex gap-2 mt-auto">
-                        <button
-                          onClick={(ev) => { ev.stopPropagation(); onAdd(e); onClose(); }}
-                          className="flex-1 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg py-2 transition-colors"
-                        >
-                          + Lisää suunnitelmaan
-                        </button>
-                        <button
-                          onClick={(ev) => { ev.stopPropagation(); setExpandedId(null); }}
-                          className="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 text-xs font-semibold rounded-lg px-3 py-2 transition-colors"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
+                  {e.canvasDataUrl ? (
+                    <img
+                      src={e.canvasDataUrl}
+                      alt={e.name}
+                      className="w-full h-full object-contain p-1"
+                    />
+                  ) : (
+                    <span className="text-3xl">{CAT_EMOJIS[e.category]}</span>
                   )}
                 </div>
-              );
-            })}
+                {/* Info */}
+                <div className="p-1.5">
+                  <div className="text-xs font-semibold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2 leading-tight">{e.name}</div>
+                  <div className="flex items-center gap-1 flex-wrap">
+                    <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
+                    <span className="text-xs text-gray-400 dark:text-slate-500">{e.duration} min</span>
+                  </div>
+                </div>
+              </div>
+            ))}
             {filtered.length === 0 && (
-              <div className="col-span-3 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+              <div className="col-span-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                 Ei harjoitteita tässä kategoriassa
               </div>
             )}
           </div>
         </div>
+
+        {/* Detail popup — overlays the modal content */}
+        {detail && (
+          <div
+            className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 rounded-2xl"
+            onClick={() => setDetail(null)}
+          >
+            <div
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Image */}
+              <div className="bg-gray-50 dark:bg-slate-900 w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
+                {detail.canvasDataUrl ? (
+                  <img
+                    src={detail.canvasDataUrl}
+                    alt={detail.name}
+                    className="w-full h-full object-contain p-2"
+                  />
+                ) : (
+                  <span className="text-6xl">{CAT_EMOJIS[detail.category]}</span>
+                )}
+              </div>
+              {/* Detail body */}
+              <div className="p-4 flex flex-col gap-2">
+                <div>
+                  <div className="text-base font-bold text-gray-900 dark:text-slate-100 mb-1">{detail.name}</div>
+                  <div className="flex items-center gap-2">
+                    <Badge label={CAT_LABELS[detail.category]} color={CAT_COLORS[detail.category]} />
+                    <span className="text-xs text-gray-400 dark:text-slate-500">{detail.duration} min</span>
+                  </div>
+                </div>
+                {detail.description && (
+                  <p className="text-sm text-gray-600 dark:text-slate-300 leading-relaxed">{detail.description}</p>
+                )}
+                {detail.goals && (
+                  <p className="text-xs text-gray-400 dark:text-slate-500 italic">{detail.goals}</p>
+                )}
+                <div className="flex gap-2 pt-1">
+                  <button
+                    onClick={() => { onAdd(detail); onClose(); }}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl py-2.5 transition-colors"
+                  >
+                    + Lisää suunnitelmaan
+                  </button>
+                  <button
+                    onClick={() => setDetail(null)}
+                    className="bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 rounded-xl px-3 py-2.5 transition-colors hover:bg-gray-200 dark:hover:bg-slate-600"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
