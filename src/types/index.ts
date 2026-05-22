@@ -67,6 +67,7 @@ export interface Exercise {
   playerCount?: number;
   canvasDataUrl?: string;
   drillId?: string;
+  isTextSection?: boolean; // true for text-only blocks (no exercise from library)
 }
 
 export interface GroupSet {
