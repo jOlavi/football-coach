@@ -306,22 +306,29 @@ export function MatchPlanning() {
                 const assignment = assignments[p.id];
                 const assignedTeam = selectedEvent.teams.find((t) => t.id === assignment);
                 const isAbsent = assignment === "absent";
+                const assignedTeamColor = assignedTeam
+                  ? teams.find((t) => t.id === assignedTeam.id)?.color ?? '#64748b'
+                  : null;
                 return (
                   <div
                     key={p.id}
                     className={`rounded-xl border-2 p-3 transition-all ${
                       assignedTeam
-                        ? "border-brand-300 dark:border-brand-700 bg-brand-50 dark:bg-brand-900/20"
+                        ? ''
                         : isAbsent
                         ? "border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 opacity-50"
                         : "border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800"
                     }`}
+                    style={assignedTeamColor ? { borderColor: assignedTeamColor, backgroundColor: `${assignedTeamColor}18` } : undefined}
                   >
                     {/* Player info */}
                     <div className="flex items-center gap-2 mb-2.5">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-                        assignedTeam ? "bg-brand-600" : isAbsent ? "bg-gray-300 dark:bg-slate-600" : "bg-gray-400 dark:bg-slate-500"
-                      }`}>
+                      <div
+                        className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                          assignedTeam ? 'text-white' : isAbsent ? "bg-gray-300 dark:bg-slate-600 text-white" : "bg-gray-400 dark:bg-slate-500 text-white"
+                        }`}
+                        style={assignedTeamColor ? { backgroundColor: assignedTeamColor } : undefined}
+                      >
                         {p.number || "?"}
                       </div>
                       <span className={`text-sm font-medium leading-tight ${isAbsent ? "line-through text-gray-400 dark:text-slate-500" : "text-gray-900 dark:text-slate-100"}`}>
