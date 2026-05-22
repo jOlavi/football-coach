@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { X } from 'lucide-react';
 import type { Exercise, ExerciseCategory } from '../../types';
 import { Badge } from '../ui/Badge';
@@ -31,7 +31,10 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
   const [filter, setFilter] = useState<ExerciseCategory | 'all'>('all');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const filtered = filter === 'all' ? items : items.filter((e) => e.category === filter);
+  const filtered = useMemo(
+    () => (filter === 'all' ? items : items.filter((e) => e.category === filter)),
+    [items, filter]
+  );
 
   function toggle(id: string) {
     setExpandedId((prev) => (prev === id ? null : id));
