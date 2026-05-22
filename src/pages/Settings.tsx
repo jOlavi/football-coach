@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import type { TeamFormat } from '../types';
-import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy, Pencil } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
@@ -74,10 +74,29 @@ export function Settings() {
   const { addPlayer } = usePlayerStore();
   const { addMatch } = useMatchStore();
   const { addSession } = useTrainingStore();
-  const { teams, addTeam, deleteTeam } = useTeamStore();
+  const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
   const [newTeamName, setNewTeamName] = useState('');
   const [newTeamColor, setNewTeamColor] = useState(PRESET_COLORS[0]);
   const colorInputRef = useRef<HTMLInputElement>(null);
+
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState<{ name: string; color: string }>({ name: '', color: '' });
+  const editColorRef = useRef<HTMLInputElement>(null);
+
+  function startEdit(t: { id: string; name: string; color?: string }) {
+    setEditingTeamId(t.id);
+    setEditDraft({ name: t.name, color: t.color ?? '#64748b' });
+  }
+
+  function saveEdit() {
+    if (!editingTeamId || !editDraft.name.trim()) return;
+    updateTeam(editingTeamId, { name: editDraft.name.trim(), color: editDraft.color });
+    setEditingTeamId(null);
+  }
+
+  function cancelEdit() {
+    setEditingTeamId(null);
+  }
 
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
@@ -324,17 +343,100 @@ export function Settings() {
                 <p className="text-xs text-gray-400 dark:text-slate-500 italic">Ei joukkueita vielä.</p>
               )}
               {teams.map((t) => (
-                <div key={t.id} className="flex items-center justify-between bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
-                  <div className="flex items-center gap-2">
-                    <div
-                      className="w-3.5 h-3.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: t.color ?? '#64748b' }}
-                    />
-                    <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
-                  </div>
-                  <button onClick={() => deleteTeam(t.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
-                    <X size={14} />
-                  </button>
+                <div key={t.id} className="bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
+                  {editingTeamId === t.id ? (
+                    /* ── Edit row ── */
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2">
+                        {/* Clickable color dot */}
+                        <button
+                          type="button"
+                          onClick={() => editColorRef.current?.click()}
+                          className="w-5 h-5 rounded-full flex-shrink-0 hover:ring-2 hover:ring-offset-1 hover:ring-gray-400 transition-all"
+                          style={{ backgroundColor: editDraft.color }}
+                        />
+                        {/* Name input */}
+                        <input
+                          autoFocus
+                          value={editDraft.name}
+                          onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                          className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                        />
+                        {/* Save */}
+                        <button
+                          onClick={saveEdit}
+                          disabled={!editDraft.name.trim()}
+                          className="text-green-500 hover:text-green-600 disabled:opacity-30 transition-colors"
+                        >
+                          <Check size={14} />
+                        </button>
+                        {/* Cancel */}
+                        <button onClick={cancelEdit} className="text-gray-300 dark:text-slate-600 hover:text-gray-500 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                      {/* Color swatches */}
+                      <div className="flex items-center gap-1.5 pl-7">
+                        {PRESET_COLORS.map((c) => (
+                          <button
+                            key={c}
+                            type="button"
+                            onClick={() => setEditDraft({ ...editDraft, color: c })}
+                            className="w-5 h-5 rounded-full transition-transform hover:scale-110"
+                            style={{
+                              backgroundColor: c,
+                              outline: editDraft.color === c ? `2px solid ${c}` : 'none',
+                              outlineOffset: '2px',
+                            }}
+                          />
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => editColorRef.current?.click()}
+                          className="w-5 h-5 rounded-full bg-gray-200 dark:bg-slate-600 text-gray-500 dark:text-slate-300 text-xs font-bold flex items-center justify-center hover:bg-gray-300 dark:hover:bg-slate-500 transition-colors"
+                          title="Valitse oma väri"
+                        >
+                          ···
+                        </button>
+                        <input
+                          ref={editColorRef}
+                          type="color"
+                          value={editDraft.color}
+                          onChange={(e) => setEditDraft({ ...editDraft, color: e.target.value })}
+                          className="sr-only"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    /* ── Normal row ── */
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: t.color ?? '#64748b' }}
+                        />
+                        <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => startEdit(t)}
+                          className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => deleteTeam(t.id)}
+                          className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
