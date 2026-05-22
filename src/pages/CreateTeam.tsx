@@ -4,6 +4,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createTeam } from '../lib/firestore/teams';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 
 const SPORTS = [
   { value: 'football', label: 'Jalkapallo' },
@@ -21,6 +22,7 @@ export function CreateTeam() {
   const user = useAuthStore((s) => s.user);
   const addTeam = useAuthStore((s) => s.addTeam);
   const { setActiveTeamId } = useAppStore();
+  const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -39,6 +41,7 @@ export function CreateTeam() {
       }, id);
       addTeam(team);
       setActiveTeamId(team.id);
+      updateSettings({ teamName: name.trim(), season });
       navigate('/');
     } catch {
       setError('Joukkueen luonti epäonnistui. Yritä uudelleen.');
