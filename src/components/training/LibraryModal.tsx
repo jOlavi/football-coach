@@ -41,9 +41,9 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-800 rounded-t-2xl w-full max-h-[85vh] flex flex-col shadow-2xl"
+        className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -73,7 +73,7 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
 
         {/* Grid */}
         <div className="overflow-y-auto flex-1 px-4 py-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             {filtered.map((e) => {
               const isExpanded = expandedId === e.id;
               return (
@@ -82,21 +82,22 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
                   onClick={() => toggle(e.id)}
                   className={`border rounded-xl overflow-hidden cursor-pointer transition-all ${
                     isExpanded
-                      ? 'col-span-2 border-green-500 flex flex-row items-stretch'
+                      ? 'col-span-3 border-green-500 flex flex-row items-stretch'
                       : 'border-gray-200 dark:border-slate-600 flex flex-col hover:border-gray-300 dark:hover:border-slate-500'
                   }`}
                 >
                   {/* Thumbnail */}
                   <div
                     className={`bg-gray-50 dark:bg-slate-900 flex items-center justify-center shrink-0 ${
-                      isExpanded ? 'w-36 border-r border-gray-100 dark:border-slate-700' : 'w-full h-20 border-b border-gray-100 dark:border-slate-700'
+                      isExpanded ? 'w-40 border-r border-gray-100 dark:border-slate-700' : 'w-full border-b border-gray-100 dark:border-slate-700'
                     }`}
+                    style={!isExpanded ? { aspectRatio: '3/4' } : undefined}
                   >
                     {e.canvasDataUrl ? (
                       <img
                         src={e.canvasDataUrl}
                         alt={e.name}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-contain p-1"
                       />
                     ) : (
                       <span className={isExpanded ? 'text-4xl' : 'text-3xl'}>{CAT_EMOJIS[e.category]}</span>
@@ -105,9 +106,9 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
 
                   {/* Collapsed info */}
                   {!isExpanded && (
-                    <div className="p-2">
-                      <div className="text-xs font-semibold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2">{e.name}</div>
-                      <div className="flex items-center gap-1.5">
+                    <div className="p-1.5">
+                      <div className="text-xs font-semibold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2 leading-tight">{e.name}</div>
+                      <div className="flex items-center gap-1 flex-wrap">
                         <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
                         <span className="text-xs text-gray-400 dark:text-slate-500">{e.duration} min</span>
                       </div>
@@ -148,7 +149,7 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
               );
             })}
             {filtered.length === 0 && (
-              <div className="col-span-2 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+              <div className="col-span-3 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                 Ei harjoitteita tässä kategoriassa
               </div>
             )}
