@@ -294,6 +294,31 @@ export function MatchPlanning() {
                 return unassigned > 0 ? <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">{unassigned} jakamatta</span> : null;
               })()}
             </div>
+
+            {/* Roster list */}
+            <div className="flex flex-col gap-1.5 pt-3 border-t border-gray-100 dark:border-slate-700">
+              {selectedEvent.teams.map((team) => {
+                const teamCol = teams.find((t) => t.id === team.id)?.color ?? '#64748b';
+                const assigned = eventPlayers
+                  .filter((p) => assignments[p.id] === team.id)
+                  .map((p) => p.name);
+                return (
+                  <div key={team.id} className="flex items-baseline gap-2">
+                    <span
+                      className="flex-shrink-0 text-xs font-bold text-white px-2.5 py-0.5 rounded-full"
+                      style={{ backgroundColor: teamCol }}
+                    >
+                      {team.name}
+                    </span>
+                    {assigned.length > 0 ? (
+                      <span className="text-sm text-gray-700 dark:text-slate-300">{assigned.join(', ')}</span>
+                    ) : (
+                      <span className="text-sm text-gray-300 dark:text-slate-600">–</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {/* Player assignment grid */}
