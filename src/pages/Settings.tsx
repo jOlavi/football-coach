@@ -11,6 +11,7 @@ import { useAppStore } from '../store/useAppStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input, Select } from '../components/ui/Input';
+import { Modal } from '../components/ui/Modal';
 import { getCoachProfiles } from '../lib/firestore/userData';
 import { createInvitation } from '../lib/firestore/invitations';
 import { removeCoachFromTeam, deleteFirebaseTeam } from '../lib/firestore/teams';
@@ -99,6 +100,8 @@ export function Settings() {
 
   const [draft, setDraft] = useState(settings);
   const [saved, setSaved] = useState(false);
+  const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
+  const deletedTeamName = useRef('');
   const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
 
   useEffect(() => { setDraft(settings); }, [settings]);
@@ -208,11 +211,17 @@ export function Settings() {
 
   async function deleteCurrentTeam() {
     if (!activeTeamId) return;
+    deletedTeamName.current = activeTeam?.name ?? 'Joukkue';
     await deleteFirebaseTeam(activeTeamId);
-    useAuthStore.getState().removeTeam(activeTeamId);
+    setClearConfirm(false);
+    setShowDeleteSuccess(true);
+  }
+
+  function handleDeleteSuccessClose() {
+    setShowDeleteSuccess(false);
+    useAuthStore.getState().removeTeam(activeTeamId!);
     const remaining = useAuthStore.getState().teams;
     useAppStore.getState().setActiveTeamId(remaining[0]?.id ?? null);
-    setClearConfirm(false);
   }
 
   function handleAddTeam() {
@@ -224,6 +233,20 @@ export function Settings() {
   }
 
   return (
+    <>
+    {showDeleteSuccess && (
+      <Modal title="Joukkue poistettu" onClose={handleDeleteSuccessClose}>
+        <div className="flex flex-col items-center gap-4 py-2 text-center">
+          <div className="w-12 h-12 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+            <Check size={24} className="text-green-600 dark:text-green-400" />
+          </div>
+          <p className="text-sm text-gray-700 dark:text-slate-300">
+            <span className="font-semibold">{deletedTeamName.current}</span> on poistettu pysyvästi.
+          </p>
+          <Button onClick={handleDeleteSuccessClose}>OK</Button>
+        </div>
+      </Modal>
+    )}
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
 
       <CollapsibleCard title="Valmentajat">
@@ -626,5 +649,6 @@ export function Settings() {
         </div>
       </div>
     </div>
+    </>
   );
 }
