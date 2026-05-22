@@ -28,3 +28,4 @@ docs/superpowers
 *.sln
 *.sw?
 .worktrees/
+todo.txt
