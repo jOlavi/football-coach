@@ -96,6 +96,7 @@ export function Settings() {
 
   function cancelEdit() {
     setEditingTeamId(null);
+    setEditDraft({ name: '', color: '' });
   }
 
   const [draft, setDraft] = useState(settings);
@@ -402,13 +403,6 @@ export function Settings() {
                         >
                           ···
                         </button>
-                        <input
-                          ref={editColorRef}
-                          type="color"
-                          value={editDraft.color}
-                          onChange={(e) => setEditDraft({ ...editDraft, color: e.target.value })}
-                          className="sr-only"
-                        />
                       </div>
                     </div>
                   ) : (
@@ -439,6 +433,14 @@ export function Settings() {
                   )}
                 </div>
               ))}
+              {/* Hidden native color picker for edit mode */}
+              <input
+                ref={editColorRef}
+                type="color"
+                value={editDraft.color}
+                onChange={(e) => setEditDraft({ ...editDraft, color: e.target.value })}
+                className="sr-only"
+              />
             </div>
             <div className="flex gap-2 flex-wrap items-center">
               <input
