@@ -20,7 +20,7 @@ export function deserializeSession(data: Record<string, unknown>): TrainingSessi
 }
 
 export function serializeDrill(d: Drill): { id: string } & Record<string, unknown> {
-  const { shapes, canvasDataUrl, ...rest } = d;
+  const { shapes, ...rest } = d;
   return {
     ...rest,
     shapesJson: JSON.stringify(shapes),
@@ -33,5 +33,5 @@ export function deserializeDrill(data: Record<string, unknown>): Drill {
   if (shapesJson) {
     try { shapes = JSON.parse(shapesJson); } catch { shapes = []; }
   }
-  return { ...rest, shapes, canvasDataUrl: '' } as Drill;
+  return { ...rest, shapes } as Drill;
 }
