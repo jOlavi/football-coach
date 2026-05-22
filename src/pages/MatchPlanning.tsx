@@ -303,7 +303,7 @@ export function MatchPlanning() {
             <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">
               Pelaajat ({eventPlayers.length})
             </p>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
               {eventPlayers.map((p) => {
                 const assignment = assignments[p.id];
                 const assignedTeam = selectedEvent.teams.find((t) => t.id === assignment);
