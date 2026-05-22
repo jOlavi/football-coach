@@ -272,29 +272,6 @@ export function MatchPlanning() {
               ))}
             </div>
 
-            {/* Summary counts */}
-            <div className="flex flex-wrap gap-3">
-              {selectedEvent.teams.map((team) => {
-                const count = eventPlayers.filter((p) => assignments[p.id] === team.id).length;
-                const teamCol = teams.find((t) => t.id === team.id)?.color ?? '#64748b';
-                return (
-                  <span
-                    key={team.id}
-                    className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                      count > 0 ? '' : 'bg-gray-100 dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-gray-400 dark:text-slate-500'
-                    }`}
-                    style={count > 0 ? { backgroundColor: teamCol, borderColor: teamCol, color: '#fff' } : undefined}
-                  >
-                    {team.name}: {count}
-                  </span>
-                );
-              })}
-              {(() => {
-                const unassigned = eventPlayers.filter((p) => !assignments[p.id] || assignments[p.id] === "absent").length;
-                return unassigned > 0 ? <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500">{unassigned} jakamatta</span> : null;
-              })()}
-            </div>
-
             {/* Roster list */}
             <div className="flex flex-col gap-1.5 pt-3 border-t border-gray-100 dark:border-slate-700">
               {selectedEvent.teams.map((team) => {
@@ -308,7 +285,7 @@ export function MatchPlanning() {
                       className="flex-shrink-0 text-xs font-bold text-white px-2.5 py-0.5 rounded-full"
                       style={{ backgroundColor: teamCol }}
                     >
-                      {team.name}
+                      {team.name} {assigned.length > 0 ? `(${assigned.length})` : ''}
                     </span>
                     {assigned.length > 0 ? (
                       <span className="text-sm text-gray-700 dark:text-slate-300">{assigned.join(', ')}</span>
