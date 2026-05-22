@@ -154,6 +154,7 @@ export interface Drill {
 export interface OwnTeam {
   id: string;
   name: string;
+  color?: string;
   createdAt: string;
 }
 

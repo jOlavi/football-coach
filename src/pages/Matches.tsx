@@ -174,7 +174,11 @@ export function Matches() {
                   const ownTeam = m.ownTeamId ? teams.find((t) => t.id === m.ownTeamId) : null;
                   const vs = <span className="text-gray-400 dark:text-slate-500 font-normal mx-1">–</span>;
                   if (!ownTeam) return <>vs {m.opponent}</>;
-                  const own = <span className="text-brand-600 dark:text-brand-400">{ownTeam.name}</span>;
+                  const own = (
+                    <span style={{ color: ownTeam.color ?? '#64748b' }} className="font-semibold">
+                      {ownTeam.name}
+                    </span>
+                  );
                   const opp = <span>{m.opponent}</span>;
                   if (m.location === 'home') return <>{own}{vs}{opp}</>;
                   return <>{opp}{vs}{own}</>;
