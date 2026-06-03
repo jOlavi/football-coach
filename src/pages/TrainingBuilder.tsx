@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { X, GripVertical, Users } from 'lucide-react';
 import type { Exercise, ExerciseCategory, GroupSet } from '../types';
@@ -60,7 +60,11 @@ export function TrainingBuilder() {
   const matches = useMatchStore((s) => s.matches);
   const { exercises: custom } = useExerciseStore();
   const drills = useDrillStore((s) => s.drills);
-  const { addSession, updateSession, getSession } = useTrainingStore();
+  const { addSession, updateSession } = useTrainingStore();
+  const storedSession = useTrainingStore(
+    useCallback((s) => s.sessions.find((t) => t.id === editId) ?? null, [editId])
+  );
+  const initializedForId = useRef<string | null>(null);
 
   const matchCounts = useMemo(
     () => getMatchCountsForPlayers(players.map((p) => p.id), matches.map((m) => m.lineup)),
@@ -73,7 +77,7 @@ export function TrainingBuilder() {
     ...drills.map((d) => ({
       id: d.id,
       name: d.name,
-      category: 'tactical' as ExerciseCategory,
+      category: (d.category ?? 'tactical') as ExerciseCategory,
       duration: d.duration,
       description: d.description || '',
       goals: d.goals || undefined,
@@ -84,7 +88,7 @@ export function TrainingBuilder() {
 
   const [title, setTitle] = useState('');
   const [date, setDate] = useState('');
-  const [startTime, setStartTime] = useState('');
+  const [startTime, setStartTime] = useState('16:00');
   const [sessionDuration, setSessionDuration] = useState(90);
   const [customDuration, setCustomDuration] = useState(false);
   const [notes, setNotes] = useState('');
@@ -97,30 +101,30 @@ export function TrainingBuilder() {
   const [groupModalOpen, setGroupModalOpen] = useState(false);
 
   useEffect(() => {
-    if (!editId) return;
-    const s = getSession(editId);
-    if (!s) return;
-    setTitle(s.title);
-    setDate(s.date);
-    setStartTime(s.startTime ?? '');
-    setSessionDuration(s.duration);
-    setNotes(s.notes);
+    if (!editId || !storedSession) return;
+    if (initializedForId.current === editId) return;
+    initializedForId.current = editId;
+    setTitle(storedSession.title);
+    setDate(storedSession.date);
+    setStartTime(storedSession.startTime ?? '');
+    setSessionDuration(storedSession.duration);
+    setNotes(storedSession.notes);
     const drillMap = new Map(useDrillStore.getState().drills.map((d) => [d.id, d]));
     setExercises(
-      s.exercises.map((ex) => {
+      storedSession.exercises.map((ex) => {
         if (!ex.drillId) return ex;
         const drill = drillMap.get(ex.drillId);
         return drill ? { ...ex, canvasDataUrl: drill.canvasDataUrl } : ex;
       })
     );
-    if ((s.uncertainPlayerIds ?? []).length > 0) {
-      setSessionUncertainIds(new Set(s.uncertainPlayerIds));
+    if ((storedSession.uncertainPlayerIds ?? []).length > 0) {
+      setSessionUncertainIds(new Set(storedSession.uncertainPlayerIds));
     }
-    if ((s.groupSets ?? []).length > 0) {
-      const allIds = Array.from(new Set((s.groupSets ?? []).flatMap((gs) => gs.playerIds.flat())));
+    if ((storedSession.groupSets ?? []).length > 0) {
+      const allIds = Array.from(new Set((storedSession.groupSets ?? []).flatMap((gs) => gs.playerIds.flat())));
       setSessionPlayerIds(allIds);
       setGroupSets(
-        (s.groupSets ?? []).map((gs) => ({
+        (storedSession.groupSets ?? []).map((gs) => ({
           id: gs.id,
           label: gs.label,
           groupCount: gs.playerIds.length,
@@ -132,8 +136,7 @@ export function TrainingBuilder() {
         }))
       );
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editId]);
+  }, [editId, storedSession]);
 
   const endTime = startTime ? addMinutes(startTime, sessionDuration) : '';
 
@@ -243,17 +246,32 @@ export function TrainingBuilder() {
             type="date"
             value={date}
             onChange={(e) => setDate(e.target.value)}
-            className="border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            className="border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 dark:[color-scheme:dark] rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
           />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Alkaa</label>
-          <input
-            type="time"
-            value={startTime}
-            onChange={(e) => setStartTime(e.target.value)}
-            className="border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 w-24"
-          />
+          <div className="flex items-center gap-1">
+            <select
+              value={startTime ? startTime.split(':')[0] : '16'}
+              onChange={(e) => setStartTime(`${e.target.value}:${startTime ? startTime.split(':')[1] : '00'}`)}
+              className="border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {Array.from({ length: 24 }, (_, i) => String(i).padStart(2, '0')).map((h) => (
+                <option key={h} value={h}>{h}</option>
+              ))}
+            </select>
+            <span className="text-gray-400 dark:text-slate-500 font-semibold">:</span>
+            <select
+              value={startTime ? startTime.split(':')[1] : '00'}
+              onChange={(e) => setStartTime(`${startTime ? startTime.split(':')[0] : '16'}:${e.target.value}`)}
+              className="border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              {['00', '15', '30', '45'].map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide">Kesto</label>

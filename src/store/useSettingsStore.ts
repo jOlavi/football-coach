@@ -14,7 +14,7 @@ export interface AppSettings {
   // Otteluasetukset
   minLineupSize: number;
   defaultTeamFormat: '5v5' | '7v7' | '8v8' | '11v11';
-  theme: 'light' | 'dark';
+  theme: 'light' | 'dark' | 'forest';
 }
 
 const DEFAULTS: AppSettings = {

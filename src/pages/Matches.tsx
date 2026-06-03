@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   ClipboardList,
+  PlayCircle,
 } from "lucide-react";
 import { useMatchStore } from "../store/useMatchStore";
 import { usePlayerStore } from "../store/usePlayerStore";
@@ -69,6 +70,7 @@ export function Matches() {
   const teams = useTeamStore((s) => s.teams);
 
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [showPast, setShowPast] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Match | null>(null);
   const [form, setForm] = useState(emptyMatch());
@@ -186,6 +188,7 @@ export function Matches() {
               </p>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <Badge label={levelLabels[m.level]} color={levelColors[m.level]} />
+                {m.format && <Badge label={m.format} color="gray" />}
                 {m.teamLevel && (
                   <Badge label={m.teamLevel === 'taso1' ? 'Taso 1' : 'Taso 2'} color={m.teamLevel === 'taso1' ? 'purple' : 'yellow'} />
                 )}
@@ -317,7 +320,7 @@ export function Matches() {
                 <p className="text-sm text-gray-600 dark:text-slate-300 italic">{m.notes}</p>
               )}
               {!m.result && (
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant="secondary"
                     size="sm"
@@ -328,6 +331,13 @@ export function Matches() {
                   </Button>
                   <Button size="sm" onClick={() => openResult(m)}>
                     Kirjaa tulos
+                  </Button>
+                  <Button
+                    size="sm"
+                    icon={<PlayCircle size={13} />}
+                    onClick={() => navigate(`/matches/${m.id}/setup`, { state: { match: m } })}
+                  >
+                    Aloita pelinhallinta
                   </Button>
                 </div>
               )}
@@ -349,7 +359,36 @@ export function Matches() {
 
   return (
     <div className="space-y-5">
-      <div className="sticky top-0 z-10 -mt-6 -mx-6 px-6 pt-4 pb-3 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 flex items-center justify-between gap-3">
+      <div className="sticky top-0 z-10 -mt-6 -mx-6 px-6 pt-4 pb-3 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 space-y-2">
+        <div className="flex items-center gap-3">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowPast(false)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                !showPast
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+              }`}
+            >
+              Tulevat {upcoming.length > 0 && `(${upcoming.length})`}
+            </button>
+            <button
+              onClick={() => setShowPast(true)}
+              className={`px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                showPast
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+              }`}
+            >
+              Pelatut {past.length > 0 && `(${past.length})`}
+            </button>
+          </div>
+          <div className="ml-auto">
+            <Button icon={<Plus size={15} />} onClick={openAdd}>
+              Lisää ottelu
+            </Button>
+          </div>
+        </div>
         {teams.length > 0 && (
           <div className="flex flex-wrap gap-2">
             <button
@@ -377,35 +416,30 @@ export function Matches() {
             ))}
           </div>
         )}
-        <div className="ml-auto">
-          <Button icon={<Plus size={15} />} onClick={openAdd}>
-            Lisää ottelu
-          </Button>
-        </div>
       </div>
 
-      {upcoming.length > 0 && (
+      {!showPast && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-            Tulevat
-          </h2>
           <div className="space-y-2">
             {upcoming.map((m) => (
               <MatchRow key={m.id} m={m} />
             ))}
+            {upcoming.length === 0 && (
+              <p className="text-center text-gray-400 dark:text-slate-500 py-8">Ei tulevia otteluita.</p>
+            )}
           </div>
         </section>
       )}
 
-      {past.length > 0 && (
+      {showPast && (
         <section>
-          <h2 className="text-sm font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-            Tulokset
-          </h2>
           <div className="space-y-2">
             {past.map((m) => (
               <MatchRow key={m.id} m={m} />
             ))}
+            {past.length === 0 && (
+              <p className="text-center text-gray-400 dark:text-slate-500 py-8">Ei pelattuja otteluita.</p>
+            )}
           </div>
         </section>
       )}

@@ -6,7 +6,7 @@ import {
   ArrowRight, ArrowRightFromLine, Spline, Square, Type,
 } from 'lucide-react';
 import { useTacticalBoard } from '../hooks/useTacticalBoard';
-import type { ToolType, SizeKey, FieldType } from '../types';
+import type { ToolType, SizeKey, FieldType, ExerciseCategory } from '../types';
 import { useDrillStore } from '../store/useDrillStore';
 import { saveDrill, updateDrill } from '../utils/drillStorage';
 
@@ -76,6 +76,7 @@ export function NewDrillPage() {
   const [goals, setGoals] = useState(drill?.goals ?? '');
   const [duration, setDuration] = useState(drill?.duration ?? 15);
   const [repetitions, setRepetitions] = useState(drill?.repetitions ?? 1);
+  const [category, setCategory] = useState<ExerciseCategory>(drill?.category ?? 'tactical');
   const [tags, setTags] = useState<string[]>(drill?.tags ?? []);
   const [tagInput, setTagInput] = useState('');
   const [saving, setSaving] = useState(false);
@@ -127,6 +128,7 @@ export function NewDrillPage() {
           goals,
           duration,
           repetitions,
+          category,
           tags,
           fieldType: board.fieldType,
           canvasDataUrl,
@@ -139,6 +141,7 @@ export function NewDrillPage() {
           goals,
           duration,
           repetitions,
+          category,
           tags,
           fieldType: board.fieldType,
           canvasDataUrl,
@@ -401,6 +404,32 @@ export function NewDrillPage() {
               placeholder="esim. 2v1 hyökkäys"
               className="w-full border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
             />
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide block mb-1">Kategoria</label>
+            <div className="flex flex-wrap gap-1.5">
+              {([
+                ['warmup', 'Lämmittely'],
+                ['technical', 'Tekninen'],
+                ['tactical', 'Taktinen'],
+                ['physical', 'Fyysinen'],
+                ['game', 'Peli'],
+              ] as [ExerciseCategory, string][]).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setCategory(val)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-semibold border transition-colors ${
+                    category === val
+                      ? 'bg-brand-600 text-white border-brand-600'
+                      : 'bg-white dark:bg-slate-900 text-gray-500 dark:text-slate-400 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>

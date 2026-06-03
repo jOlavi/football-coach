@@ -20,11 +20,15 @@ import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { CreateTeam } from './pages/CreateTeam';
 import { JoinTeam } from './pages/JoinTeam';
+import { MatchSetup } from './pages/MatchSetup';
+import { MatchLive } from './pages/MatchLive';
+import { MatchBreak } from './pages/MatchBreak';
 
 function ThemeSync() {
   const theme = useSettingsStore((s) => s.settings.theme);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('forest', theme === 'forest');
   }, [theme]);
   return null;
 }
@@ -47,6 +51,16 @@ export default function App() {
           <Route path="/join" element={<JoinTeam />} />
           <Route path="/teams/new" element={
             <ProtectedRoute><CreateTeam /></ProtectedRoute>
+          } />
+          {/* Full-screen match management — no sidebar layout */}
+          <Route path="/matches/:id/setup" element={
+            <ProtectedRoute><TeamGuard><MatchSetup /></TeamGuard></ProtectedRoute>
+          } />
+          <Route path="/matches/:id/live" element={
+            <ProtectedRoute><TeamGuard><MatchLive /></TeamGuard></ProtectedRoute>
+          } />
+          <Route path="/matches/:id/break" element={
+            <ProtectedRoute><TeamGuard><MatchBreak /></TeamGuard></ProtectedRoute>
           } />
           <Route path="/" element={
             <ProtectedRoute>

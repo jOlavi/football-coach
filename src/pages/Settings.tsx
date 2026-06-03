@@ -11,28 +11,30 @@ import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { Input, Select } from '../components/ui/Input';
+import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { getCoachProfiles } from '../lib/firestore/userData';
 import { createInvitation } from '../lib/firestore/invitations';
 import { removeCoachFromTeam, deleteFirebaseTeam } from '../lib/firestore/teams';
 
-function CollapsibleCard({ title, children }: { title: string; children: React.ReactNode }) {
+function CollapsibleCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   const [open, setOpen] = useState(true);
   return (
-    <Card>
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="w-full flex items-center justify-between mb-0 group"
-      >
-        <h2 className="font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
-        <ChevronDown
-          size={16}
-          className={`text-gray-400 dark:text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
-        />
-      </button>
-      {open && <div className="mt-4">{children}</div>}
-    </Card>
+    <div className={className}>
+      <Card>
+        <button
+          onClick={() => setOpen((v) => !v)}
+          className="w-full flex items-center justify-between mb-0 group"
+        >
+          <h2 className="font-semibold text-gray-900 dark:text-slate-100">{title}</h2>
+          <ChevronDown
+            size={16}
+            className={`text-gray-400 dark:text-slate-500 transition-transform ${open ? 'rotate-180' : ''}`}
+          />
+        </button>
+        {open && <div className="mt-4">{children}</div>}
+      </Card>
+    </div>
   );
 }
 
@@ -66,7 +68,7 @@ function Toggle({ label, description, checked, onChange }: ToggleProps) {
   );
 }
 
-const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#eab308', '#64748b', '#0f172a'];
+const PRESET_COLORS = ['#1d4ed8', '#dc2626', '#eab308', '#64748b', '#000000'];
 
 export function Settings() {
   const { settings, updateSettings, resetSettings } = useSettingsStore();
@@ -77,26 +79,34 @@ export function Settings() {
   const { addMatch } = useMatchStore();
   const { addSession } = useTrainingStore();
   const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
-  const [newTeamName, setNewTeamName] = useState('');
-  const [newTeamColor, setNewTeamColor] = useState(PRESET_COLORS[0]);
-  const [showAddTeam, setShowAddTeam] = useState(false);
-  const [editingTeamId, setEditingTeamId] = useState<string | null>(null);
-  const [editDraft, setEditDraft] = useState<{ name: string; color: string }>({ name: '', color: '' });
 
-  function startEdit(t: { id: string; name: string; color?: string }) {
-    setEditingTeamId(t.id);
-    setEditDraft({ name: t.name, color: t.color ?? '#64748b' });
+  type TeamModalDraft = { name: string; color: string; format: TeamFormat; minLineupSize: number };
+  const emptyTeamDraft = (): TeamModalDraft => ({ name: '', color: PRESET_COLORS[0], format: '7v7', minLineupSize: 7 });
+  const [teamModal, setTeamModal] = useState<{ mode: 'add' | 'edit'; id?: string } | null>(null);
+  const [teamDraft, setTeamDraft] = useState<TeamModalDraft>(emptyTeamDraft());
+  const [teamSaveConfirm, setTeamSaveConfirm] = useState(false);
+
+  function openAddTeam() {
+    setTeamDraft(emptyTeamDraft());
+    setTeamSaveConfirm(false);
+    setTeamModal({ mode: 'add' });
   }
 
-  function saveEdit() {
-    if (!editingTeamId || !editDraft.name.trim()) return;
-    updateTeam(editingTeamId, { name: editDraft.name.trim(), color: editDraft.color });
-    setEditingTeamId(null);
+  function openEditTeam(t: { id: string; name: string; color?: string; format?: TeamFormat; minLineupSize?: number }) {
+    setTeamDraft({ name: t.name, color: t.color ?? PRESET_COLORS[0], format: t.format ?? '7v7', minLineupSize: t.minLineupSize ?? 7 });
+    setTeamSaveConfirm(false);
+    setTeamModal({ mode: 'edit', id: t.id });
   }
 
-  function cancelEdit() {
-    setEditingTeamId(null);
-    setEditDraft({ name: '', color: '' });
+  function saveTeamModal() {
+    if (!teamDraft.name.trim()) return;
+    if (teamModal?.mode === 'add') {
+      addTeam({ id: crypto.randomUUID(), name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize, createdAt: new Date().toISOString() });
+      setTeamModal(null);
+    } else if (teamModal?.id) {
+      updateTeam(teamModal.id, { name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize });
+      setTeamModal(null);
+    }
   }
 
   const [draft, setDraft] = useState(settings);
@@ -227,13 +237,6 @@ export function Settings() {
     navigate('/');
   }
 
-  function handleAddTeam() {
-    if (!newTeamName.trim()) return;
-    addTeam({ id: crypto.randomUUID(), name: newTeamName.trim(), color: newTeamColor, createdAt: new Date().toISOString() });
-    setNewTeamName('');
-    setNewTeamColor(PRESET_COLORS[0]);
-    setShowAddTeam(false);
-  }
 
   return (
     <>
@@ -250,9 +253,67 @@ export function Settings() {
         </div>
       </Modal>
     )}
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+    <div className="lg:columns-2 lg:gap-6">
 
-      <CollapsibleCard title="Valmentajat">
+      <CollapsibleCard className="break-inside-avoid mb-6" title="Joukkueen tiedot">
+        <div className="space-y-3">
+          <Input
+            label="Joukkueen nimi"
+            value={draft.teamName}
+            onChange={(e) => setDraft({ ...draft, teamName: e.target.value })}
+            placeholder="esim. FC Tähdet U13"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Input
+              label="Kausi"
+              value={draft.season}
+              onChange={(e) => setDraft({ ...draft, season: e.target.value })}
+              placeholder="esim. 2026"
+            />
+            <Input
+              label="Valmentajan nimi"
+              value={draft.coachName}
+              onChange={(e) => setDraft({ ...draft, coachName: e.target.value })}
+              placeholder="Oma nimesi"
+            />
+          </div>
+
+          <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Joukkueet</p>
+            <div className="space-y-1.5 mb-2">
+              {teams.length === 0 && (
+                <p className="text-xs text-gray-400 dark:text-slate-500 italic">Ei joukkueita vielä.</p>
+              )}
+              {teams.map((t) => (
+                <div key={t.id} className="bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color ?? '#64748b' }} />
+                    <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
+                    {t.format && <span className="text-xs text-gray-400 dark:text-slate-500">{t.format}</span>}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => openEditTeam(t)} className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors">
+                      <Pencil size={14} />
+                    </button>
+                    <button onClick={() => deleteTeam(t.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={openAddTeam}
+              className="flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
+            >
+              <Plus size={14} /> Lisää joukkue
+            </button>
+          </div>
+        </div>
+      </CollapsibleCard>
+
+      <CollapsibleCard className="break-inside-avoid mb-6" title="Valmentajat">
         {!activeTeam ? (
           <p className="text-sm text-gray-400 dark:text-slate-500">Ei aktiivista joukkuetta.</p>
         ) : (
@@ -341,181 +402,30 @@ export function Settings() {
         )}
       </CollapsibleCard>
 
-      <CollapsibleCard title="Joukkueen tiedot">
-        <div className="space-y-3">
-          <Input
-            label="Joukkueen nimi"
-            value={draft.teamName}
-            onChange={(e) => setDraft({ ...draft, teamName: e.target.value })}
-            placeholder="esim. FC Tähdet U13"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Kausi"
-              value={draft.season}
-              onChange={(e) => setDraft({ ...draft, season: e.target.value })}
-              placeholder="esim. 2026"
-            />
-            <Input
-              label="Valmentajan nimi"
-              value={draft.coachName}
-              onChange={(e) => setDraft({ ...draft, coachName: e.target.value })}
-              placeholder="Oma nimesi"
-            />
-          </div>
-
-          <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
-            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Joukkueet</p>
-            <div className="space-y-1.5 mb-2">
-              {teams.length === 0 && (
-                <p className="text-xs text-gray-400 dark:text-slate-500 italic">Ei joukkueita vielä.</p>
-              )}
-              {teams.map((t) => (
-                <div key={t.id} className="bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2">
-                  {editingTeamId === t.id ? (
-                    /* ── Edit row ── */
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-5 h-5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: editDraft.color }}
-                        />
-                        {/* Name input */}
-                        <input
-                          autoFocus
-                          value={editDraft.name}
-                          onChange={(e) => setEditDraft({ ...editDraft, name: e.target.value })}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') saveEdit();
-                            if (e.key === 'Escape') cancelEdit();
-                          }}
-                          className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-slate-100 rounded-lg px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                        />
-                        {/* Save */}
-                        <button
-                          onClick={saveEdit}
-                          disabled={!editDraft.name.trim()}
-                          className="text-green-500 hover:text-green-600 disabled:opacity-30 transition-colors"
-                        >
-                          <Check size={14} />
-                        </button>
-                        {/* Cancel */}
-                        <button onClick={cancelEdit} className="text-gray-300 dark:text-slate-600 hover:text-gray-500 transition-colors">
-                          <X size={14} />
-                        </button>
-                      </div>
-                      {/* Color swatches */}
-                      <div className="flex items-center gap-1.5 pl-7">
-                        {PRESET_COLORS.map((c) => (
-                          <button
-                            key={c}
-                            type="button"
-                            onClick={() => setEditDraft({ ...editDraft, color: c })}
-                            className="w-5 h-5 rounded-full transition-transform hover:scale-110"
-                            style={{
-                              backgroundColor: c,
-                              outline: editDraft.color === c ? `2px solid ${c}` : 'none',
-                              outlineOffset: '2px',
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    /* ── Normal row ── */
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div
-                          className="w-3.5 h-3.5 rounded-full flex-shrink-0"
-                          style={{ backgroundColor: t.color ?? '#64748b' }}
-                        />
-                        <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => startEdit(t)}
-                          className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => deleteTeam(t.id)}
-                          className="text-gray-300 dark:text-slate-600 hover:text-red-500 transition-colors"
-                        >
-                          <X size={14} />
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            {showAddTeam ? (
-              <div className="flex gap-2 flex-wrap items-center">
-                <input
-                  autoFocus
-                  value={newTeamName}
-                  onChange={(e) => setNewTeamName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleAddTeam();
-                    if (e.key === 'Escape') { setShowAddTeam(false); setNewTeamName(''); }
-                  }}
-                  placeholder="Joukkueen nimi, esim. Valkoiset"
-                  className="flex-1 min-w-0 border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
-                />
-                <div className="flex items-center gap-1.5">
-                  {PRESET_COLORS.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setNewTeamColor(c)}
-                      className="w-5 h-5 rounded-full transition-transform hover:scale-110"
-                      style={{
-                        backgroundColor: c,
-                        outline: newTeamColor === c ? `2px solid ${c}` : 'none',
-                        outlineOffset: '2px',
-                      }}
-                    />
-                  ))}
-                </div>
-                <button
-                  onClick={handleAddTeam}
-                  disabled={!newTeamName.trim()}
-                  className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 hover:bg-brand-700 text-white rounded-lg disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  <Plus size={13} /> Lisää
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setShowAddTeam(false); setNewTeamName(''); }}
-                  className="text-xs text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
-                >
-                  Peruuta
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAddTeam(true)}
-                className="flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
-              >
-                <Plus size={14} /> Lisää joukkue
-              </button>
-            )}
-          </div>
+      <CollapsibleCard className="break-inside-avoid mb-6" title="Teema">
+        <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">Valitse sovelluksen värimaailma</p>
+        <div className="flex gap-2">
+          {([
+            { value: 'light', label: 'Vaalea', icon: '☀️' },
+            { value: 'dark', label: 'Tumma', icon: '🌙' },
+            { value: 'forest', label: 'Metsä', icon: '🌲' },
+          ] as const).map(({ value, label, icon }) => (
+            <button
+              key={value}
+              onClick={() => setDraft({ ...draft, theme: value })}
+              className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-colors min-h-[44px] ${
+                draft.theme === value
+                  ? 'bg-brand-600 text-white border-brand-600'
+                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600'
+              }`}
+            >
+              {icon} {label}
+            </button>
+          ))}
         </div>
       </CollapsibleCard>
 
-      <CollapsibleCard title="Teema">
-        <Toggle
-          label="Tumma teema"
-          description="Vaihda sovelluksen värimaailma tummaksi"
-          checked={draft.theme === 'dark'}
-          onChange={(v) => setDraft({ ...draft, theme: v ? 'dark' : 'light' })}
-        />
-      </CollapsibleCard>
-
-      <CollapsibleCard title="Pelaajan tietojen näkyvyys">
+      <CollapsibleCard className="break-inside-avoid mb-6" title="Pelaajan tietojen näkyvyys">
         <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">Valitse mitä tietoja näytetään pelaajalistassa ja -korteissa.</p>
         <Toggle
           label="Pelipaikka"
@@ -537,36 +447,8 @@ export function Settings() {
         />
       </CollapsibleCard>
 
-      <CollapsibleCard title="Otteluasetukset">
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1">
-              Kokoonpanon minimimäärä
-            </label>
-            <input
-              type="number"
-              min={3}
-              max={11}
-              value={draft.minLineupSize}
-              onChange={(e) => setDraft({ ...draft, minLineupSize: Math.max(3, Math.min(11, +e.target.value)) })}
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
-            />
-            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Muistutus jos kokoonpanossa alle tämän verran pelaajia</p>
-          </div>
-          <Select
-            label="Oletusmuoto (ottelu ja joukkuegeneraattori)"
-            value={draft.defaultTeamFormat}
-            onChange={(e) => setDraft({ ...draft, defaultTeamFormat: e.target.value as TeamFormat })}
-          >
-            <option value="5v5">5 vs 5</option>
-            <option value="7v7">7 vs 7</option>
-            <option value="8v8">8 vs 8</option>
-            <option value="11v11">11 vs 11</option>
-          </Select>
-        </div>
-      </CollapsibleCard>
 
-      <CollapsibleCard title="Data">
+      <CollapsibleCard className="break-inside-avoid mb-6" title="Data">
         <p className="text-xs text-gray-400 dark:text-slate-500 mb-4">
           Tiedot tallennetaan selaimeen. Varmuuskopioi säännöllisesti.
         </p>
@@ -652,6 +534,99 @@ export function Settings() {
         </div>
       </div>
     </div>
+
+    {/* Team add/edit modal */}
+    {teamModal && (
+      <Modal
+        title={teamModal.mode === 'add' ? 'Lisää joukkue' : 'Muokkaa joukkuetta'}
+        onClose={() => setTeamModal(null)}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Nimi"
+            autoFocus
+            value={teamDraft.name}
+            onChange={(e) => setTeamDraft({ ...teamDraft, name: e.target.value })}
+            placeholder="esim. Valkoiset"
+          />
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Väri</p>
+            <div className="flex items-center gap-2">
+              {PRESET_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setTeamDraft({ ...teamDraft, color: c })}
+                  className="w-7 h-7 rounded-full transition-transform hover:scale-110 border-2"
+                  style={{
+                    backgroundColor: c,
+                    borderColor: teamDraft.color === c ? c : 'transparent',
+                    outline: teamDraft.color === c ? `2px solid ${c}` : 'none',
+                    outlineOffset: '2px',
+                  }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Pelimuoto</p>
+            <div className="flex gap-2">
+              {(['5v5', '7v7', '8v8', '11v11'] as const).map((f) => (
+                <button
+                  key={f}
+                  type="button"
+                  onClick={() => setTeamDraft({ ...teamDraft, format: f })}
+                  className={`flex-1 px-3 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    teamDraft.format === f
+                      ? 'bg-brand-600 text-white border-brand-600'
+                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                  }`}
+                >
+                  {f}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-slate-200 block mb-1">
+              Kokoonpanon minimimäärä
+            </label>
+            <input
+              type="number"
+              min={3}
+              max={15}
+              value={teamDraft.minLineupSize}
+              onChange={(e) => setTeamDraft({ ...teamDraft, minLineupSize: Math.max(3, Math.min(15, +e.target.value)) })}
+              className="w-24 rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:text-slate-100"
+            />
+            <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Varoitus jos kokoonpanossa alle tämän verran pelaajia</p>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-1">
+            {teamSaveConfirm && teamModal.mode === 'edit' ? (
+              <>
+                <span className="text-sm text-gray-500 dark:text-slate-400 self-center">Tallennetaanko muutokset?</span>
+                <Button variant="secondary" onClick={() => setTeamSaveConfirm(false)}>Peruuta</Button>
+                <Button onClick={saveTeamModal}>Kyllä, tallenna</Button>
+              </>
+            ) : (
+              <>
+                <Button variant="secondary" onClick={() => setTeamModal(null)}>Peruuta</Button>
+                <Button
+                  onClick={() => teamModal.mode === 'edit' ? setTeamSaveConfirm(true) : saveTeamModal()}
+                  disabled={!teamDraft.name.trim()}
+                >
+                  {teamModal.mode === 'add' ? 'Lisää joukkue' : 'Tallenna'}
+                </Button>
+              </>
+            )}
+          </div>
+        </div>
+      </Modal>
+    )}
     </>
   );
 }

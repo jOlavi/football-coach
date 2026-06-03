@@ -90,7 +90,6 @@ export function Dashboard() {
             ) : (
               <div className="space-y-3">
                 {upcomingMatches.map((m) => {
-                  const missingPlayers = m.availability.filter((a) => a.status === 'unavailable').length;
                   return (
                     <div
                       key={m.id}
@@ -121,9 +120,6 @@ export function Dashboard() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {missingPlayers > 0 && (
-                          <Badge label={`${missingPlayers} pois`} color="red" />
-                        )}
                         <Badge label={levelLabels[m.level] ?? m.level} color={levelColors[m.level]} />
                         <Badge label={`${m.lineup.length} valittu`} color={m.lineup.length >= 7 ? 'green' : 'yellow'} />
                       </div>

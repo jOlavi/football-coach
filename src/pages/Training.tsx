@@ -209,6 +209,7 @@ export function Training() {
   const [view, setView] = useState<ViewMode>(
     searchParams.get("view") === "library" ? "library" : "sessions"
   );
+  const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<
     string | null
@@ -226,19 +227,35 @@ export function Training() {
   const [editingEx, setEditingEx] = useState<Exercise | null>(null);
   const [exForm, setExForm] = useState(emptyExForm());
 
-  const allExercises = useMemo(() => [...BUILT_IN, ...custom], [custom]);
-  const customIds = useMemo(() => new Set(custom.map((e) => e.id)), [custom]);
+  // Unified library: drills first, then custom exercises, then built-in
+  type LibraryItem =
+    | { kind: 'drill'; data: Drill }
+    | { kind: 'exercise'; data: Exercise; isCustom: boolean };
 
-  const filteredLibrary = useMemo(
-    () =>
-      allExercises.filter((e) => {
-        if (filterCat !== "all" && e.category !== filterCat) return false;
-        if (filterTag !== "all" && !(e.tags ?? []).includes(filterTag))
-          return false;
-        return true;
-      }),
-    [allExercises, filterCat, filterTag]
-  );
+  const filteredLibrary = useMemo<LibraryItem[]>(() => {
+    const drillItems: LibraryItem[] = drills
+      .filter((d) => filterCat === 'all' || (d.category ?? 'tactical') === filterCat)
+      .filter((d) => filterTag === 'all' || (d.tags ?? []).includes(filterTag))
+      .map((d) => ({ kind: 'drill', data: d }));
+
+    const exItems: LibraryItem[] = [
+      ...custom.map((e) => ({ kind: 'exercise' as const, data: e, isCustom: true })),
+      ...BUILT_IN.map((e) => ({ kind: 'exercise' as const, data: e, isCustom: false })),
+    ].filter(({ data: e }) => {
+      if (filterCat !== 'all' && e.category !== filterCat) return false;
+      if (filterTag !== 'all' && !(e.tags ?? []).includes(filterTag)) return false;
+      return true;
+    });
+
+    return [...drillItems, ...exItems];
+  }, [drills, custom, filterCat, filterTag]);
+
+  const allTags = useMemo(() => {
+    const tagSet = new Set<string>(EXERCISE_TAGS);
+    drills.forEach((d) => (d.tags ?? []).forEach((t) => tagSet.add(t)));
+    custom.forEach((e) => (e.tags ?? []).forEach((t) => tagSet.add(t)));
+    return Array.from(tagSet).sort();
+  }, [drills, custom]);
 
   function openEditEx(e: Exercise) {
     setEditingEx(e);
@@ -280,129 +297,153 @@ export function Training() {
     }));
   }
 
-  function printSession(s: TrainingSession) {
+  async function downloadSessionPDF(s: TrainingSession) {
+    if (pdfLoadingId) return;
+    setPdfLoadingId(s.id);
     const { settings } = useSettingsStore.getState();
-    const win = window.open("", "_blank");
-    if (!win) return;
 
-    const groupSetsHtml = (s.groupSets ?? [])
-      .map(
-        (gs) => `
-    <div class="group-set">
-      <h3>${gs.label}</h3>
-      <div class="groups-row">
-        ${gs.playerIds
-          .map(
-            (groupPlayerIds, gi) => `
-          <div class="group-card">
-            <div class="group-heading">${
-              gs.groupNames[gi] ?? `Ryhmä ${gi + 1}`
-            }</div>
-            ${groupPlayerIds
-              .map((pid) => {
+    const groupSets = s.groupSets ?? [];
+
+    const groupSetsHtml = groupSets.map((gs) => `
+      <div class="groupset">
+        <div class="groupset-label">${gs.label}</div>
+        <div class="groupset-chips">
+          ${gs.playerIds.map((groupPlayerIds, gi) => `
+            <div class="group-chip">
+              <div class="group-chip-name">${gs.groupNames[gi] ?? `Ryhmä ${gi + 1}`}</div>
+              <div class="group-chip-players">${groupPlayerIds.map((pid) => {
                 const player = players.find((p) => p.id === pid);
                 if (!player) return "";
                 const color = gs.playerColors?.[pid];
                 const uncertain = (s.uncertainPlayerIds ?? []).includes(pid);
-                return `<div class="group-player${
-                  color ? ` color-${color}` : ""
-                }">${player.name}${uncertain ? ' <span class="uncertain">?</span>' : ""}</div>`;
-              })
-              .join("")}
-          </div>
-        `
-          )
-          .join("")}
+                return `<div class="group-chip-player${color ? ` color-${color}` : ""}">${player.name}${uncertain ? ' <span class="uncertain">?</span>' : ""}</div>`;
+              }).join("")}</div>
+            </div>
+          `).join("")}
+        </div>
       </div>
-    </div>
-  `
-      )
-      .join("");
+    `).join("");
+
+    const startTime = s.startTime ? ` · klo ${s.startTime}` : "";
 
     const html = `<!DOCTYPE html><html><head><title>${s.title}</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 780px; margin: 0 auto; color: #111827; background: #f9fafb; }
-    .header { background: #15803d; color: #fff; padding: 24px 32px 20px; }
-    .header h1 { font-size: 22px; font-weight: 700; margin: 0 0 6px; letter-spacing: -0.3px; }
-    .meta { font-size: 13px; color: #bbf7d0; display: flex; gap: 16px; flex-wrap: wrap; }
-    .content { padding: 24px 32px 32px; }
-    .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #16a34a; margin: 24px 0 10px; }
-    .exercise { background: #fff; border: 1px solid #e5e7eb; border-left: 3px solid #16a34a; border-radius: 8px; padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 16px; align-items: flex-start; }
+
+    /* ── Header ── */
+    .header { background: #15803d; color: #fff; padding: 16px 24px 14px; display: flex; flex-direction: column; gap: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .header-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; }
+    .header-left { flex: 1; min-width: 0; }
+    .header-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+    .header-meta { font-size: 11px; color: #bbf7d0; display: flex; gap: 10px; flex-wrap: wrap; }
+    .header-notes { font-size: 11px; color: rgba(255,255,255,0.8); background: rgba(0,0,0,0.15); border-radius: 5px; padding: 5px 8px; line-height: 1.4; flex-shrink: 0; max-width: 280px; }
+    .header-notes-label { font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #86efac; margin-bottom: 2px; }
+
+    /* ── Group sets full-width row ── */
+    .groups-row { border-top: 1px solid rgba(255,255,255,0.18); padding-top: 10px; display: flex; gap: 16px; }
+    .groupset { flex: 1; min-width: 0; }
+    .groupset-label { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #86efac; margin-bottom: 5px; }
+    .groupset-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+    .group-chip-players { display: grid; grid-template-rows: repeat(5, auto); grid-auto-flow: column; grid-auto-columns: max-content; column-gap: 8px; row-gap: 0; }
+    .group-chip { background: rgba(255,255,255,0.13); border: 1px solid rgba(255,255,255,0.22); border-radius: 5px; padding: 4px 7px; min-width: 68px; }
+    .group-chip-name { font-size: 9px; font-weight: 700; color: #bbf7d0; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px; }
+    .group-chip-player { font-size: 10px; color: #fff; line-height: 1.45; padding: 0 2px; border-radius: 3px; }
+    .uncertain { color: #fde68a; font-weight: 700; }
+    .color-red { background: rgba(220,38,38,0.35); }
+    .color-yellow { background: rgba(234,179,8,0.35); }
+    .color-green { background: rgba(22,163,74,0.4); }
+    .color-blue { background: rgba(59,130,246,0.35); }
+
+    /* ── Content ── */
+    .content { padding: 16px 24px 24px; }
+    .section-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #16a34a; margin: 0 0 8px; }
+
+    /* ── Exercise list ── */
+    .ex-list { border: 1px solid #e5e7eb; border-radius: 7px; overflow: hidden; }
+    .exercise { display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; border-bottom: 1px solid #f0f0ee; break-inside: avoid; page-break-inside: avoid; }
+    .exercise:last-child { border-bottom: none; }
+    .ex-num { width: 16px; min-width: 16px; font-size: 11px; font-weight: 700; color: #9ca3af; padding-top: 1px; text-align: right; flex-shrink: 0; }
     .ex-content { flex: 1; min-width: 0; }
-    .ex-drill-image { width: 360px; min-width: 360px; height: auto; border-radius: 6px; flex-shrink: 0; display: block; }
-    .ex-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; gap: 8px; }
-    .ex-name { font-weight: 700; font-size: 15px; color: #111827; }
-    .ex-cat { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
-    .ex-desc { color: #4b5563; font-size: 13px; margin-top: 4px; line-height: 1.5; }
-    .ex-goals { color: #15803d; font-size: 12px; margin-top: 6px; }
-    .ex-dur { color: #6b7280; font-size: 12px; margin-top: 6px; }
-    .groups-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .group-set { margin-bottom: 0; break-inside: avoid; }
-    .group-set h3 { font-size: 13px; font-weight: 600; color: #374151; margin-bottom: 8px; }
-    .groups-row { display: flex; gap: 10px; flex-wrap: wrap; }
-    .group-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 8px; padding: 10px 14px; min-width: 100px; flex: 1; }
-    .group-heading { font-weight: 700; font-size: 12px; margin-bottom: 6px; color: #16a34a; text-transform: uppercase; letter-spacing: 0.04em; }
-    .group-player { font-size: 12px; color: #374151; padding: 2px 4px; border-radius: 4px; margin-bottom: 2px; }
-    .uncertain { color: #d97706; font-weight: 700; }
-    .color-red { background: #fee2e2; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .color-yellow { background: #fef9c3; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .color-green { background: #dcfce7; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .color-blue { background: #dbeafe; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .notes { background: #fff; border: 1px solid #e5e7eb; border-left: 3px solid #22c55e; padding: 12px 16px; border-radius: 8px; margin-top: 16px; color: #4b5563; font-size: 13px; line-height: 1.5; }
-    @media print { body { background: #fff; } @page { margin: 16mm; } }
+    .ex-header { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; flex-wrap: wrap; }
+    .ex-name { font-size: 12.5px; font-weight: 700; color: #111827; }
+    .ex-cat { font-size: 9.5px; font-weight: 600; color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .ex-dur { font-size: 10.5px; color: #9ca3af; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+    .ex-desc { color: #6b7280; font-size: 11.5px; line-height: 1.45; }
+    .ex-goals { color: #15803d; font-size: 11px; margin-top: 3px; }
+    .ex-drill-image { width: 200px; min-width: 200px; height: auto; border-radius: 5px; border: 1px solid #e5e7eb; display: block; flex-shrink: 0; }
+
+    @media print {
+      body { background: #fff; }
+      @page { margin: 16mm; }
+      .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .exercise { break-inside: avoid; page-break-inside: avoid; }
+      .section-title { break-after: avoid; page-break-after: avoid; }
+    }
   </style></head><body>
+
   <div class="header">
-    <h1>⚽ ${s.title}</h1>
-    <div class="meta">
-      <span>📅 ${format(new Date(s.date), "dd.MM.yyyy")}</span>
-      <span>⏱ ${s.duration} min</span>
-      ${settings.coachName ? `<span>👤 ${settings.coachName}</span>` : ""}
-      ${settings.teamName ? `<span>${settings.teamName}</span>` : ""}
+    <div class="header-top">
+      <div class="header-left">
+        <div class="header-title">⚽ ${s.title}</div>
+        <div class="header-meta">
+          <span>📅 ${format(new Date(s.date), "dd.MM.yyyy")}${startTime}</span>
+          <span>⏱ ${s.duration} min</span>
+          ${settings.coachName ? `<span>👤 ${settings.coachName}</span>` : ""}
+          ${settings.teamName ? `<span>${settings.teamName}</span>` : ""}
+        </div>
+      </div>
+      ${s.notes ? `
+        <div class="header-notes">
+          <div class="header-notes-label">📝 Muistiinpanot</div>
+          ${s.notes}
+        </div>` : ""}
+    </div>
+    ${groupSets.length > 0 ? `<div class="groups-row">${groupSetsHtml}</div>` : ""}
+  </div>
+
+  <div class="content">
+    ${s.exercises.length > 0 ? `<div class="section-title">Harjoitteet</div>` : ""}
+    <div class="ex-list">
+      ${s.exercises.map((e, i) => `
+        <div class="exercise">
+          <div class="ex-num">${i + 1}</div>
+          <div class="ex-content">
+            <div class="ex-header">
+              <span class="ex-name">${e.name}</span>
+              <span class="ex-cat">${CAT_LABELS[e.category]}</span>
+              <span class="ex-dur">⏱ ${e.duration} min${e.playerCount ? ` · 👥 ${e.playerCount}` : ""}</span>
+            </div>
+            ${e.description ? `<div class="ex-desc">${e.description}</div>` : ""}
+            ${e.goals ? `<div class="ex-goals">🎯 ${e.goals}</div>` : ""}
+          </div>
+          ${e.canvasDataUrl ? `<img src="${e.canvasDataUrl}" class="ex-drill-image" />` : ""}
+        </div>`).join("")}
     </div>
   </div>
-  <div class="content">
 
-  ${
-    s.exercises.length > 0 ? `<div class="section-title">Harjoitteet</div>` : ""
-  }
-  ${s.exercises
-    .map(
-      (e, i) => `
-    <div class="exercise">
-      <div class="ex-content">
-        <div class="ex-header">
-          <span class="ex-name">${i + 1}. ${e.name}</span>
-          <span class="ex-cat">${CAT_LABELS[e.category]}</span>
-        </div>
-        <div class="ex-desc">${e.description}</div>
-        ${e.goals ? `<div class="ex-goals">🎯 ${e.goals}</div>` : ""}
-        <div class="ex-dur">⏱ ${e.duration} min${
-        e.playerCount ? ` · 👥 ${e.playerCount} pelaajaa` : ""
-      }</div>
-      </div>
-      ${
-        e.canvasDataUrl
-          ? `<img src="${e.canvasDataUrl}" class="ex-drill-image" />`
-          : ""
-      }
-    </div>`
-    )
-    .join("")}
-
-  ${
-    (s.groupSets ?? []).length > 0
-      ? `<div class="section-title">Ryhmät &amp; Joukkueet</div><div class="groups-grid">${groupSetsHtml}</div>`
-      : ""
-  }
-
-  ${s.notes ? `<div class="notes">📝 ${s.notes}</div>` : ""}
-  </div>
-  <script>window.print();</script>
   </body></html>`;
 
-    win.document.write(html);
-    win.document.close();
+    try {
+      const win = window.open('', '_blank');
+      if (!win) throw new Error('Popup blocked');
+      win.document.open();
+      win.document.write(html);
+      win.document.close();
+      await new Promise<void>((resolve) => {
+        const check = () => win.document.readyState === 'complete' ? resolve() : setTimeout(check, 30);
+        check();
+      });
+      // Wait for images (drill canvases) to render
+      await new Promise((r) => setTimeout(r, 300));
+      win.focus();
+      win.print();
+      win.close();
+    } catch (err) {
+      console.error('PDF-lataus epäonnistui:', err);
+    } finally {
+      setPdfLoadingId(null);
+    }
   }
 
   return (
@@ -452,70 +493,6 @@ export function Training() {
       {/* ── LIBRARY VIEW ── */}
       {view === "library" && (
         <div className="space-y-4">
-          {/* Saved tactical drills */}
-          {drills.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-3">
-                Tallennetut harjoitteet
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3 mb-2">
-                {drills.map((d) => (
-                  <div
-                    key={d.id}
-                    className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:border-brand-300 hover:shadow-sm transition-all"
-                  >
-                    <button
-                      className="w-full text-left"
-                      onClick={() => setPreviewDrill(d)}
-                    >
-                      {(d.imageUrl || d.canvasDataUrl) ? (
-                        <img
-                          src={d.imageUrl || d.canvasDataUrl}
-                          alt={d.name}
-                          className="w-full aspect-video object-cover"
-                        />
-                      ) : (
-                        <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
-                          <BookOpen size={24} className="text-gray-300 dark:text-slate-600" />
-                        </div>
-                      )}
-                      <div className="px-2 pt-2 pb-1">
-                        <p className="font-medium text-sm text-gray-900 dark:text-slate-100 truncate">
-                          {d.name}
-                        </p>
-                      </div>
-                    </button>
-                    <div className="flex items-center justify-between px-2 pb-2">
-                      <span className="text-xs text-gray-400 dark:text-slate-500">
-                        {d.duration} min
-                      </span>
-                      <div className="flex gap-1">
-                        <button
-                          onClick={() =>
-                            navigate(`/training/drills/${d.id}/edit`)
-                          }
-                          className="p-1 text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors"
-                          title="Muokkaa harjoitetta"
-                        >
-                          <Pencil size={12} />
-                        </button>
-                        <button
-                          onClick={() =>
-                            deleteDrill(d.id).catch(console.error)
-                          }
-                          className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors"
-                          title="Poista harjoite"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Category filter */}
           <div className="flex flex-wrap gap-2">
             {CATEGORIES.map((c) => (
@@ -545,7 +522,7 @@ export function Training() {
             >
               kaikki tagit
             </button>
-            {EXERCISE_TAGS.map((tag) => (
+            {allTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setFilterTag(filterTag === tag ? "all" : tag)}
@@ -569,73 +546,83 @@ export function Training() {
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredLibrary.map((e) => (
-              <div
-                key={e.id}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-2 hover:border-brand-300 hover:shadow-sm transition-all"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm">
-                        {e.name}
-                      </p>
-                      {customIds.has(e.id) && (
-                        <span className="text-xs bg-brand-100 text-brand-700 px-1.5 py-0.5 rounded font-medium">
-                          Oma
-                        </span>
+            {filteredLibrary.map((item) => {
+              if (item.kind === 'drill') {
+                const d = item.data;
+                return (
+                  <div
+                    key={d.id}
+                    className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden hover:border-brand-300 hover:shadow-sm transition-all flex flex-col"
+                  >
+                    <button className="w-full text-left" onClick={() => setPreviewDrill(d)}>
+                      {(d.imageUrl || d.canvasDataUrl) ? (
+                        <img src={d.imageUrl || d.canvasDataUrl} alt={d.name} className="w-full aspect-video object-cover" />
+                      ) : (
+                        <div className="w-full aspect-video bg-gray-100 dark:bg-slate-700 flex items-center justify-center">
+                          <BookOpen size={24} className="text-gray-300 dark:text-slate-600" />
+                        </div>
                       )}
-                    </div>
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      <Badge
-                        label={CAT_LABELS[e.category]}
-                        color={CAT_COLORS[e.category]}
-                      />
-                      {(e.tags ?? []).map((tag) => (
-                        <span
-                          key={tag}
-                          className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 px-2 py-0.5 rounded-full"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                    </button>
+                    <div className="p-3 flex flex-col gap-1.5 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm truncate">{d.name}</p>
+                          {(d.tags ?? []).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {(d.tags ?? []).map((tag) => (
+                                <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 px-2 py-0.5 rounded-full">{tag}</span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex gap-1 shrink-0">
+                          <button onClick={() => navigate(`/training/drills/${d.id}/edit`)} className="p-1 text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors" title="Muokkaa"><Pencil size={12} /></button>
+                          <button onClick={() => deleteDrill(d.id).catch(console.error)} className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors" title="Poista"><Trash2 size={12} /></button>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between mt-auto">
+                        <span className="text-xs text-gray-400 dark:text-slate-500">⏱ {d.duration} min</span>
+                        <span className="text-xs bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded font-medium">Oma</span>
+                      </div>
                     </div>
                   </div>
-                  {customIds.has(e.id) && (
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        onClick={() => openEditEx(e)}
-                        className="text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors p-0.5"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => deleteExercise(e.id)}
-                        className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-0.5"
-                      >
-                        <Trash2 size={13} />
-                      </button>
+                );
+              }
+
+              const e = item.data;
+              return (
+                <div
+                  key={e.id}
+                  className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-2 hover:border-brand-300 hover:shadow-sm transition-all"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm">{e.name}</p>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
+                        {(e.tags ?? []).map((tag) => (
+                          <span key={tag} className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-300 px-2 py-0.5 rounded-full">{tag}</span>
+                        ))}
+                      </div>
                     </div>
-                  )}
+                    {item.isCustom && (
+                      <div className="flex gap-1 shrink-0">
+                        <button onClick={() => openEditEx(e)} className="text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors p-0.5"><Pencil size={13} /></button>
+                        <button onClick={() => deleteExercise(e.id)} className="text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors p-0.5"><Trash2 size={13} /></button>
+                      </div>
+                    )}
+                  </div>
+                  {e.description && <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2">{e.description}</p>}
+                  {e.goals && <p className="text-xs text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/20 rounded px-2 py-1.5">🎯 {e.goals}</p>}
+                  <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-50 dark:border-slate-700">
+                    <span className="text-xs text-gray-400 dark:text-slate-500">⏱ {e.duration} min{e.playerCount ? ` · 👥 ${e.playerCount} pelaajaa` : ""}</span>
+                    {item.isCustom && (
+                      <span className="text-xs bg-brand-100 dark:bg-brand-900/40 text-brand-700 dark:text-brand-300 px-1.5 py-0.5 rounded font-medium">Oma</span>
+                    )}
+                  </div>
                 </div>
-                {e.description && (
-                  <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2">
-                    {e.description}
-                  </p>
-                )}
-                {e.goals && (
-                  <p className="text-xs text-brand-700 bg-brand-50 rounded px-2 py-1.5">
-                    🎯 {e.goals}
-                  </p>
-                )}
-                <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-50 dark:border-slate-700">
-                  <span className="text-xs text-gray-400 dark:text-slate-500">
-                    ⏱ {e.duration} min
-                    {e.playerCount ? ` · 👥 ${e.playerCount} pelaajaa` : ""}
-                  </span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
@@ -681,9 +668,10 @@ export function Training() {
                       variant="secondary"
                       size="sm"
                       icon={<FileText size={13} />}
-                      onClick={() => printSession(s)}
+                      onClick={() => downloadSessionPDF(s)}
+                      disabled={!!pdfLoadingId}
                     >
-                      Lataa PDF
+                      {pdfLoadingId === s.id ? 'Ladataan...' : 'Lataa PDF'}
                     </Button>
                     <Button
                       variant="secondary"
@@ -721,10 +709,10 @@ export function Training() {
                           key={e.id}
                           className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-gray-100 dark:border-slate-700 flex items-start gap-3"
                         >
-                          <span className="text-gray-300 dark:text-slate-600 text-sm font-bold w-5 mt-0.5">
+                          <span className="text-gray-300 dark:text-slate-600 text-sm font-bold w-5 mt-0.5 shrink-0">
                             {i + 1}.
                           </span>
-                          <div className="flex-1">
+                          <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium text-sm text-gray-900 dark:text-white">
                                 {e.name}
@@ -746,6 +734,13 @@ export function Training() {
                               </p>
                             )}
                           </div>
+                          {e.canvasDataUrl && (
+                            <img
+                              src={e.canvasDataUrl}
+                              alt={e.name}
+                              className="w-36 h-24 object-contain rounded-md border border-gray-100 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 shrink-0"
+                            />
+                          )}
                         </div>
                       ))}
                       {(s.groupSets ?? []).length > 0 && (

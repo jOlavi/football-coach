@@ -59,12 +59,23 @@ export function DataLoader() {
           getUserSubcollection<Record<string, unknown>>(uid, sport, 'drills'),
         ]);
 
+      const drills = rawDrills.map(deserializeDrill);
+      const drillMap = new Map(drills.map((d) => [d.id, d]));
+      const sessions = rawSessions.map(deserializeSession).map((s) => ({
+        ...s,
+        exercises: s.exercises.map((ex) => {
+          if (!ex.drillId) return ex;
+          const drill = drillMap.get(ex.drillId);
+          return drill ? { ...ex, canvasDataUrl: drill.canvasDataUrl } : ex;
+        }),
+      }));
+
       usePlayerStore.getState().setAll(players);
       useMatchStore.getState().setAll(matches);
       useTeamStore.getState().setAll(ownTeams);
-      useTrainingStore.getState().setAll(rawSessions.map(deserializeSession));
+      useTrainingStore.getState().setAll(sessions);
       useExerciseStore.getState().setAll(exercises);
-      useDrillStore.getState().setAll(rawDrills.map(deserializeDrill));
+      useDrillStore.getState().setAll(drills);
     }
 
     loadData().catch(console.error);

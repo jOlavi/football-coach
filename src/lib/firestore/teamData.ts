@@ -15,7 +15,8 @@ export function writeTeamDoc(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   data: { id: string } & Record<string, any>
 ): void {
-  setDoc(doc(db, 'teams', teamId, sub, data.id), data).catch(console.error);
+  const clean = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+  setDoc(doc(db, 'teams', teamId, sub, data.id), clean).catch(console.error);
 }
 
 export function removeTeamDoc(
