@@ -49,6 +49,7 @@ export interface Match {
   teamLevel?: TeamLevel;
   lineup: string[];
   availability: PlayerAvailability[];
+  absentPlayerIds?: string[];
   lineupConfirmed?: boolean;
   result?: MatchResult;
   ownTeamId?: string;
@@ -144,6 +145,7 @@ export interface Drill {
   goals: string;
   duration: number;
   repetitions: number;
+  category?: ExerciseCategory;
   fieldType: FieldType;
   canvasDataUrl: string;
   shapes: Shape[];
@@ -156,6 +158,8 @@ export interface OwnTeam {
   id: string;
   name: string;
   color?: string;
+  format?: TeamFormat;
+  minLineupSize?: number;
   createdAt: string;
 }
 
