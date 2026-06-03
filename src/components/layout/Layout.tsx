@@ -1,5 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, Leaf } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { DataLoader } from '../data/DataLoader';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -49,11 +49,11 @@ export function Layout() {
               <span>Kausi 2026</span>
             </div>
             <button
-              onClick={() => updateSettings({ theme: theme === 'dark' ? 'light' : 'dark' })}
+              onClick={() => updateSettings({ theme: theme === 'light' ? 'dark' : theme === 'dark' ? 'forest' : 'light' })}
               className="p-2 rounded-lg text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
-              title={theme === 'dark' ? 'Vaihda vaaleatilaan' : 'Vaihda tummatilaan'}
+              title={theme === 'light' ? 'Vaihda tummaksi' : theme === 'dark' ? 'Vaihda metsäteemaan' : 'Vaihda vaaleatilaan'}
             >
-              {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+              {theme === 'light' ? <Moon size={17} /> : theme === 'dark' ? <Leaf size={17} /> : <Sun size={17} />}
             </button>
           </div>
         </header>

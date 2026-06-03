@@ -16,7 +16,6 @@ export function MatchBreak() {
   const currentPeriod = session?.currentPeriod ?? 1;
   const isFinalBreak = currentPeriod >= (config?.periods ?? 2);
 
-  // Build lineup for next period — start from previous period's on-field players
   const [selectedIds, setSelectedIds] = useState<string[]>(
     () => session?.players.filter((p) => p.onField).map((p) => p.id) ?? []
   );
@@ -99,7 +98,6 @@ export function MatchBreak() {
 
     setResult(matchId!, { goalsFor, goalsAgainst, scorers: [] });
 
-    // Save player minutes as notes or extended data — update match with final player times
     updateMatch(matchId!, {
       lineupConfirmed: true,
       notes: [
@@ -116,34 +114,35 @@ export function MatchBreak() {
 
   if (!session || !config) {
     return (
-      <div className="min-h-screen bg-amber-50 flex items-center justify-center">
-        <p className="text-gray-400">Ei aktiivista ottelua.</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)' }}>
+        <p style={{ color: 'var(--match-text-muted)' }}>Ei aktiivista ottelua.</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-amber-50 dark:bg-slate-900 pb-10">
+    <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--match-dark)' }}>
       {/* Header */}
-      <div className="bg-amber-600 text-white px-4 pt-10 pb-5">
+      <div className="px-4 pt-10 pb-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center gap-2 text-amber-100 mb-3 min-h-[48px]"
+          className="flex items-center gap-2 mb-3 min-h-[48px]"
+          style={{ color: 'var(--match-text-muted)' }}
         >
           <ArrowLeft size={18} />
           <span className="text-sm">Takaisin</span>
         </button>
         <div className="flex items-start justify-between">
           <div>
-            <h1 className="text-xl font-bold">Erätauko</h1>
-            <p className="text-amber-100 text-sm mt-0.5">
+            <h1 className="text-xl font-bold" style={{ color: 'var(--match-text-primary)' }}>Erätauko</h1>
+            <p className="text-sm mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
               {currentPeriod}. erä päättyi
               {!isFinalBreak && ` · Seuraava: ${currentPeriod + 1}. erä`}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-amber-100 text-xs mb-1">Tulos</p>
-            <p className="text-3xl font-bold tabular-nums">
+            <p className="text-xs mb-1" style={{ color: 'var(--match-text-muted)' }}>Tulos</p>
+            <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--match-text-primary)' }}>
               {session.scores.home} – {session.scores.away}
             </p>
           </div>
@@ -154,7 +153,7 @@ export function MatchBreak() {
 
         {/* Player time summary */}
         <section>
-          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">
+          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>
             Pelaajaminuutit — {currentPeriod}. erä
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -163,18 +162,19 @@ export function MatchBreak() {
               return (
                 <div
                   key={p.id}
-                  className={`rounded-xl border p-3 ${
+                  className="rounded-xl border p-3"
+                  style={
                     wasOnField
-                      ? 'border-amber-300 bg-amber-100/70 dark:bg-amber-900/20 dark:border-amber-700'
-                      : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-60'
-                  }`}
+                      ? { borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }
+                      : { borderColor: '#334155', backgroundColor: 'var(--match-dark-mid)', opacity: 0.6 }
+                  }
                 >
-                  <p className="text-xs text-gray-400 dark:text-slate-500 font-bold">#{p.number}</p>
-                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 leading-tight mt-0.5">{p.name}</p>
+                  <p className="text-xs font-bold" style={{ color: wasOnField ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>#{p.number}</p>
+                  <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: wasOnField ? 'var(--match-field-name)' : 'var(--match-text-muted)' }}>{p.name}</p>
                   {p.isGoalkeeper && (
                     <span className="inline-block text-xs font-bold bg-yellow-400 text-yellow-900 rounded px-1 mt-0.5">MV</span>
                   )}
-                  <p className="text-xs font-mono text-amber-700 dark:text-amber-400 mt-1">
+                  <p className="text-xs font-mono mt-1" style={{ color: 'var(--match-active)' }}>
                     {fmtTime(p.accumulatedSeconds)}
                   </p>
                 </div>
@@ -187,10 +187,10 @@ export function MatchBreak() {
         {!isFinalBreak && (
           <section>
             <div className="flex items-center justify-between mb-2">
-              <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">
+              <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--match-text-muted)' }}>
                 Kokoonpano — {currentPeriod + 1}. erä
               </p>
-              <span className={`text-sm font-bold ${selectedIds.length === required ? 'text-brand-600' : 'text-amber-500'}`}>
+              <span className="text-sm font-bold" style={{ color: selectedIds.length === required ? 'var(--match-active)' : '#f59e0b' }}>
                 {selectedIds.length} / {required} valittu
               </span>
             </div>
@@ -201,20 +201,21 @@ export function MatchBreak() {
                 return (
                   <div
                     key={p.id}
-                    className={`relative rounded-xl border-2 p-3 transition-all ${
+                    className="relative rounded-xl border-2 p-3 transition-all"
+                    style={
                       onField
                         ? isGK
-                          ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-                          : 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                        : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-50'
-                    }`}
+                          ? { borderColor: '#facc15', backgroundColor: '#fefce8' }
+                          : { borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }
+                        : { borderColor: '#334155', backgroundColor: 'var(--match-dark-mid)' }
+                    }
                   >
                     <button onClick={() => togglePlayer(p.id)} className="w-full text-left min-h-[48px]">
-                      <p className="text-xs font-bold text-gray-400 dark:text-slate-500">#{p.number}</p>
-                      <p className={`text-sm font-semibold leading-tight mt-0.5 ${onField ? 'text-gray-900 dark:text-slate-100' : 'text-gray-500 dark:text-slate-400'}`}>
+                      <p className="text-xs font-bold" style={{ color: onField ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>#{p.number}</p>
+                      <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: onField ? 'var(--match-field-name)' : 'var(--match-text-muted)' }}>
                         {p.name}
                       </p>
-                      <p className="text-xs font-mono text-gray-400 dark:text-slate-500 mt-0.5">
+                      <p className="text-xs font-mono mt-0.5" style={{ color: onField ? 'var(--match-active)' : 'var(--match-text-muted)' }}>
                         {fmtTime(p.accumulatedSeconds)}
                       </p>
                       {isGK && (
@@ -224,11 +225,12 @@ export function MatchBreak() {
                     {onField && (
                       <button
                         onClick={() => toggleGK(p.id)}
-                        className={`absolute top-1.5 right-1.5 w-7 h-7 rounded-full text-xs font-bold border-2 transition-colors ${
+                        className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full text-xs font-bold border-2 transition-colors"
+                        style={
                           isGK
-                            ? 'bg-yellow-400 border-yellow-400 text-yellow-900'
-                            : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-500 text-gray-400'
-                        }`}
+                            ? { backgroundColor: '#facc15', borderColor: '#facc15', color: '#713f12' }
+                            : { backgroundColor: 'var(--match-dark)', borderColor: '#334155', color: 'var(--match-text-muted)' }
+                        }
                       >
                         MV
                       </button>
@@ -241,23 +243,25 @@ export function MatchBreak() {
         )}
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
-            <AlertCircle size={16} className="text-red-500 shrink-0" />
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="flex items-center gap-2 rounded-xl px-4 py-3 border" style={{ backgroundColor: 'var(--match-out-bg)', borderColor: 'var(--match-out-border)' }}>
+            <AlertCircle size={16} style={{ color: 'var(--match-out-border)' }} className="shrink-0" />
+            <p className="text-sm" style={{ color: 'var(--match-out-text)' }}>{error}</p>
           </div>
         )}
 
         {isFinalBreak ? (
           <button
             onClick={handleFinish}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px]"
+            className="w-full text-white font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px]"
+            style={{ backgroundColor: 'var(--match-out-border)' }}
           >
             Lopeta ottelu ja tallenna tulos
           </button>
         ) : (
           <button
             onClick={handleNext}
-            className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px]"
+            className="w-full text-white font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px]"
+            style={{ backgroundColor: 'var(--match-active)' }}
           >
             <Check size={20} />
             Aloita {currentPeriod + 1}. erä

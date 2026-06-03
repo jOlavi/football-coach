@@ -28,6 +28,7 @@ function ThemeSync() {
   const theme = useSettingsStore((s) => s.settings.theme);
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark');
+    document.documentElement.classList.toggle('forest', theme === 'forest');
   }, [theme]);
   return null;
 }

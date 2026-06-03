@@ -46,7 +46,6 @@ export function MatchSetup() {
     setFormat(f);
     setSelectedIds((prev) => {
       if (prev.length <= newRequired) return prev;
-      // deselect from bench first (those not matching goalkeeper)
       const trimmed = prev.slice(0, newRequired);
       return trimmed;
     });
@@ -61,7 +60,7 @@ export function MatchSetup() {
         if (goalkeeperIdState === id) setGoalkeeperIdState(null);
         return prev.filter((x) => x !== id);
       }
-      if (prev.length >= required) return prev; // already full
+      if (prev.length >= required) return prev;
       return [...prev, id];
     });
     setError('');
@@ -115,25 +114,26 @@ export function MatchSetup() {
 
   if (!match && !matchId) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex items-center justify-center">
-        <p className="text-gray-400">Ottelua ei löydy</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)' }}>
+        <p style={{ color: 'var(--match-text-muted)' }}>Ottelua ei löydy</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 pb-10">
+    <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--match-dark)' }}>
       {/* Header */}
-      <div className="bg-brand-700 text-white px-4 pt-12 pb-6">
+      <div className="px-4 pt-12 pb-6" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
         <button
           onClick={() => navigate('/matches')}
-          className="flex items-center gap-2 text-green-200 mb-4 min-h-[48px]"
+          className="flex items-center gap-2 mb-4 min-h-[48px]"
+          style={{ color: 'var(--match-text-muted)' }}
         >
           <ArrowLeft size={20} />
           <span className="text-sm">Takaisin</span>
         </button>
-        <h1 className="text-xl font-bold">Pelinhallinta – asetukset</h1>
-        <p className="text-green-200 text-sm mt-1">
+        <h1 className="text-xl font-bold" style={{ color: 'var(--match-text-primary)' }}>Pelinhallinta – asetukset</h1>
+        <p className="text-sm mt-1" style={{ color: 'var(--match-text-muted)' }}>
           vs {match?.opponent ?? '—'} · {match?.venue ?? ''}
         </p>
       </div>
@@ -141,17 +141,18 @@ export function MatchSetup() {
       <div className="px-4 py-5 space-y-6 max-w-lg mx-auto">
         {/* Format */}
         <section>
-          <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">Formaatti</p>
+          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Formaatti</p>
           <div className="flex gap-2">
             {FORMAT_OPTIONS.map((f) => (
               <button
                 key={f}
                 onClick={() => handleFormatChange(f)}
-                className={`flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors min-h-[48px] ${
+                className="flex-1 py-3 rounded-xl text-sm font-bold border-2 transition-colors min-h-[48px]"
+                style={
                   format === f
-                    ? 'bg-brand-600 text-white border-brand-600'
-                    : 'bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 border-gray-200 dark:border-slate-600'
-                }`}
+                    ? { backgroundColor: 'var(--match-active)', borderColor: 'var(--match-active)', color: '#fff' }
+                    : { backgroundColor: 'var(--match-dark-mid)', borderColor: '#334155', color: 'var(--match-text-muted)' }
+                }
               >
                 {f}
               </button>
@@ -162,19 +163,19 @@ export function MatchSetup() {
         {/* Periods */}
         <section className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">Eriä</p>
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3">
-              <button onClick={() => setPeriods((p) => Math.max(1, p - 1))} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xl font-bold flex items-center justify-center">−</button>
-              <span className="flex-1 text-center text-xl font-bold text-gray-900 dark:text-slate-100">{periods}</span>
-              <button onClick={() => setPeriods((p) => Math.min(4, p + 1))} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xl font-bold flex items-center justify-center">+</button>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Eriä</p>
+            <div className="flex items-center gap-3 rounded-xl border p-3" style={{ backgroundColor: 'var(--match-dark-mid)', borderColor: '#334155' }}>
+              <button onClick={() => setPeriods((p) => Math.max(1, p - 1))} className="w-10 h-10 rounded-lg text-xl font-bold flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-muted)' }}>−</button>
+              <span className="flex-1 text-center text-xl font-bold" style={{ color: 'var(--match-text-primary)' }}>{periods}</span>
+              <button onClick={() => setPeriods((p) => Math.min(4, p + 1))} className="w-10 h-10 rounded-lg text-xl font-bold flex items-center justify-center" style={{ backgroundColor: 'var(--match-active)', color: '#fff' }}>+</button>
             </div>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide mb-2">Erän pituus (min)</p>
-            <div className="flex items-center gap-3 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-3">
-              <button onClick={() => setPeriodLength((p) => Math.max(5, p - 5))} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xl font-bold flex items-center justify-center">−</button>
-              <span className="flex-1 text-center text-xl font-bold text-gray-900 dark:text-slate-100">{periodLength}</span>
-              <button onClick={() => setPeriodLength((p) => Math.min(60, p + 5))} className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-slate-200 text-xl font-bold flex items-center justify-center">+</button>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Erän pituus (min)</p>
+            <div className="flex items-center gap-3 rounded-xl border p-3" style={{ backgroundColor: 'var(--match-dark-mid)', borderColor: '#334155' }}>
+              <button onClick={() => setPeriodLength((p) => Math.max(5, p - 5))} className="w-10 h-10 rounded-lg text-xl font-bold flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-muted)' }}>−</button>
+              <span className="flex-1 text-center text-xl font-bold" style={{ color: 'var(--match-text-primary)' }}>{periodLength}</span>
+              <button onClick={() => setPeriodLength((p) => Math.min(60, p + 5))} className="w-10 h-10 rounded-lg text-xl font-bold flex items-center justify-center" style={{ backgroundColor: 'var(--match-active)', color: '#fff' }}>+</button>
             </div>
           </div>
         </section>
@@ -182,12 +183,12 @@ export function MatchSetup() {
         {/* Player selection */}
         <section>
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Aloituskokoonpano</p>
-            <span className={`text-sm font-bold ${selectedIds.length === required ? 'text-brand-600' : 'text-amber-500'}`}>
+            <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'var(--match-text-muted)' }}>Aloituskokoonpano</p>
+            <span className="text-sm font-bold" style={{ color: selectedIds.length === required ? 'var(--match-active)' : '#f59e0b' }}>
               {selectedIds.length} / {required} valittu
             </span>
           </div>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">Valitse {required} kenttäpelaajaa · merkitse MV-napilla maalivahti</p>
+          <p className="text-xs mb-3" style={{ color: 'var(--match-text-muted)' }}>Valitse {required} kenttäpelaajaa · merkitse MV-napilla maalivahti</p>
           <div className="grid grid-cols-3 gap-2">
             {pool.map((p) => {
               const onField = selectedIds.includes(p.id);
@@ -195,20 +196,21 @@ export function MatchSetup() {
               return (
                 <div
                   key={p.id}
-                  className={`relative rounded-xl border-2 p-3 transition-all ${
+                  className="relative rounded-xl border-2 p-3 transition-all"
+                  style={
                     onField
                       ? isGK
-                        ? 'border-yellow-400 bg-yellow-50 dark:bg-yellow-900/20'
-                        : 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                      : 'border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 opacity-50'
-                  }`}
+                        ? { borderColor: '#facc15', backgroundColor: '#fefce8' }
+                        : { borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }
+                      : { borderColor: '#334155', backgroundColor: 'var(--match-dark-mid)' }
+                  }
                 >
                   <button
                     onClick={() => togglePlayer(p.id)}
                     className="w-full text-left min-h-[48px]"
                   >
-                    <p className="text-xs font-bold text-gray-400 dark:text-slate-500">#{p.number}</p>
-                    <p className={`text-sm font-semibold leading-tight mt-0.5 ${onField ? 'text-gray-900 dark:text-slate-100' : 'text-gray-500 dark:text-slate-400'}`}>
+                    <p className="text-xs font-bold" style={{ color: onField ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>#{p.number}</p>
+                    <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: onField ? 'var(--match-field-name)' : 'var(--match-text-muted)' }}>
                       {p.name}
                     </p>
                     {isGK && (
@@ -218,11 +220,12 @@ export function MatchSetup() {
                   {onField && (
                     <button
                       onClick={() => toggleGK(p.id)}
-                      className={`absolute top-1.5 right-1.5 w-7 h-7 rounded-full text-xs font-bold border-2 transition-colors ${
+                      className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full text-xs font-bold border-2 transition-colors"
+                      style={
                         isGK
-                          ? 'bg-yellow-400 border-yellow-400 text-yellow-900'
-                          : 'bg-white dark:bg-slate-700 border-gray-300 dark:border-slate-500 text-gray-400 dark:text-slate-500'
-                      }`}
+                          ? { backgroundColor: '#facc15', borderColor: '#facc15', color: '#713f12' }
+                          : { backgroundColor: 'var(--match-dark)', borderColor: '#334155', color: 'var(--match-text-muted)' }
+                      }
                       title="Merkitse maalivahdiksi"
                     >
                       MV
@@ -235,15 +238,16 @@ export function MatchSetup() {
         </section>
 
         {error && (
-          <div className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3">
-            <AlertCircle size={16} className="text-red-500 shrink-0" />
-            <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+          <div className="flex items-center gap-2 rounded-xl px-4 py-3 border" style={{ backgroundColor: 'var(--match-out-bg)', borderColor: 'var(--match-out-border)' }}>
+            <AlertCircle size={16} style={{ color: 'var(--match-out-border)' }} className="shrink-0" />
+            <p className="text-sm" style={{ color: 'var(--match-out-text)' }}>{error}</p>
           </div>
         )}
 
         <button
           onClick={handleStart}
-          className="w-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px]"
+          className="w-full font-bold text-base rounded-xl py-4 flex items-center justify-center gap-2 transition-colors min-h-[56px] text-white"
+          style={{ backgroundColor: 'var(--match-active)' }}
         >
           <Check size={20} />
           Aloita ottelu
