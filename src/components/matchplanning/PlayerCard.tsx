@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import type { Player, AvailabilityStatus, Position } from '../../types';
+import type { Player, Position } from '../../types';
 import { Badge } from '../ui/Badge';
 
 const POSITION_LABELS: Record<Position, string> = {
@@ -9,43 +9,14 @@ const POSITION_LABELS: Record<Position, string> = {
   forward: 'HY',
 };
 
-const AVAILABILITY_NEXT: Record<AvailabilityStatus, AvailabilityStatus> = {
-  available: 'unavailable',
-  unavailable: 'available',
-  unknown: 'available', // first click on unset player marks them available
-};
-
-const BORDER_COLOR: Record<AvailabilityStatus, string> = {
-  available: 'border-l-green-400',
-  unavailable: 'border-l-red-400',
-  unknown: 'border-l-transparent',
-};
-
-const DOT_COLOR: Record<AvailabilityStatus, string> = {
-  available: 'bg-green-500',
-  unavailable: 'bg-red-500',
-  unknown: 'bg-gray-200 dark:bg-slate-600',
-};
-
 interface PlayerCardProps {
   player: Player;
   gamesPlayedPct: number;
-  availability: AvailabilityStatus;
-  onAvailabilityChange: (status: AvailabilityStatus) => void;
   onTransfer: () => void;
   conflictOpponent?: string;
 }
 
-export function PlayerCard({
-  player,
-  gamesPlayedPct,
-  availability,
-  onAvailabilityChange,
-  onTransfer,
-  conflictOpponent,
-}: PlayerCardProps) {
-  const unavailable = availability === 'unavailable';
-
+export function PlayerCard({ player, gamesPlayedPct, onTransfer, conflictOpponent }: PlayerCardProps) {
   function handleDragStart(e: React.DragEvent<HTMLDivElement>) {
     e.dataTransfer.setData('text/plain', player.id);
   }
@@ -53,35 +24,21 @@ export function PlayerCard({
   return (
     <div
       role="button"
-      tabIndex={unavailable ? -1 : 0}
-      aria-label={`${player.name}${unavailable ? ' (ei saatavilla)' : ' - klikkaa vaihtaaksesi joukkueeseen'}`}
-      draggable={!unavailable}
+      tabIndex={0}
+      aria-label={`${player.name} - klikkaa vaihtaaksesi joukkueeseen`}
+      draggable
       onDragStart={handleDragStart}
-      onClick={unavailable ? undefined : onTransfer}
+      onClick={onTransfer}
       onKeyDown={(e) => {
-        if (!unavailable && (e.key === 'Enter' || e.key === ' ')) {
+        if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault();
           onTransfer();
         }
       }}
-      className={`border-l-4 ${BORDER_COLOR[availability]} bg-white dark:bg-slate-800 rounded-lg p-3 shadow-sm select-none transition-all ${
-        unavailable
-          ? 'opacity-40 cursor-not-allowed'
-          : 'cursor-pointer hover:shadow-md active:scale-95'
-      }`}
+      className="border-l-4 border-l-transparent bg-white dark:bg-slate-800 rounded-lg p-3 shadow-sm select-none transition-all cursor-pointer hover:shadow-md active:scale-95"
     >
       <div className="flex items-start justify-between mb-1">
         <span className="text-xl font-bold text-gray-700 dark:text-slate-200">#{player.number}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onAvailabilityChange(AVAILABILITY_NEXT[availability]);
-          }}
-          aria-label="Vaihda saatavuus"
-          className={`w-7 h-7 rounded-full mt-1 flex-shrink-0 flex items-center justify-center ${DOT_COLOR[availability]}`}
-        >
-          <span className="w-2 h-2 rounded-full bg-white" />
-        </button>
       </div>
       <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 leading-tight truncate">{player.name}</p>
       {conflictOpponent && (

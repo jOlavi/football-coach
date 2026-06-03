@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, Plus } from 'lucide-react';
 import type { Exercise, ExerciseCategory } from '../../types';
 import { Badge } from '../ui/Badge';
 
@@ -37,13 +37,22 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40" onClick={onClose}>
+    // Mobile: bottom sheet (items-end, no padding-x). Desktop: centered dialog (items-center, padding).
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center sm:p-4 bg-black/40"
+      onClick={onClose}
+    >
       <div
-        className="relative bg-white dark:bg-slate-800 rounded-2xl w-full max-w-3xl max-h-[80vh] flex flex-col shadow-2xl overflow-hidden"
+        className="relative bg-white dark:bg-slate-800 w-full sm:max-w-3xl sm:mx-auto h-[85vh] sm:h-[80vh] flex flex-col shadow-2xl overflow-hidden rounded-t-2xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Drag handle — mobile only */}
+        <div className="flex justify-center pt-3 pb-1 sm:hidden shrink-0">
+          <div className="w-10 h-1 rounded-full bg-gray-300 dark:bg-slate-600" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-gray-100 dark:border-slate-700 shrink-0">
+        <div className="flex items-center justify-between px-4 pt-3 sm:pt-4 pb-3 border-b border-gray-100 dark:border-slate-700 shrink-0">
           <span className="text-base font-bold text-gray-900 dark:text-slate-100">Harjoitekirjasto</span>
           <button onClick={onClose} className="text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300">
             <X size={20} />
@@ -68,68 +77,76 @@ export function LibraryModal({ items, onAdd, onClose }: Props) {
         </div>
 
         {/* Grid */}
-        <div className="overflow-y-auto flex-1 px-4 py-3">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="overflow-y-auto flex-1 px-4 py-3 bg-gray-50 dark:bg-slate-900">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
             {filtered.map((e) => (
               <div
                 key={e.id}
                 onClick={() => setDetail(e)}
-                className="border border-gray-200 dark:border-slate-600 rounded-xl overflow-hidden cursor-pointer flex flex-col hover:border-gray-400 dark:hover:border-slate-400 transition-colors"
+                className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-2 hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer"
               >
-                {/* Thumbnail */}
-                <div
-                  className="bg-gray-50 dark:bg-slate-900 w-full flex items-center justify-center border-b border-gray-100 dark:border-slate-700"
-                  style={{ aspectRatio: '3/4' }}
-                >
-                  {e.canvasDataUrl ? (
-                    <img
-                      src={e.canvasDataUrl}
-                      alt={e.name}
-                      className="w-full h-full object-contain p-1"
-                    />
-                  ) : (
-                    <span className="text-3xl">{CAT_EMOJIS[e.category]}</span>
-                  )}
-                </div>
-                {/* Info */}
-                <div className="p-1.5">
-                  <div className="text-xs font-semibold text-gray-900 dark:text-slate-100 mb-1 line-clamp-2 leading-tight">{e.name}</div>
-                  <div className="flex items-center gap-1 flex-wrap">
-                    <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
-                    <span className="text-xs text-gray-400 dark:text-slate-500">{e.duration} min</span>
+                {e.canvasDataUrl && (
+                  <div className="w-full aspect-video rounded-lg overflow-hidden bg-gray-50 dark:bg-slate-900 border border-gray-100 dark:border-slate-700">
+                    <img src={e.canvasDataUrl} alt={e.name} className="w-full h-full object-contain" />
                   </div>
+                )}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm">{e.name}</p>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      <Badge label={CAT_LABELS[e.category]} color={CAT_COLORS[e.category]} />
+                    </div>
+                  </div>
+                </div>
+                {e.description && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400 line-clamp-2">{e.description}</p>
+                )}
+                {e.goals && (
+                  <p className="text-xs text-brand-700 bg-brand-50 dark:bg-slate-700 dark:text-brand-300 rounded px-2 py-1.5">🎯 {e.goals}</p>
+                )}
+                <div className="flex items-center justify-between mt-auto pt-1 border-t border-gray-50 dark:border-slate-700">
+                  <span className="text-xs text-gray-400 dark:text-slate-500">⏱ {e.duration} min{e.playerCount ? ` · 👥 ${e.playerCount} pelaajaa` : ''}</span>
+                  <button
+                    onClick={(ev) => { ev.stopPropagation(); onAdd(e); onClose(); }}
+                    className="flex items-center justify-center w-7 h-7 rounded-full bg-green-500 hover:bg-green-600 text-white transition-colors"
+                    title="Lisää suunnitelmaan"
+                  >
+                    <Plus size={14} />
+                  </button>
                 </div>
               </div>
             ))}
             {filtered.length === 0 && (
-              <div className="col-span-4 py-8 text-center text-sm text-gray-400 dark:text-slate-500">
+              <div className="col-span-full py-8 text-center text-sm text-gray-400 dark:text-slate-500">
                 Ei harjoitteita tässä kategoriassa
               </div>
             )}
           </div>
         </div>
 
-        {/* Detail popup — overlays the modal content */}
+        {/* Detail popup — fixed overlay so it's not clipped by parent overflow-hidden */}
         {detail && (
           <div
-            className="absolute inset-0 bg-black/40 flex items-center justify-center p-6 rounded-2xl"
+            className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4 sm:p-6"
             onClick={() => setDetail(null)}
           >
             <div
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden"
+              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm flex flex-col overflow-y-auto max-h-[90vh]"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Image */}
-              <div className="bg-gray-50 dark:bg-slate-900 w-full flex items-center justify-center" style={{ aspectRatio: '16/9' }}>
-                {detail.canvasDataUrl ? (
-                  <img
-                    src={detail.canvasDataUrl}
-                    alt={detail.name}
-                    className="w-full h-full object-contain p-2"
-                  />
-                ) : (
-                  <span className="text-6xl">{CAT_EMOJIS[detail.category]}</span>
-                )}
+              <div className="p-3">
+                <div className="bg-gray-50 dark:bg-slate-900 w-full flex items-center justify-center rounded-xl overflow-hidden" style={{ aspectRatio: '16/9' }}>
+                  {detail.canvasDataUrl ? (
+                    <img
+                      src={detail.canvasDataUrl}
+                      alt={detail.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <span className="text-6xl">{CAT_EMOJIS[detail.category]}</span>
+                  )}
+                </div>
               </div>
               {/* Detail body */}
               <div className="p-4 flex flex-col gap-2">

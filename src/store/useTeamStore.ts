@@ -7,7 +7,7 @@ interface TeamStore {
   teams: OwnTeam[];
   setAll: (teams: OwnTeam[]) => void;
   addTeam: (team: OwnTeam) => void;
-  updateTeam: (id: string, patch: Partial<Pick<OwnTeam, 'name' | 'color'>>) => void;
+  updateTeam: (id: string, patch: Partial<Pick<OwnTeam, 'name' | 'color' | 'format' | 'minLineupSize'>>) => void;
   deleteTeam: (id: string) => void;
 }
 
