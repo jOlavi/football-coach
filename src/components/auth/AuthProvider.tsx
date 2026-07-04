@@ -14,13 +14,11 @@ interface AccessConfig {
 async function checkAccess(email: string): Promise<boolean> {
   try {
     const snap = await getDoc(doc(db, 'appConfig', 'access'));
-    if (!snap.exists()) { console.log('[access] no config doc, allowing'); return true; }
+    if (!snap.exists()) return true;
     const config = snap.data() as AccessConfig;
-    console.log('[access] email:', email, 'config:', config);
     if (config.openRegistration) return true;
     return (config.allowedEmails ?? []).includes(email);
-  } catch (e) {
-    console.error('[access] error:', e);
+  } catch {
     return true;
   }
 }
