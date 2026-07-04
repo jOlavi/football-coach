@@ -326,7 +326,7 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolea
       for (let i = 0; i < 5; i++) {
         const a = (i * 2 * Math.PI / 5) - Math.PI / 2;
         const px = cx + pr * Math.cos(a), py = cy + pr * Math.sin(a);
-        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
       }
       ctx.closePath(); ctx.fillStyle = '#1a1a1a'; ctx.fill();
       // 5 edge patches (one per pentagon vertex direction)

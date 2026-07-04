@@ -168,7 +168,6 @@ export function Settings() {
 
   const [teamNameDraft, setTeamNameDraft] = useState(activeTeam?.name ?? '');
   const [teamNameSaving, setTeamNameSaving] = useState(false);
-  const [teamNameSaved, setTeamNameSaved] = useState(false);
   const teamNameDirty = teamNameDraft.trim() !== (activeTeam?.name ?? '');
 
   async function handleSaveTeamName() {
@@ -178,9 +177,7 @@ export function Settings() {
       await updateFirebaseTeamName(activeTeamId, teamNameDraft.trim());
       const { teams: authTeams, setTeams } = useAuthStore.getState();
       setTeams(authTeams.map((t) => t.id === activeTeamId ? { ...t, name: teamNameDraft.trim() } : t));
-      setTeamNameSaved(true);
       setEditingTeamName(false);
-      setTimeout(() => setTeamNameSaved(false), 2500);
     } finally {
       setTeamNameSaving(false);
     }
@@ -269,9 +266,9 @@ export function Settings() {
       try {
         const json = JSON.parse(ev.target?.result as string);
         if (!json.players || !json.matches) throw new Error('Virheellinen tiedostorakenne');
-        json.players?.forEach((p: any) => addPlayer(p));
-        json.matches?.forEach((m: any) => addMatch(m));
-        json.sessions?.forEach((s: any) => addSession(s));
+        json.players?.forEach((p: unknown) => addPlayer(p as Parameters<typeof addPlayer>[0]));
+        json.matches?.forEach((m: unknown) => addMatch(m as Parameters<typeof addMatch>[0]));
+        json.sessions?.forEach((s: unknown) => addSession(s as Parameters<typeof addSession>[0]));
         setImportOk(true);
         setTimeout(() => setImportOk(false), 3000);
       } catch {

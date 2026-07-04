@@ -445,7 +445,7 @@ export function Training() {
     // Inject auto-print script so the tab triggers the print dialog on load
     const printHtml = html.replace(
       '</body>',
-      `<script>window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 400); });<\/script></body>`
+      `<script>window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 400); });${'<'}/script></body>`
     );
 
     try {

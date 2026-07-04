@@ -58,13 +58,13 @@ export async function runMigration(
     writes.push(setDoc(doc(db, 'teams', teamId, 'ownTeams', t.id), t))
   );
   snap.sessions.forEach((s) =>
-    writes.push(setDoc(doc(db, 'teams', teamId, 'trainingSessions', s.id), serializeSession(s) as any))
+    writes.push(setDoc(doc(db, 'teams', teamId, 'trainingSessions', s.id), serializeSession(s) as Record<string, unknown>))
   );
   snap.exercises.forEach((e) =>
     writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'exercises', e.id), e))
   );
   snap.drills.forEach((d) =>
-    writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'drills', d.id), serializeDrill(d) as any))
+    writes.push(setDoc(doc(db, 'users', userId, 'sports', sport, 'drills', d.id), serializeDrill(d) as Record<string, unknown>))
   );
 
   await Promise.all(writes);

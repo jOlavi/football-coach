@@ -29,7 +29,7 @@ export const useCommDraftStore = create<CommDraftStore>()((set) => ({
     const { activeTeamId } = useAppStore.getState();
     if (activeTeamId) removeTeamDoc(activeTeamId, 'commDrafts', key);
     set((s) => {
-      const { [key]: _, ...rest } = s.drafts;
+      const { [key]: _deleted, ...rest } = s.drafts;
       return { drafts: rest };
     });
   },

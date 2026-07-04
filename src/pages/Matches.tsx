@@ -415,7 +415,7 @@ export function Matches() {
             const isCollapsed = !expandedTournaments.has(t.id);
             const toggleCollapse = () => setExpandedTournaments((prev) => {
               const next = new Set(prev);
-              next.has(t.id) ? next.delete(t.id) : next.add(t.id);
+              if (next.has(t.id)) next.delete(t.id); else next.add(t.id);
               return next;
             });
             const tournamentOwnTeam = t.ownTeamId ? teams.find((team) => team.id === t.ownTeamId) : null;

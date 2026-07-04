@@ -2,7 +2,7 @@ import type { TrainingSession, Drill } from '../../types';
 
 export function serializeSession(s: TrainingSession): { id: string } & Record<string, unknown> {
   const { groupSets, ...rest } = s;
-  const exercises = s.exercises?.map(({ canvasDataUrl: _canvas, ...ex }) => {
+  const exercises = s.exercises?.map(({ canvasDataUrl: _omitted, ...ex }) => {
     const clean: Record<string, unknown> = { ...ex };
     Object.keys(clean).forEach((k) => clean[k] === undefined && delete clean[k]);
     return clean;

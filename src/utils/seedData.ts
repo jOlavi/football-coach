@@ -3,7 +3,7 @@ import type { Player, Match, OwnTeam } from "../types";
 // If seedData.local.ts exists (gitignored), it overrides these example defaults.
 // Create src/utils/seedData.local.ts with your own SEED_PLAYERS / SEED_TEAMS / SEED_MATCHES.
 const localMods = import.meta.glob('./seedData.local.ts', { eager: true });
-const local = localMods['./seedData.local.ts'] as any;
+const local = localMods['./seedData.local.ts'] as { SEED_PLAYERS?: Player[]; SEED_TEAMS?: OwnTeam[]; SEED_MATCHES?: Match[] } | undefined;
 
 const examplePlayers: Player[] = [
   { id: "example-p1", name: "Pelaaja 1", number: 1, position: "midfielder", skillLevel: 1, dateOfBirth: "", parentName: "", parentContact: "", active: true, createdAt: new Date().toISOString() },
