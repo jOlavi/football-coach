@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { StopCircle } from 'lucide-react';
 import { useMatchTimer } from '../hooks/useMatchTimer';
-import type { MatchSessionState, MatchPlayer, SubEntry } from '../types/matchSession';
+import type { MatchSessionState, MatchPlayer, SubEntry, GoalEntry } from '../types/matchSession';
 import { fmtTime, FORMAT_SIZES } from '../types/matchSession';
 
 export function MatchLive() {
@@ -16,10 +16,14 @@ export function MatchLive() {
   const [players, setPlayers] = useState<MatchPlayer[]>(session?.players ?? []);
   const [scores, setScores] = useState(session?.scores ?? { home: 0, away: 0 });
   const [substitutions, setSubstitutions] = useState<SubEntry[]>(session?.substitutions ?? []);
+  const [goalEntries, setGoalEntries] = useState<GoalEntry[]>(session?.goalEntries ?? []);
+  const [opponentGoalTimes, setOpponentGoalTimes] = useState<number[]>(session?.opponentGoalTimes ?? []);
   const [periodHistory] = useState(session?.periodHistory ?? []);
   const [showPeriodEnd, setShowPeriodEnd] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const [pendingSubId, setPendingSubId] = useState<string | null>(null);
+  const [pendingOutIds, setPendingOutIds] = useState<string[]>([]);
+  const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
+  const [selectingNewGk, setSelectingNewGk] = useState(false);
 
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -53,6 +57,7 @@ export function MatchLive() {
 
   const periodLength = config?.periodLength ?? 15;
   const initialMatchSeconds = session?.matchSeconds ?? 0;
+  const initialPeriodSeconds = session?.periodSeconds ?? 0;
 
   const handlePeriodEnd = useCallback(() => {
     setIsRunning(false);
@@ -60,7 +65,7 @@ export function MatchLive() {
   }, []);
 
   const { matchSeconds, periodSeconds, resetPeriodClock } = useMatchTimer(
-    isRunning, initialMatchSeconds, periodLength, handlePeriodEnd,
+    isRunning, initialMatchSeconds, initialPeriodSeconds, periodLength, handlePeriodEnd,
   );
   void resetPeriodClock;
 
@@ -85,44 +90,69 @@ export function MatchLive() {
       substitutions,
       periodHistory,
       matchSeconds,
+      periodSeconds,
+      goalEntries,
+      opponentGoalTimes,
     };
     navigate(`/matches/${matchId}/break`, { state: updatedSession });
   }
 
+  const isHome = config?.location === 'home';
+
   function scoreChange(team: 'home' | 'away', delta: number) {
-    setScores((s) => ({ ...s, [team]: Math.max(0, s[team] + delta) }));
+    const isOurGoal = (isHome && team === 'home') || (!isHome && team === 'away');
+    if (delta < 0) {
+      setScores((s) => ({ ...s, [team]: Math.max(0, s[team] + delta) }));
+      if (!isOurGoal) setOpponentGoalTimes((prev) => prev.slice(0, -1));
+      return;
+    }
+    if (config?.trackScorers && isOurGoal) {
+      setPendingScorerTeam(team);
+    } else {
+      setScores((s) => ({ ...s, [team]: s[team] + 1 }));
+      if (!isOurGoal) {
+        setOpponentGoalTimes((prev) => [...prev, Math.floor(matchSeconds / 60)]);
+      }
+    }
+  }
+
+  function handleScorerSelected(playerId: string | null) {
+    if (!pendingScorerTeam) return;
+    setScores((s) => ({ ...s, [pendingScorerTeam]: s[pendingScorerTeam] + 1 }));
+    if (playerId) {
+      setGoalEntries((prev) => [
+        ...prev,
+        { playerId, period: currentPeriod, matchMinute: Math.floor(matchSeconds / 60) },
+      ]);
+    }
+    setPendingScorerTeam(null);
   }
 
   function handlePlayerTap(player: MatchPlayer) {
     if (player.onField) {
-      if (pendingSubId) {
+      setPendingOutIds((prev) =>
+        prev.includes(player.id)
+          ? prev.filter((id) => id !== player.id)
+          : [...prev, player.id]
+      );
+    } else {
+      if (pendingOutIds.length > 0) {
+        const outId = pendingOutIds[0];
         const minute = Math.floor(matchSeconds / 60);
         setSubstitutions((s) => [
           ...s,
-          { outId: player.id, inId: pendingSubId, matchMinute: minute, period: currentPeriod },
+          { outId, inId: player.id, matchMinute: minute, period: currentPeriod },
         ]);
+        const gkWentOut = players.some((p) => p.id === outId && p.isGoalkeeper);
         setPlayers((prev) =>
           prev.map((p) => {
-            if (p.id === player.id) return { ...p, onField: false };
-            if (p.id === pendingSubId) return { ...p, onField: true };
+            if (p.id === outId) return { ...p, onField: false };
+            if (p.id === player.id) return { ...p, onField: true };
             return p;
           })
         );
-        setPendingSubId(null);
-      } else {
-        setPlayers((prev) =>
-          prev.map((p) => (p.id === player.id ? { ...p, onField: false } : p))
-        );
-      }
-    } else {
-      const onFieldCount = players.filter((p) => p.onField).length;
-      const required = FORMAT_SIZES[config?.format ?? '7v7'];
-      if (onFieldCount < required) {
-        setPlayers((prev) =>
-          prev.map((p) => (p.id === player.id ? { ...p, onField: true } : p))
-        );
-      } else {
-        setPendingSubId((prev) => (prev === player.id ? null : player.id));
+        setPendingOutIds((prev) => prev.slice(1));
+        if (gkWentOut) setSelectingNewGk(true);
       }
     }
   }
@@ -152,45 +182,44 @@ export function MatchLive() {
 
   const onFieldPlayers = players.filter((p) => p.onField).sort((a, b) => a.number - b.number);
   const benchPlayers = players.filter((p) => !p.onField).sort((a, b) => a.number - b.number);
-  const isHome = config.location === 'home';
 
   return (
-    <div className="min-h-screen flex flex-col select-none" style={{ backgroundColor: 'var(--match-dark)' }}>
+    <div className="min-h-dvh flex flex-col select-none" style={{ backgroundColor: 'var(--match-dark)' }}>
 
       {/* Scoreboard header */}
-      <div className="px-4 pt-10 pb-4" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm font-semibold" style={{ color: 'var(--match-text-muted)' }}>
+      <div className="px-3 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+        <div className="relative flex items-center justify-center mb-2 min-h-[36px]">
+          <span className="absolute left-0 text-sm font-semibold" style={{ color: 'var(--match-text-muted)' }}>
             {currentPeriod}. erä / {config.periods}
           </span>
           <span className="text-3xl font-mono font-bold tabular-nums" style={{ color: 'var(--match-text-primary)' }}>
             {fmtTime(periodSeconds)}
           </span>
-          <span className="text-xs font-mono" style={{ color: 'var(--match-text-muted)' }}>
+          <span className="absolute right-0 text-xs font-mono" style={{ color: 'var(--match-text-muted)' }}>
             ⏱ {fmtTime(matchSeconds)}
           </span>
         </div>
 
-        <div className="flex items-center justify-center gap-6">
-          <div className="text-center flex-1">
-            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--match-text-muted)' }}>
-              {isHome ? 'Kotijoukkue' : config.opponent}
+        <div className="flex items-center justify-center gap-2">
+          <div className="text-center flex-1 min-w-0">
+            <p className="text-xs font-semibold mb-1 truncate" style={{ color: 'var(--match-text-muted)' }}>
+              {isHome ? (config.teamName ?? 'Kotijoukkue') : config.opponent}
             </p>
-            <div className="flex items-center justify-center gap-2">
-              <button onClick={() => scoreChange('home', -1)} className="w-10 h-10 rounded-full text-xl flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-primary)' }}>−</button>
-              <span className="text-5xl font-bold w-14 text-center tabular-nums" style={{ color: 'var(--match-text-primary)' }}>{scores.home}</span>
-              <button onClick={() => scoreChange('home', 1)} className="w-10 h-10 rounded-full text-white text-xl flex items-center justify-center" style={{ backgroundColor: 'var(--match-active)' }}>+</button>
+            <div className="flex items-center justify-center gap-1.5">
+              <button onClick={() => scoreChange('home', -1)} className="w-9 h-9 rounded-full text-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-primary)' }}>−</button>
+              <span className="text-4xl font-bold min-w-[2.5rem] text-center tabular-nums" style={{ color: 'var(--match-text-primary)' }}>{scores.home}</span>
+              <button onClick={() => scoreChange('home', 1)} className="w-9 h-9 rounded-full text-white text-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--match-active)' }}>+</button>
             </div>
           </div>
-          <span className="text-2xl font-bold" style={{ color: 'var(--match-text-muted)' }}>–</span>
-          <div className="text-center flex-1">
-            <p className="text-xs font-semibold mb-1" style={{ color: 'var(--match-text-muted)' }}>
-              {isHome ? config.opponent : 'Kotijoukkue'}
+          <span className="text-xl font-bold flex-shrink-0" style={{ color: 'var(--match-text-muted)' }}>–</span>
+          <div className="text-center flex-1 min-w-0">
+            <p className="text-xs font-semibold mb-1 truncate" style={{ color: 'var(--match-text-muted)' }}>
+              {isHome ? config.opponent : (config.teamName ?? 'Kotijoukkue')}
             </p>
-            <div className="flex items-center justify-center gap-2">
-              <button onClick={() => scoreChange('away', -1)} className="w-10 h-10 rounded-full text-xl flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-primary)' }}>−</button>
-              <span className="text-5xl font-bold w-14 text-center tabular-nums" style={{ color: 'var(--match-text-primary)' }}>{scores.away}</span>
-              <button onClick={() => scoreChange('away', 1)} className="w-10 h-10 rounded-full text-white text-xl flex items-center justify-center" style={{ backgroundColor: 'var(--match-active)' }}>+</button>
+            <div className="flex items-center justify-center gap-1.5">
+              <button onClick={() => scoreChange('away', -1)} className="w-9 h-9 rounded-full text-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--match-dark)', color: 'var(--match-text-primary)' }}>−</button>
+              <span className="text-4xl font-bold min-w-[2.5rem] text-center tabular-nums" style={{ color: 'var(--match-text-primary)' }}>{scores.away}</span>
+              <button onClick={() => scoreChange('away', 1)} className="w-9 h-9 rounded-full text-white text-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--match-active)' }}>+</button>
             </div>
           </div>
         </div>
@@ -198,9 +227,11 @@ export function MatchLive() {
 
       {/* Players */}
       <div className="flex-1 px-3 pt-4 pb-24 overflow-y-auto">
-        {pendingSubId && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ backgroundColor: 'var(--match-hint-bg)', borderColor: 'var(--match-hint-border)' }}>
-            <span className="text-xs" style={{ color: 'var(--match-hint-text)' }}>Vaihto vireillä — valitse kenttäpelaaja joka tulee ulos</span>
+        {pendingOutIds.length > 0 && (
+          <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ backgroundColor: 'var(--match-out-bg)', borderColor: 'var(--match-out-border)' }}>
+            <span className="text-xs" style={{ color: 'var(--match-out-text)' }}>
+              {pendingOutIds.length} pelaaja{pendingOutIds.length > 1 ? 'a' : ''} vaihtoon — valitse penkiltä sisään tuleva
+            </span>
           </div>
         )}
 
@@ -209,7 +240,7 @@ export function MatchLive() {
         </p>
         <div className="grid grid-cols-3 gap-2 mb-4">
           {onFieldPlayers.map((p) => (
-            <LivePlayerCard key={p.id} player={p} variant="onField" isPending={false} onTap={() => handlePlayerTap(p)} />
+            <LivePlayerCard key={p.id} player={p} variant="onField" isPendingOut={pendingOutIds.includes(p.id)} pendingOutIndex={pendingOutIds.indexOf(p.id)} goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => handlePlayerTap(p)} />
           ))}
         </div>
 
@@ -220,7 +251,7 @@ export function MatchLive() {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {benchPlayers.map((p) => (
-                <LivePlayerCard key={p.id} player={p} variant="bench" isPending={p.id === pendingSubId} onTap={() => handlePlayerTap(p)} />
+                <LivePlayerCard key={p.id} player={p} variant="bench" isPendingOut={false} pendingOutIndex={-1} goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => handlePlayerTap(p)} />
               ))}
             </div>
           </>
@@ -252,6 +283,69 @@ export function MatchLive() {
         </button>
       </div>
 
+      {/* New goalkeeper picker */}
+      {selectingNewGk && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-t-2xl p-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+            <p className="text-sm font-semibold text-center mb-1" style={{ color: 'var(--match-text-primary)' }}>
+              Valitse uusi maalivahti
+            </p>
+            <p className="text-xs text-center mb-4" style={{ color: 'var(--match-text-muted)' }}>
+              Maalivahti poistui kentältä
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-3 max-h-64 overflow-y-auto">
+              {onFieldPlayers.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => {
+                    setPlayers((prev) =>
+                      prev.map((pl) => ({ ...pl, isGoalkeeper: pl.id === p.id }))
+                    );
+                    setSelectingNewGk(false);
+                  }}
+                  className="rounded-xl p-3 text-left border-2 min-h-[72px]"
+                  style={{ backgroundColor: 'var(--match-field-bg)', borderColor: 'var(--match-field-border)' }}
+                >
+                  <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{p.number}</p>
+                  <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{p.name}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Scorer picker */}
+      {pendingScorerTeam && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-t-2xl p-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+            <p className="text-sm font-semibold text-center mb-4" style={{ color: 'var(--match-text-muted)' }}>
+              Kuka teki maalin?
+            </p>
+            <div className="grid grid-cols-3 gap-2 mb-3 max-h-64 overflow-y-auto">
+              {onFieldPlayers.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => handleScorerSelected(p.id)}
+                  className="rounded-xl p-3 text-left border-2 min-h-[72px]"
+                  style={{ backgroundColor: 'var(--match-field-bg)', borderColor: 'var(--match-field-border)' }}
+                >
+                  <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{p.number}</p>
+                  <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{p.name}</p>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => handleScorerSelected(null)}
+              className="w-full py-3 rounded-xl text-sm font-semibold border"
+              style={{ backgroundColor: 'var(--match-dark)', borderColor: '#334155', color: 'var(--match-text-muted)' }}
+            >
+              Ohita — ei tiedossa
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Period end overlay */}
       {showPeriodEnd && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--match-dark)' }}>
@@ -271,48 +365,67 @@ export function MatchLive() {
 interface LivePlayerCardProps {
   player: MatchPlayer;
   variant: 'onField' | 'bench';
-  isPending: boolean;
+  isPendingOut: boolean;
+  pendingOutIndex: number;
+  goals: number;
   onTap: () => void;
 }
 
-function LivePlayerCard({ player, variant, isPending, onTap }: LivePlayerCardProps) {
+function LivePlayerCard({ player, variant, isPendingOut, pendingOutIndex, goals, onTap }: LivePlayerCardProps) {
   const mins = Math.floor(player.accumulatedSeconds / 60);
   const secs = player.accumulatedSeconds % 60;
   const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
 
   let bgColor: string;
   let borderColor: string;
-  if (isPending) {
+  if (isPendingOut) {
     bgColor = 'var(--match-out-bg)';
     borderColor = 'var(--match-out-border)';
   } else if (variant === 'onField') {
     bgColor = 'var(--match-field-bg)';
-    borderColor = 'var(--match-field-border)';
+    borderColor = player.isGoalkeeper ? '#facc15' : 'var(--match-field-border)';
   } else {
     bgColor = 'transparent';
     borderColor = 'var(--match-border)';
   }
 
+  const textColor = isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-name)' : 'var(--match-text-muted)';
+  const numColor = isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-num)' : 'var(--match-text-muted)';
+
   return (
     <button
       onClick={onTap}
-      className="w-full rounded-xl p-3 text-left transition-all min-h-[80px] border-2"
+      className="w-full rounded-xl p-3 text-left transition-all min-h-[80px] border-2 relative"
       style={{ backgroundColor: bgColor, borderColor }}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold" style={{ color: isPending ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>
+        <span className="text-xs font-bold" style={{ color: numColor }}>
           #{player.number}
         </span>
-        {player.isGoalkeeper && (
-          <span className="text-xs font-bold bg-yellow-400 text-yellow-900 rounded px-1">MV</span>
-        )}
+        <div className="flex items-center gap-1">
+          {isPendingOut && pendingOutIndex >= 0 && (
+            <span className="text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center" style={{ backgroundColor: 'var(--match-out-border)', color: '#fff' }}>
+              {pendingOutIndex + 1}
+            </span>
+          )}
+          {player.isGoalkeeper && (
+            <span className="text-xs font-bold rounded px-1 border" style={{ backgroundColor: 'transparent', borderColor: '#facc15', color: '#facc15' }}>MV</span>
+          )}
+        </div>
       </div>
-      <p className="text-sm font-semibold leading-tight" style={{ color: isPending ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-name)' : 'var(--match-text-muted)' }}>
+      <p className="text-sm font-semibold leading-tight" style={{ color: textColor }}>
         {player.name}
       </p>
-      <p className="text-xs mt-1 font-mono tabular-nums" style={{ color: isPending ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-active)' : 'var(--match-text-muted)' }}>
-        {timeStr}
-      </p>
+      <div className="flex items-center justify-between mt-1">
+        <p className="text-xs font-mono tabular-nums" style={{ color: isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-active)' : 'var(--match-text-muted)' }}>
+          {timeStr}
+        </p>
+        {goals > 0 && (
+          <span className="text-xs font-bold" style={{ color: isPendingOut ? 'var(--match-out-text)' : 'var(--match-active)' }}>
+            ⚽ {goals}
+          </span>
+        )}
+      </div>
     </button>
   );
 }

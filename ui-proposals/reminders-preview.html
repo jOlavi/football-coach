@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Muistutukset — UI Ehdotukset</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f4f4f0;
+    --surface: #ffffff;
+    --border: #e5e5e0;
+    --text: #1a1a18;
+    --muted: #888880;
+    --yellow: #f59e0b;
+    --yellow-bg: #fffbeb;
+    --yellow-border: #fde68a;
+    --yellow-text: #92400e;
+    --blue: #3b82f6;
+    --blue-bg: #eff6ff;
+    --blue-border: #bfdbfe;
+    --blue-text: #1e40af;
+    --green: #10b981;
+    --green-bg: #ecfdf5;
+    --brand: #16a34a;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 32px 24px;
+  }
+
+  /* ── Tab switcher ── */
+  .page-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  .page-header h1 {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+  .tabs {
+    display: inline-flex;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 4px;
+    gap: 2px;
+  }
+  .tab {
+    padding: 8px 20px;
+    border-radius: 9px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tab.active {
+    background: var(--text);
+    color: #fff;
+  }
+
+  /* ── Phone frame ── */
+  .phone-frame {
+    max-width: 390px;
+    margin: 0 auto;
+    background: var(--surface);
+    border-radius: 24px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+  }
+  .phone-topbar {
+    background: #f9f9f7;
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .phone-topbar .page-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .phone-topbar .badge {
+    background: #fee2e2;
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 20px;
+  }
+  .phone-content {
+    padding: 20px;
+    min-height: 500px;
+  }
+
+  /* ── Design panel visibility ── */
+  .design { display: none; }
+  .design.active { display: block; }
+
+  /* ────────────────────────────────
+     DESIGN 1 — Ryhmitelty osioihin
+  ──────────────────────────────── */
+
+  .d1-summary {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    padding: 0 2px;
+  }
+  .d1-summary-item {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .d1-summary-item .num {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .d1-summary-item .label {
+    font-size: 13px;
+    color: var(--muted);
+    font-weight: 400;
+  }
+  .d1-summary .sep {
+    width: 1px;
+    height: 18px;
+    background: var(--border);
+  }
+
+  .d1-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .d1-section-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .d1-section-header.warning { background: var(--yellow-bg); border-bottom-color: var(--yellow-border); }
+  .d1-section-header.info { background: var(--blue-bg); border-bottom-color: var(--blue-border); }
+  .d1-section-header .icon { font-size: 14px; }
+  .d1-section-header .section-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .d1-section-header.warning .section-title { color: var(--yellow-text); }
+  .d1-section-header.info .section-title { color: var(--blue-text); }
+  .d1-section-header .count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+  }
+
+  .d1-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .d1-row:last-child { border-bottom: none; }
+  .d1-row-text { flex: 1; min-width: 0; }
+  .d1-row-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .d1-row-detail {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+    font-family: 'DM Mono', monospace;
+  }
+  .d1-action {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand);
+    white-space: nowrap;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    flex-shrink: 0;
+  }
+
+  /* ────────────────────────────────
+     DESIGN 2 — Ottelukeskeinen
+  ──────────────────────────────── */
+
+  .d2-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .d2-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    background: #fafaf8;
+  }
+  .d2-match-info {}
+  .d2-match-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .d2-match-date {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 1px;
+  }
+  .d2-urgency-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .d2-urgency-dot.warning { background: var(--yellow); }
+  .d2-urgency-dot.info { background: var(--blue); }
+
+  .d2-issues {
+    padding: 10px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .d2-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 20px;
+    width: fit-content;
+  }
+  .d2-chip.warning {
+    background: var(--yellow-bg);
+    color: var(--yellow-text);
+    border: 1px solid var(--yellow-border);
+  }
+  .d2-chip.info {
+    background: var(--blue-bg);
+    color: var(--blue-text);
+    border: 1px solid var(--blue-border);
+  }
+  .d2-card-footer {
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .d2-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--brand);
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .d2-generic-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 12px;
+  }
+  .d2-generic-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 14px 10px;
+    border-bottom: 1px solid var(--border);
+    background: #fafaf8;
+  }
+  .d2-generic-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .d2-generic-body {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+  .d2-generic-footer {
+    padding: 8px 14px 12px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  /* ────────────────────────────────
+     DESIGN 3 — Kompakti lista
+  ──────────────────────────────── */
+
+  .d3-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+    background: #f0f0ec;
+    padding: 4px;
+    border-radius: 10px;
+  }
+  .d3-tab {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 7px;
+    border: none;
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.12s;
+    text-align: center;
+  }
+  .d3-tab.active {
+    background: var(--surface);
+    color: var(--text);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  }
+
+  .d3-list {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .d3-item {
+    display: flex;
+    align-items: center;
+    border-left: 3px solid transparent;
+    padding: 10px 14px 10px 11px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+    transition: background 0.1s;
+  }
+  .d3-item:last-child { border-bottom: none; }
+  .d3-item.warning { border-left-color: var(--yellow); }
+  .d3-item.info { border-left-color: var(--blue); }
+  .d3-item:hover { background: #fafaf8; }
+
+  .d3-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .d3-item.warning .d3-dot { background: var(--yellow); }
+  .d3-item.info .d3-dot { background: var(--blue); }
+
+  .d3-content { flex: 1; min-width: 0; }
+  .d3-title {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .d3-meta {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: 1px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .d3-action {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--brand);
+    white-space: nowrap;
+    flex-shrink: 0;
+    background: none;
+    border: none;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .d3-count-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .d3-count-pill {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .d3-count-pill.warning { background: var(--yellow-bg); color: var(--yellow-text); border: 1px solid var(--yellow-border); }
+  .d3-count-pill.info { background: var(--blue-bg); color: var(--blue-text); border: 1px solid var(--blue-border); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Muistutukset — UI ehdotukset</h1>
+  <div class="tabs">
+    <button class="tab active" onclick="showDesign(1)">1 · Ryhmitelty</button>
+    <button class="tab" onclick="showDesign(2)">2 · Ottelukeskeinen</button>
+    <button class="tab" onclick="showDesign(3)">3 · Kompakti lista</button>
+  </div>
+</div>
+
+<!-- ── DESIGN 1 ── -->
+<div class="design active" id="design-1">
+  <div class="phone-frame">
+    <div class="phone-topbar">
+      <span class="page-title">Muistutukset</span>
+      <span class="badge">2</span>
+    </div>
+    <div class="phone-content">
+
+      <div class="d1-summary">
+        <div class="d1-summary-item">
+          <span class="num" style="color: #f59e0b">2</span>
+          <span class="label">kiireellistä</span>
+        </div>
+        <div class="sep"></div>
+        <div class="d1-summary-item">
+          <span class="num" style="color: #3b82f6">3</span>
+          <span class="label">tiedoksi</span>
+        </div>
+      </div>
+
+      <!-- Kiireelliset -->
+      <div class="d1-section">
+        <div class="d1-section-header warning">
+          <span class="icon">⚠️</span>
+          <span class="section-title">Kiireelliset</span>
+          <span class="count">2</span>
+        </div>
+        <div class="d1-row">
+          <div class="d1-row-text">
+            <div class="d1-row-title">Tulos kirjaamatta: vs JJK</div>
+            <div class="d1-row-detail">Pelattiin 29.5. · 2 pv sitten</div>
+          </div>
+          <button class="d1-action">Kirjaa →</button>
+        </div>
+        <div class="d1-row">
+          <div class="d1-row-text">
+            <div class="d1-row-title">Kokoonpano vajaa: vs Myrsky</div>
+            <div class="d1-row-detail">02.06. · 3/7 pelaajaa · 1 pv</div>
+          </div>
+          <button class="d1-action">Suunnittele →</button>
+        </div>
+      </div>
+
+      <!-- Tiedoksi -->
+      <div class="d1-section">
+        <div class="d1-section-header info">
+          <span class="icon">ℹ️</span>
+          <span class="section-title">Tiedoksi</span>
+          <span class="count">3</span>
+        </div>
+        <div class="d1-row">
+          <div class="d1-row-text">
+            <div class="d1-row-title">Saatavuus asettamatta: vs FCV</div>
+            <div class="d1-row-detail">06.06. · 5 pv päästä</div>
+          </div>
+          <button class="d1-action">Aseta →</button>
+        </div>
+        <div class="d1-row">
+          <div class="d1-row-text">
+            <div class="d1-row-title">Saatavuus asettamatta: vs ViPa</div>
+            <div class="d1-row-detail">07.06. · 6 pv päästä</div>
+          </div>
+          <button class="d1-action">Aseta →</button>
+        </div>
+        <div class="d1-row">
+          <div class="d1-row-text">
+            <div class="d1-row-title">Puuttuvat yhteystiedot</div>
+            <div class="d1-row-detail">Aaro, Nikko, Sisu</div>
+          </div>
+          <button class="d1-action">Päivitä →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── DESIGN 2 ── -->
+<div class="design" id="design-2">
+  <div class="phone-frame">
+    <div class="phone-topbar">
+      <span class="page-title">Muistutukset</span>
+      <span class="badge">2</span>
+    </div>
+    <div class="phone-content">
+
+      <!-- Match card: JJK -->
+      <div class="d2-card">
+        <div class="d2-card-header">
+          <div class="d2-match-info">
+            <div class="d2-match-name">⚽ vs JJK Hurrikaani</div>
+            <div class="d2-match-date">la 29.5.2026 · Kenttä 1</div>
+          </div>
+          <div class="d2-urgency-dot warning"></div>
+        </div>
+        <div class="d2-issues">
+          <span class="d2-chip warning">⚠️ Tulos kirjaamatta · 2 pv sitten</span>
+        </div>
+        <div class="d2-card-footer">
+          <button class="d2-btn">Kirjaa tulos →</button>
+        </div>
+      </div>
+
+      <!-- Match card: Myrsky -->
+      <div class="d2-card">
+        <div class="d2-card-header">
+          <div class="d2-match-info">
+            <div class="d2-match-name">⚽ vs Myrsky</div>
+            <div class="d2-match-date">ti 2.6.2026 · Huomenna</div>
+          </div>
+          <div class="d2-urgency-dot warning"></div>
+        </div>
+        <div class="d2-issues">
+          <span class="d2-chip warning">⚠️ Kokoonpano vajaa · 3/7 pelaajaa</span>
+          <span class="d2-chip info">ℹ️ Saatavuus asettamatta</span>
+        </div>
+        <div class="d2-card-footer">
+          <button class="d2-btn">Suunnittele kokoonpano →</button>
+        </div>
+      </div>
+
+      <!-- Match card: FCV -->
+      <div class="d2-card">
+        <div class="d2-card-header">
+          <div class="d2-match-info">
+            <div class="d2-match-name">⚽ vs FCV/Red</div>
+            <div class="d2-match-date">pe 6.6.2026 · 5 pv päästä</div>
+          </div>
+          <div class="d2-urgency-dot info"></div>
+        </div>
+        <div class="d2-issues">
+          <span class="d2-chip info">ℹ️ Saatavuus asettamatta</span>
+        </div>
+        <div class="d2-card-footer">
+          <button class="d2-btn">Aseta saatavuus →</button>
+        </div>
+      </div>
+
+      <!-- Generic: players -->
+      <div class="d2-generic-card">
+        <div class="d2-generic-header">
+          <span>👥</span>
+          <span class="d2-generic-title">Puuttuvat yhteystiedot</span>
+        </div>
+        <div class="d2-generic-body">Aaro, Nikko, Sisu — ei vanhemman yhteystietoja</div>
+        <div class="d2-generic-footer">
+          <button class="d2-btn">Päivitä pelaajat →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ── DESIGN 3 ── -->
+<div class="design" id="design-3">
+  <div class="phone-frame">
+    <div class="phone-topbar">
+      <span class="page-title">Muistutukset</span>
+      <span class="badge">2</span>
+    </div>
+    <div class="phone-content">
+
+      <div class="d3-count-bar">
+        <span class="d3-count-pill warning">⚠️ 2 kiireellistä</span>
+        <span class="d3-count-pill info">ℹ️ 3 tiedoksi</span>
+      </div>
+
+      <div class="d3-tabs">
+        <button class="d3-tab active" onclick="d3Filter('all', this)">Kaikki</button>
+        <button class="d3-tab" onclick="d3Filter('warning', this)">Kiireelliset</button>
+        <button class="d3-tab" onclick="d3Filter('info', this)">Tiedoksi</button>
+      </div>
+
+      <div class="d3-list" id="d3-list">
+        <div class="d3-item warning" data-type="warning">
+          <div class="d3-dot"></div>
+          <div class="d3-content">
+            <div class="d3-title">Tulos kirjaamatta: vs JJK Hurrikaani</div>
+            <div class="d3-meta">Pelattiin 29.5. · 2 pv sitten</div>
+          </div>
+          <button class="d3-action">Kirjaa →</button>
+        </div>
+        <div class="d3-item warning" data-type="warning">
+          <div class="d3-dot"></div>
+          <div class="d3-content">
+            <div class="d3-title">Kokoonpano vajaa: vs Myrsky</div>
+            <div class="d3-meta">02.06. · 3/7 pelaajaa · 1 pv</div>
+          </div>
+          <button class="d3-action">Suunnittele →</button>
+        </div>
+        <div class="d3-item info" data-type="info">
+          <div class="d3-dot"></div>
+          <div class="d3-content">
+            <div class="d3-title">Saatavuus asettamatta: vs FCV/Red</div>
+            <div class="d3-meta">06.06. · 5 pv päästä</div>
+          </div>
+          <button class="d3-action">Aseta →</button>
+        </div>
+        <div class="d3-item info" data-type="info">
+          <div class="d3-dot"></div>
+          <div class="d3-content">
+            <div class="d3-title">Saatavuus asettamatta: vs ViPa/Musta</div>
+            <div class="d3-meta">07.06. · 6 pv päästä</div>
+          </div>
+          <button class="d3-action">Aseta →</button>
+        </div>
+        <div class="d3-item info" data-type="info">
+          <div class="d3-dot"></div>
+          <div class="d3-content">
+            <div class="d3-title">Puuttuvat yhteystiedot</div>
+            <div class="d3-meta">Aaro, Nikko, Sisu</div>
+          </div>
+          <button class="d3-action">Päivitä →</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function showDesign(n) {
+    document.querySelectorAll('.design').forEach(d => d.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('design-' + n).classList.add('active');
+    document.querySelectorAll('.tab')[n - 1].classList.add('active');
+  }
+
+  function d3Filter(type, btn) {
+    document.querySelectorAll('.d3-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('#d3-list .d3-item').forEach(item => {
+      item.style.display = (type === 'all' || item.dataset.type === type) ? 'flex' : 'none';
+    });
+  }
+</script>
+</body>
+</html>

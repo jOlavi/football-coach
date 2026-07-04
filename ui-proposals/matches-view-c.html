@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ottelut – C: Korttinäkymä</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f3f4f6; display: flex; min-height: 100vh; }
+
+.sidebar { width: 56px; background: #111827; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; padding: 16px 0; gap: 8px; }
+.sb-dot { width: 32px; height: 32px; border-radius: 8px; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.sb-dot.active { background: #16a34a; }
+
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+/* Dark header */
+.page-header { background: #111827; padding: 20px 24px 0; }
+.header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.page-title { font-size: 20px; font-weight: 800; color: #fff; }
+
+.btn-add {
+  display: flex; align-items: center; gap: 6px;
+  background: #16a34a; color: #fff; border: none;
+  padding: 9px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer;
+}
+
+/* Tabs */
+.tabs { display: flex; }
+.tab { padding: 10px 20px; font-size: 13px; font-weight: 600; color: rgba(255,255,255,.4); border-bottom: 2px solid transparent; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.tab.active { color: #fff; border-bottom-color: #16a34a; }
+.tab-n { font-size: 10px; font-weight: 800; background: rgba(255,255,255,.1); color: rgba(255,255,255,.5); padding: 1px 5px; border-radius: 99px; }
+.tab.active .tab-n { background: rgba(22,163,74,.3); color: #86efac; }
+
+/* Filter + teams */
+.controls { background: #fff; border-bottom: 1px solid #e5e7eb; padding: 12px 24px; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.seg { display: flex; background: #f3f4f6; padding: 3px; border-radius: 8px; gap: 2px; }
+.seg-btn { padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; color: #6b7280; border: none; background: none; cursor: pointer; }
+.seg-btn.active { background: #fff; color: #111827; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.teams { display: flex; gap: 6px; }
+.t-pill { padding: 5px 12px; border-radius: 99px; font-size: 12px; font-weight: 600; border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280; cursor: pointer; display: flex; align-items: center; gap: 6px; }
+.t-pill.active { border-color: transparent; color: #fff; }
+.t-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+/* Content */
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Next match hero */
+.next-hero {
+  background: #111827;
+  border-radius: 18px;
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  display: flex; align-items: center; gap: 20px;
+  position: relative; overflow: hidden;
+}
+.next-hero::before {
+  content: ''; position: absolute; right: -20px; top: -20px;
+  width: 140px; height: 140px; border-radius: 50%;
+  background: rgba(22,163,74,.15);
+}
+.next-label { font-size: 10px; font-weight: 800; color: #16a34a; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+.next-title { font-size: 18px; font-weight: 800; color: #fff; margin-bottom: 8px; }
+.next-title .dim { color: rgba(255,255,255,.5); font-weight: 500; }
+.next-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.next-chip { font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px; background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
+.next-chip.green { background: rgba(22,163,74,.2); color: #86efac; }
+.next-date-block { flex-shrink: 0; text-align: center; background: rgba(255,255,255,.06); border-radius: 14px; padding: 12px 16px; }
+.next-date-block .nd-day { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.4); text-transform: uppercase; }
+.next-date-block .nd-num { font-size: 32px; font-weight: 900; color: #fff; line-height: 1; }
+.next-date-block .nd-mon { font-size: 12px; color: rgba(255,255,255,.5); }
+.next-actions { margin-top: 14px; display: flex; gap: 8px; }
+.na-btn { padding: 7px 14px; border-radius: 8px; font-size: 12px; font-weight: 700; border: none; cursor: pointer; }
+.na-primary { background: #16a34a; color: #fff; }
+.na-secondary { background: rgba(255,255,255,.1); color: rgba(255,255,255,.8); }
+
+/* Grid */
+.grid-label { font-size: 11px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+.match-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 10px; }
+
+/* Match card */
+.mcard {
+  background: #fff; border-radius: 14px; border: 1px solid #e5e7eb;
+  overflow: hidden; cursor: pointer; transition: all .15s;
+}
+.mcard:hover { border-color: #d1d5db; box-shadow: 0 4px 12px rgba(0,0,0,.08); transform: translateY(-1px); }
+.mcard.past { opacity: .65; }
+.mcard.past:hover { opacity: 1; transform: none; }
+
+/* Top strip */
+.mcard-top { padding: 12px 14px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #f3f4f6; }
+.mcard-date { text-align: center; }
+.mcd-day { font-size: 9px; font-weight: 700; color: #9ca3af; text-transform: uppercase; }
+.mcd-num { font-size: 22px; font-weight: 900; color: #111827; line-height: 1.1; }
+.mcd-mon { font-size: 10px; color: #9ca3af; }
+.mcard-sep { width: 1px; height: 36px; background: #f3f4f6; }
+.mcard-info { flex: 1; min-width: 0; }
+.mcard-teams { font-size: 13px; font-weight: 700; color: #111827; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mcard-teams .dim { font-weight: 500; color: #6b7280; }
+.mcard-time { font-size: 11px; color: #9ca3af; margin-top: 2px; font-family: monospace; }
+
+/* Bottom strip */
+.mcard-bottom { padding: 8px 14px; display: flex; align-items: center; justify-content: space-between; background: #fafafa; }
+.badges { display: flex; gap: 5px; }
+.badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 99px; }
+.b-home { background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+.b-away { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.b-gray { background: #f3f4f6; color: #6b7280; border: 1px solid #e5e7eb; }
+.mcard-status { font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 7px; }
+.ms-ok { background: #f0fdf4; color: #15803d; }
+.ms-warn { background: #fffbeb; color: #d97706; }
+.ms-bad { background: #fef2f2; color: #dc2626; }
+.ms-score-win { font-size: 16px; font-weight: 900; color: #16a34a; }
+.ms-score-loss { font-size: 16px; font-weight: 900; color: #ef4444; }
+.ms-score-draw { font-size: 16px; font-weight: 900; color: #6b7280; }
+
+.section-gap { margin-top: 24px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="sb-dot" style="margin-bottom:8px;font-size:18px">⚽</div>
+  <div class="sb-dot">🏠</div>
+  <div class="sb-dot">👥</div>
+  <div class="sb-dot active">📅</div>
+  <div class="sb-dot">📋</div>
+  <div class="sb-dot">📊</div>
+  <div class="sb-dot">🏋️</div>
+</div>
+
+<div class="main">
+
+  <div class="page-header">
+    <div class="header-top">
+      <h1 class="page-title">Ottelut</h1>
+      <button class="btn-add">＋ Lisää ottelu</button>
+    </div>
+    <div class="tabs">
+      <div class="tab active">Ottelut <span class="tab-n">8</span></div>
+      <div class="tab">🏆 Turnaukset <span class="tab-n">2</span></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="seg">
+      <button class="seg-btn active">Tulevat</button>
+      <button class="seg-btn">Pelatut</button>
+      <button class="seg-btn">Kaikki</button>
+    </div>
+    <div class="teams">
+      <button class="t-pill">Kaikki</button>
+      <button class="t-pill active" style="background:#ef4444;border-color:#ef4444">
+        <span class="t-dot" style="background:#fff;opacity:.7"></span> Muury Reds
+      </button>
+      <button class="t-pill">
+        <span class="t-dot" style="background:#3b82f6"></span> Muury Blues
+      </button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- Next match hero -->
+    <div class="next-hero">
+      <div style="flex:1;min-width:0;position:relative">
+        <p class="next-label">⚡ Seuraava ottelu</p>
+        <p class="next-title"><strong>Muury Reds</strong> <span class="dim">– FC Viikingit</span></p>
+        <div class="next-meta">
+          <span class="next-chip green">Koti</span>
+          <span class="next-chip">Sarja</span>
+          <span class="next-chip">17:00</span>
+          <span class="next-chip">Muurame Arena</span>
+        </div>
+        <div class="next-actions">
+          <button class="na-btn na-primary">Kirjaa tulos</button>
+          <button class="na-btn na-secondary">Suunnittele kokoonpano</button>
+        </div>
+      </div>
+      <div class="next-date-block">
+        <div class="nd-day">pe</div>
+        <div class="nd-num">4</div>
+        <div class="nd-mon">heinäkuu</div>
+      </div>
+    </div>
+
+    <!-- Upcoming grid -->
+    <p class="grid-label">Tulevat ottelut</p>
+    <div class="match-grid">
+
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="mcard-date">
+            <div class="mcd-day">su</div>
+            <div class="mcd-num">6</div>
+            <div class="mcd-mon">heinä</div>
+          </div>
+          <div class="mcard-sep"></div>
+          <div class="mcard-info">
+            <p class="mcard-teams"><span class="dim">JyPS –</span> <strong>Muury Reds</strong></p>
+            <p class="mcard-time">11:30 · JyPS-kenttä</p>
+          </div>
+        </div>
+        <div class="mcard-bottom">
+          <div class="badges">
+            <span class="badge b-away">Vieras</span>
+            <span class="badge b-gray">Sarja</span>
+          </div>
+          <span class="mcard-status ms-warn">5/9</span>
+        </div>
+      </div>
+
+      <div class="mcard">
+        <div class="mcard-top">
+          <div class="mcard-date">
+            <div class="mcd-day">la</div>
+            <div class="mcd-num">12</div>
+            <div class="mcd-mon">heinä</div>
+          </div>
+          <div class="mcard-sep"></div>
+          <div class="mcard-info">
+            <p class="mcard-teams"><strong>Muury Reds</strong> <span class="dim">– KPV</span></p>
+            <p class="mcard-time">10:00</p>
+          </div>
+        </div>
+        <div class="mcard-bottom">
+          <div class="badges">
+            <span class="badge b-home">Koti</span>
+            <span class="badge b-gray">Harjoitusottelu</span>
+          </div>
+          <span class="mcard-status ms-bad">Ei kokoonpanoa</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Past -->
+    <p class="grid-label section-gap">Pelatut ottelut</p>
+    <div class="match-grid">
+
+      <div class="mcard past">
+        <div class="mcard-top">
+          <div class="mcard-date">
+            <div class="mcd-day">su</div>
+            <div class="mcd-num">29</div>
+            <div class="mcd-mon">kesä</div>
+          </div>
+          <div class="mcard-sep"></div>
+          <div class="mcard-info">
+            <p class="mcard-teams"><strong>Muury Reds</strong> <span class="dim">– Grönviks IF</span></p>
+            <p class="mcard-time">14:00 · Muurame Arena</p>
+          </div>
+        </div>
+        <div class="mcard-bottom">
+          <div class="badges">
+            <span class="badge b-home">Koti</span>
+            <span class="badge b-gray">Sarja</span>
+          </div>
+          <span class="ms-score-win">3–1</span>
+        </div>
+      </div>
+
+      <div class="mcard past">
+        <div class="mcard-top">
+          <div class="mcard-date">
+            <div class="mcd-day">pe</div>
+            <div class="mcd-num">20</div>
+            <div class="mcd-mon">kesä</div>
+          </div>
+          <div class="mcard-sep"></div>
+          <div class="mcard-info">
+            <p class="mcard-teams"><span class="dim">FC Jyväskylä –</span> <strong>Muury Reds</strong></p>
+            <p class="mcard-time">17:30 · JKL-kenttä</p>
+          </div>
+        </div>
+        <div class="mcard-bottom">
+          <div class="badges">
+            <span class="badge b-away">Vieras</span>
+            <span class="badge b-gray">Sarja</span>
+          </div>
+          <span class="ms-score-loss">2–4</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

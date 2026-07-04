@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisää Ottelu – 3 versiota</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #e5e7eb; min-height: 100vh; padding: 32px 16px; }
+
+  .page-title { text-align: center; font-size: 13px; font-weight: 600; color: #6b7280; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 32px; }
+
+  .versions { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 40px; max-width: 1200px; margin: 0 auto; align-items: start; }
+
+  .version-label { font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: .1em; text-transform: uppercase; text-align: center; margin-bottom: 12px; }
+
+  /* ── SHARED BASE ─────────────────────── */
+  input, textarea, select {
+    width: 100%; font-family: inherit; font-size: 15px; outline: none;
+    transition: border-color .15s, box-shadow .15s;
+  }
+  input:focus, textarea:focus { border-color: #4f46e5 !important; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+
+  /* ════════════════════════════════════
+     VERSION A — Kortit
+  ════════════════════════════════════ */
+  .va {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .va-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .va-header h2 { font-size: 17px; font-weight: 700; color: #111827; }
+  .va-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #f3f4f6; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #6b7280;
+  }
+  .va-body { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+
+  .va-card {
+    background: #f9fafb;
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .va-card-title {
+    font-size: 11px; font-weight: 700; color: #9ca3af;
+    letter-spacing: .08em; text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  /* Inputs in A */
+  .va input[type="text"], .va input[type="datetime-local"] {
+    background: #fff; border: 1.5px solid #e5e7eb;
+    border-radius: 10px; padding: 10px 13px; color: #111827;
+    font-size: 15px;
+  }
+  .va .field-label { font-size: 12px; font-weight: 600; color: #374151; margin-bottom: 5px; }
+  .va .field { margin-bottom: 10px; }
+  .va .field:last-child { margin-bottom: 0; }
+  .va .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* Pill toggles in A */
+  .va .pills { display: flex; flex-wrap: wrap; gap: 7px; }
+  .va .pill {
+    padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #374151;
+    cursor: pointer; transition: all .15s;
+  }
+  .va .pill.active { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+  .va .pill.lg { flex: 1; text-align: center; padding: 10px 14px; font-size: 14px; }
+
+  /* Home/away big toggle */
+  .va .location-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .va .loc-btn {
+    padding: 12px; border-radius: 12px; border: 2px solid #e5e7eb;
+    background: #fff; font-size: 14px; font-weight: 700;
+    color: #6b7280; cursor: pointer; text-align: center; transition: all .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+  }
+  .va .loc-btn .loc-icon { font-size: 20px; }
+  .va .loc-btn.active-home { background: #ecfdf5; border-color: #10b981; color: #065f46; }
+  .va .loc-btn.active-away { background: #eff6ff; border-color: #3b82f6; color: #1e40af; }
+
+  /* Footer */
+  .va-footer {
+    padding: 14px 16px 20px;
+    display: flex; gap: 10px;
+  }
+  .va .btn-cancel {
+    flex: 1; padding: 13px; border-radius: 12px;
+    background: #f3f4f6; border: none; font-size: 15px; font-weight: 600;
+    color: #374151; cursor: pointer;
+  }
+  .va .btn-save {
+    flex: 2; padding: 13px; border-radius: 12px;
+    background: #4f46e5; border: none; font-size: 15px; font-weight: 700;
+    color: #fff; cursor: pointer;
+  }
+
+  /* ════════════════════════════════════
+     VERSION B — Pelkistetty
+  ════════════════════════════════════ */
+  .vb {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+  .vb-header {
+    padding: 20px 20px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .vb-header h2 { font-size: 17px; font-weight: 700; color: #111827; }
+  .vb-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: #f3f4f6; border: none; cursor: pointer;
+    font-size: 16px; color: #6b7280;
+  }
+
+  .vb-body { padding: 0 20px 8px; }
+
+  .vb-section { padding: 16px 0; border-bottom: 1px solid #f3f4f6; }
+  .vb-section:last-child { border-bottom: none; }
+  .vb-section-label {
+    font-size: 11px; font-weight: 700; color: #d1d5db;
+    letter-spacing: .1em; text-transform: uppercase; margin-bottom: 14px;
+  }
+
+  .vb input[type="text"], .vb input[type="datetime-local"], .vb textarea {
+    background: transparent; border: none; border-bottom: 1.5px solid #e5e7eb;
+    border-radius: 0; padding: 8px 0; color: #111827; font-size: 15px;
+    margin-bottom: 14px;
+  }
+  .vb input:focus, .vb textarea:focus { border-bottom-color: #4f46e5; box-shadow: none; }
+  .vb .field-label { font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 4px; }
+
+  .vb .row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Pills in B */
+  .vb .pills { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vb .pill {
+    padding: 6px 13px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280;
+    cursor: pointer; transition: all .12s;
+  }
+  .vb .pill.active { background: #111827; border-color: #111827; color: #fff; }
+
+  /* Big location in B */
+  .vb .location-row { display: flex; gap: 8px; margin-bottom: 0; }
+  .vb .loc-tab {
+    flex: 1; padding: 10px; text-align: center;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-size: 14px; font-weight: 600; color: #9ca3af;
+    cursor: pointer; transition: all .12s;
+  }
+  .vb .loc-tab.active { border-color: #111827; color: #111827; background: #f9fafb; }
+
+  .vb-footer {
+    padding: 12px 20px 24px;
+    display: flex; gap: 10px;
+  }
+  .vb .btn-cancel {
+    padding: 13px 20px; border-radius: 12px;
+    background: none; border: 1.5px solid #e5e7eb;
+    font-size: 15px; font-weight: 600; color: #374151; cursor: pointer;
+  }
+  .vb .btn-save {
+    flex: 1; padding: 13px; border-radius: 12px;
+    background: #111827; border: none; font-size: 15px; font-weight: 700;
+    color: #fff; cursor: pointer;
+  }
+
+  /* ════════════════════════════════════
+     VERSION C — Nopea / Kompakti
+  ════════════════════════════════════ */
+  .vc {
+    background: #fff;
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08), 0 8px 24px rgba(0,0,0,.06);
+  }
+
+  /* Hero section */
+  .vc-hero {
+    background: #18181b;
+    padding: 20px 20px 22px;
+  }
+  .vc-hero-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .vc-hero-top h2 { font-size: 17px; font-weight: 700; color: #fff; }
+  .vc-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: rgba(255,255,255,.1); border: none; cursor: pointer;
+    font-size: 16px; color: rgba(255,255,255,.7);
+  }
+
+  .vc-main-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+
+  .vc-field-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,.4); letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+  .vc input[type="datetime-local"], .vc input[type="text"] {
+    background: rgba(255,255,255,.08); border: 1.5px solid rgba(255,255,255,.12);
+    border-radius: 10px; padding: 10px 13px; color: #fff; font-size: 15px;
+    -webkit-appearance: none;
+  }
+  .vc input::placeholder { color: rgba(255,255,255,.3); }
+  .vc input:focus { border-color: rgba(255,255,255,.4); box-shadow: none; }
+
+  /* Big home/away in hero */
+  .vc-location { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vc-loc {
+    padding: 13px 10px; border-radius: 12px;
+    border: 2px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.05);
+    text-align: center; cursor: pointer;
+    transition: all .15s;
+  }
+  .vc-loc .icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .vc-loc .lbl { font-size: 13px; font-weight: 700; color: rgba(255,255,255,.5); }
+  .vc-loc.active-home { background: rgba(16,185,129,.15); border-color: #10b981; }
+  .vc-loc.active-home .lbl { color: #6ee7b7; }
+  .vc-loc.active-away { background: rgba(59,130,246,.15); border-color: #3b82f6; }
+  .vc-loc.active-away .lbl { color: #93c5fd; }
+
+  /* Secondary section */
+  .vc-secondary { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+
+  .vc-row-label { font-size: 11px; font-weight: 700; color: #9ca3af; letter-spacing: .07em; text-transform: uppercase; margin-bottom: 7px; }
+
+  .vc .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .vc .chip {
+    padding: 6px 12px; border-radius: 999px; font-size: 13px; font-weight: 600;
+    background: #f3f4f6; border: 1.5px solid #f3f4f6; color: #6b7280;
+    cursor: pointer; transition: all .12s;
+  }
+  .vc .chip.active { background: #18181b; border-color: #18181b; color: #fff; }
+
+  /* Venue row */
+  .vc-venue { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .vc-secondary input[type="text"] {
+    background: #f9fafb; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: 9px 12px; color: #111827; font-size: 14px;
+  }
+  .vc-secondary input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+
+  .vc-footer {
+    padding: 4px 20px 24px;
+    display: flex; gap: 10px;
+  }
+  .vc .btn-cancel {
+    padding: 13px 20px; border-radius: 12px;
+    background: #f3f4f6; border: none;
+    font-size: 15px; font-weight: 600; color: #374151; cursor: pointer;
+  }
+  .vc .btn-save {
+    flex: 1; padding: 13px; border-radius: 12px;
+    background: #18181b; border: none; font-size: 15px; font-weight: 700;
+    color: #fff; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<p class="page-title">Lisää Ottelu — 3 versiota</p>
+
+<div class="versions">
+
+  <!-- ──────────────────────────────────
+       VERSION A: Kortit
+  ────────────────────────────────── -->
+  <div>
+    <p class="version-label">A — Kortit</p>
+    <div class="va">
+      <div class="va-header">
+        <h2>Lisää ottelu</h2>
+        <button class="va-close">✕</button>
+      </div>
+
+      <div class="va-body">
+
+        <!-- Perustiedot -->
+        <div class="va-card">
+          <p class="va-card-title">Perustiedot</p>
+          <div class="row">
+            <div class="field">
+              <p class="field-label">Päivä ja aika</p>
+              <input type="datetime-local" value="2026-07-05T14:00">
+            </div>
+            <div class="field">
+              <p class="field-label">Vastustaja</p>
+              <input type="text" placeholder="Joukkueen nimi">
+            </div>
+          </div>
+        </div>
+
+        <!-- Sijainti -->
+        <div class="va-card">
+          <p class="va-card-title">Koti vai vieras?</p>
+          <div class="location-toggle">
+            <button class="loc-btn active-home">
+              <span class="loc-icon">🏠</span>
+              Kotipeli
+            </button>
+            <button class="loc-btn">
+              <span class="loc-icon">✈️</span>
+              Vieraspeli
+            </button>
+          </div>
+        </div>
+
+        <!-- Tyyppi & asetukset -->
+        <div class="va-card">
+          <p class="va-card-title">Tyyppi</p>
+          <div class="field">
+            <div class="pills">
+              <button class="pill active">Sarja</button>
+              <button class="pill">Cup</button>
+              <button class="pill">Turnaus</button>
+              <button class="pill">Harjoitusottelu</button>
+            </div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <div class="field">
+              <p class="field-label">Formaatti</p>
+              <div class="pills">
+                <button class="pill">5v5</button>
+                <button class="pill active">7v7</button>
+                <button class="pill">8v8</button>
+                <button class="pill">11v11</button>
+              </div>
+            </div>
+            <div class="field">
+              <p class="field-label">Taso</p>
+              <div class="pills">
+                <button class="pill lg active">Taso 1</button>
+                <button class="pill lg">Taso 2</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Paikka -->
+        <div class="va-card">
+          <p class="va-card-title">Paikka</p>
+          <div class="row">
+            <div class="field">
+              <p class="field-label">Kenttä / Halli</p>
+              <input type="text" placeholder="Kentän nimi">
+            </div>
+            <div class="field">
+              <p class="field-label">Osoite</p>
+              <input type="text" placeholder="Katuosoite">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="va-footer">
+        <button class="btn-cancel">Peruuta</button>
+        <button class="btn-save">Lisää ottelu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────
+       VERSION B: Pelkistetty
+  ────────────────────────────────── -->
+  <div>
+    <p class="version-label">B — Pelkistetty</p>
+    <div class="vb">
+      <div class="vb-header">
+        <h2>Lisää ottelu</h2>
+        <button class="vb-close">✕</button>
+      </div>
+
+      <div class="vb-body">
+
+        <div class="vb-section">
+          <div class="row">
+            <div>
+              <p class="field-label">Päivä ja aika</p>
+              <input type="datetime-local" value="2026-07-05T14:00">
+            </div>
+            <div>
+              <p class="field-label">Vastustaja</p>
+              <input type="text" placeholder="Joukkueen nimi">
+            </div>
+          </div>
+          <div>
+            <p class="field-label">Sijainti</p>
+            <div class="location-row">
+              <button class="loc-tab active">🏠  Koti</button>
+              <button class="loc-tab">✈️  Vieras</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="vb-section">
+          <p class="vb-section-label">Tyyppi</p>
+          <div class="pills">
+            <button class="pill active">Sarja</button>
+            <button class="pill">Cup</button>
+            <button class="pill">Turnaus</button>
+            <button class="pill">Harjoitusottelu</button>
+          </div>
+        </div>
+
+        <div class="vb-section">
+          <p class="vb-section-label">Formaatti & taso</p>
+          <div class="pills" style="margin-bottom:10px">
+            <button class="pill">5v5</button>
+            <button class="pill active">7v7</button>
+            <button class="pill">8v8</button>
+            <button class="pill">11v11</button>
+          </div>
+          <div class="pills">
+            <button class="pill active">Taso 1</button>
+            <button class="pill">Taso 2</button>
+          </div>
+        </div>
+
+        <div class="vb-section">
+          <p class="vb-section-label">Paikka</p>
+          <div class="row">
+            <div>
+              <p class="field-label">Kenttä / Halli</p>
+              <input type="text" placeholder="Kentän nimi">
+            </div>
+            <div>
+              <p class="field-label">Osoite</p>
+              <input type="text" placeholder="Katuosoite">
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="vb-footer">
+        <button class="btn-cancel">Peruuta</button>
+        <button class="btn-save">Lisää ottelu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ──────────────────────────────────
+       VERSION C: Nopea / Kompakti
+  ────────────────────────────────── -->
+  <div>
+    <p class="version-label">C — Nopea</p>
+    <div class="vc">
+
+      <!-- Dark hero: tärkeimmät kentät -->
+      <div class="vc-hero">
+        <div class="vc-hero-top">
+          <h2>Lisää ottelu</h2>
+          <button class="vc-close">✕</button>
+        </div>
+
+        <div class="vc-main-row">
+          <div>
+            <p class="vc-field-label">Päivä ja aika</p>
+            <input type="datetime-local" value="2026-07-05T14:00">
+          </div>
+          <div>
+            <p class="vc-field-label">Vastustaja</p>
+            <input type="text" placeholder="Joukkueen nimi">
+          </div>
+        </div>
+
+        <div>
+          <p class="vc-field-label" style="margin-bottom:8px">Koti vai vieras?</p>
+          <div class="vc-location">
+            <button class="vc-loc active-home">
+              <span class="icon">🏠</span>
+              <span class="lbl">Kotipeli</span>
+            </button>
+            <button class="vc-loc">
+              <span class="icon">✈️</span>
+              <span class="lbl">Vieraspeli</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Light secondary: lisätiedot -->
+      <div class="vc-secondary">
+
+        <div>
+          <p class="vc-row-label">Tyyppi</p>
+          <div class="chip-row">
+            <button class="chip active">Sarja</button>
+            <button class="chip">Cup</button>
+            <button class="chip">Turnaus</button>
+            <button class="chip">Harjoitusottelu</button>
+          </div>
+        </div>
+
+        <div>
+          <p class="vc-row-label">Formaatti</p>
+          <div class="chip-row">
+            <button class="chip">5v5</button>
+            <button class="chip active">7v7</button>
+            <button class="chip">8v8</button>
+            <button class="chip">11v11</button>
+          </div>
+        </div>
+
+        <div>
+          <p class="vc-row-label">Taso</p>
+          <div class="chip-row">
+            <button class="chip active">Taso 1</button>
+            <button class="chip">Taso 2</button>
+          </div>
+        </div>
+
+        <div>
+          <p class="vc-row-label">Paikka</p>
+          <div class="vc-venue">
+            <input type="text" placeholder="Kenttä / halli">
+            <input type="text" placeholder="Osoite">
+          </div>
+        </div>
+
+      </div>
+
+      <div class="vc-footer">
+        <button class="btn-cancel">Peruuta</button>
+        <button class="btn-save">Lisää ottelu</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

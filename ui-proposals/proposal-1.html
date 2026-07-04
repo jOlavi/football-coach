@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ehdotus 1 – Kalenteri + kortit</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' }</script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .brand { background: #16a34a; }
+    .brand-text { color: #16a34a; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+  <!-- Page wrapper like sidebar layout -->
+  <div class="max-w-2xl mx-auto px-4 py-6 space-y-4">
+
+    <h1 class="text-xl font-bold text-gray-900">Ehdotus 1 – Kalenteri + kortit</h1>
+    <p class="text-sm text-gray-500">Päivämäärä isona vasemmalla, ottelu oikealla. Tulos tai status oikeassa reunassa.</p>
+
+    <!-- Sticky header -->
+    <div class="bg-gray-50 border-b border-gray-100 pb-3 space-y-3">
+      <!-- Segmented control + Add button -->
+      <div class="flex items-center p-1.5 rounded-xl bg-gray-200 gap-0.5">
+        <button class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold bg-white text-gray-900 shadow-sm">
+          Ottelut <span class="text-xs px-1.5 py-0.5 rounded-full font-bold bg-green-100 text-green-700">6</span>
+        </button>
+        <button class="flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold text-gray-500">
+          🏆 Turnaukset <span class="text-xs px-1.5 py-0.5 rounded-full font-bold bg-gray-300 text-gray-500">2</span>
+        </button>
+        <div class="ml-auto">
+          <button class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold bg-green-600 text-white">
+            + Lisää ottelu
+          </button>
+        </div>
+      </div>
+
+      <!-- Tulevat / Pelatut -->
+      <div class="flex gap-2 items-center">
+        <button class="px-3 py-1.5 rounded-full text-sm font-medium bg-green-600 text-white border border-green-600">Tulevat (4)</button>
+        <button class="px-3 py-1.5 rounded-full text-sm font-medium bg-white text-gray-500 border border-gray-200">Pelatut (2)</button>
+        <div class="ml-auto flex gap-1.5">
+          <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-green-600 text-white border border-green-600">Kaikki</button>
+          <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-500 border border-gray-200">Muury Reds</button>
+          <button class="px-3 py-1.5 rounded-full text-xs font-medium bg-white text-gray-500 border border-gray-200">Muury Blacks</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Match list -->
+    <div class="space-y-2">
+
+      <!-- Match row -->
+      <div class="bg-white rounded-xl border border-gray-100 flex items-stretch overflow-hidden hover:border-gray-200 transition-colors cursor-pointer">
+        <!-- Date block -->
+        <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 border-r border-gray-100">
+          <span class="text-xs text-gray-400 font-medium uppercase">ke</span>
+          <span class="text-2xl font-bold text-gray-900 leading-tight">18</span>
+          <span class="text-xs text-gray-400">kesä</span>
+        </div>
+        <!-- Match info -->
+        <div class="flex-1 flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-semibold text-gray-900 text-sm">Muury Reds – HJK</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-400">18:00</span>
+              <span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-medium">Koti</span>
+              <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 font-medium">7v7</span>
+              <span class="text-xs text-gray-400">Lauttasaari</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-xs font-medium text-amber-500">● 5/12</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 flex items-stretch overflow-hidden hover:border-gray-200 transition-colors cursor-pointer">
+        <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 border-r border-gray-100">
+          <span class="text-xs text-gray-400 font-medium uppercase">la</span>
+          <span class="text-2xl font-bold text-gray-900 leading-tight">21</span>
+          <span class="text-xs text-gray-400">kesä</span>
+        </div>
+        <div class="flex-1 flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-semibold text-gray-900 text-sm">FC Haka – Muury Blacks</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-400">14:00</span>
+              <span class="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 font-medium">Vieras</span>
+              <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 font-medium">7v7</span>
+              <span class="text-xs text-gray-400">Valkeakoski</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-xs font-medium text-green-600">● 9/12</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 flex items-stretch overflow-hidden hover:border-gray-200 transition-colors cursor-pointer">
+        <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 border-r border-gray-100">
+          <span class="text-xs text-gray-400 font-medium uppercase">su</span>
+          <span class="text-2xl font-bold text-gray-900 leading-tight">22</span>
+          <span class="text-xs text-gray-400">kesä</span>
+        </div>
+        <div class="flex-1 flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-semibold text-gray-900 text-sm">Muury Reds – IFK Mariehamn</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-400">11:00</span>
+              <span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-medium">Koti</span>
+              <span class="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5 font-medium">7v7</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-xs font-medium text-red-500">● Ei kokoonpanoa</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Divider: Pelatut -->
+      <div class="flex items-center gap-3 py-1">
+        <div class="flex-1 h-px bg-gray-200"></div>
+        <span class="text-xs text-gray-400 font-medium uppercase tracking-wide">Pelatut</span>
+        <div class="flex-1 h-px bg-gray-200"></div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 flex items-stretch overflow-hidden opacity-75 cursor-pointer hover:opacity-100 transition-opacity">
+        <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 border-r border-gray-100">
+          <span class="text-xs text-gray-400 font-medium uppercase">pe</span>
+          <span class="text-2xl font-bold text-gray-400 leading-tight">14</span>
+          <span class="text-xs text-gray-400">kesä</span>
+        </div>
+        <div class="flex-1 flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-semibold text-gray-700 text-sm">Muury Reds – FC Jazz</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-400">Sarja</span>
+              <span class="text-xs bg-green-50 text-green-700 border border-green-200 rounded-full px-2 py-0.5 font-medium">Koti</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-lg font-bold text-green-600">3 – 1</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-gray-100 flex items-stretch overflow-hidden opacity-75 cursor-pointer hover:opacity-100 transition-opacity">
+        <div class="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 border-r border-gray-100">
+          <span class="text-xs text-gray-400 font-medium uppercase">su</span>
+          <span class="text-2xl font-bold text-gray-400 leading-tight">08</span>
+          <span class="text-xs text-gray-400">kesä</span>
+        </div>
+        <div class="flex-1 flex items-center justify-between px-4 py-3">
+          <div>
+            <p class="font-semibold text-gray-700 text-sm">RoPS – Muury Blacks</p>
+            <div class="flex items-center gap-2 mt-0.5">
+              <span class="text-xs text-gray-400">Sarja</span>
+              <span class="text-xs bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 font-medium">Vieras</span>
+            </div>
+          </div>
+          <div class="text-right flex-shrink-0">
+            <span class="text-lg font-bold text-red-500">1 – 2</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</body>
+</html>

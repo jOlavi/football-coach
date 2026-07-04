@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 import { createTeam } from '../lib/firestore/teams';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
-import { useSettingsStore } from '../store/useSettingsStore';
 
 const SPORTS = [
   { value: 'football', label: 'Jalkapallo' },
@@ -22,7 +22,6 @@ export function CreateTeam() {
   const user = useAuthStore((s) => s.user);
   const addTeam = useAuthStore((s) => s.addTeam);
   const { setActiveTeamId } = useAppStore();
-  const updateSettings = useSettingsStore((s) => s.updateSettings);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -41,7 +40,6 @@ export function CreateTeam() {
       }, id);
       addTeam(team);
       setActiveTeamId(team.id);
-      updateSettings({ teamName: name.trim(), season });
       navigate('/');
     } catch {
       setError('Joukkueen luonti epäonnistui. Yritä uudelleen.');
@@ -53,6 +51,13 @@ export function CreateTeam() {
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-10 w-full max-w-sm">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm font-medium text-gray-600 dark:text-slate-400 hover:text-gray-900 dark:hover:text-slate-100 transition-colors mb-5"
+        >
+          <ArrowLeft size={15} />
+          Takaisin
+        </button>
         <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100 mb-6">Luo joukkue</h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>

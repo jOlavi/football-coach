@@ -48,14 +48,14 @@ const COLORS = [
 ];
 
 const FIELD_LABELS: Record<FieldType, string> = {
-  football:   'Jalkapallokenttä',
-  floorball:  'Salibandykaukalo',
-  basketball: 'Koripallokenttä',
-  icehockey:  'Jääkiekkokaukalo',
+  football:   'Koko kenttä',
+  floorball:  'Salibandy',
+  basketball: 'Koripallo',
+  icehockey:  'Jääkiekko',
   half:       'Puolikenttä',
-  '5v5':      'Pienkenttä 5v5',
-  penalty:    'Rangaistusalue',
-  blank:      'Tyhjä kenttä',
+  '5v5':      'Pienkenttä',
+  penalty:    'Rangaistus',
+  blank:      'Tyhjä',
 };
 
 const VISIBLE_FIELDS: FieldType[] = ['football', 'half', '5v5', 'penalty', 'blank'];
@@ -177,8 +177,8 @@ export function NewDrillPage() {
         </button>
       </div>
 
-      {/* Main three-column layout */}
-      <div className="flex gap-4 items-start">
+      {/* Main three-column layout: stacks vertically on narrow screens */}
+      <div className="flex flex-wrap gap-4 items-start">
 
         {/* Left toolbar */}
         <div className="w-14 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 flex flex-col items-center py-3 gap-1 shrink-0">
@@ -256,9 +256,10 @@ export function NewDrillPage() {
         </div>
 
         {/* Canvas area */}
-        <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
+        <div className="flex-1 min-w-[280px] flex flex-col items-center gap-3">
           {/* Field type selector */}
-          <div className="flex flex-wrap gap-1.5 justify-center w-full">
+          <div className="w-full overflow-x-auto pb-0.5">
+            <div className="flex gap-1.5 justify-center min-w-max mx-auto">
             {VISIBLE_FIELDS.map((f) => (
               <button
                 key={f}
@@ -272,6 +273,7 @@ export function NewDrillPage() {
                 {FIELD_LABELS[f]}
               </button>
             ))}
+            </div>
           </div>
 
           <div className="relative w-full">
@@ -393,7 +395,7 @@ export function NewDrillPage() {
         </div>
 
         {/* Right panel — metadata form */}
-        <div className="w-72 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-4 shrink-0">
+        <div className="w-full lg:w-72 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4 flex flex-col gap-4 lg:shrink-0">
           <div>
             <label className="text-xs font-medium text-gray-500 dark:text-slate-400 uppercase tracking-wide block mb-1">
               Nimi <span className="text-red-400">*</span>

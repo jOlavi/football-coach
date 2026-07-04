@@ -3,12 +3,13 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 export function useMatchTimer(
   isRunning: boolean,
   initialMatchSeconds: number,
+  initialPeriodSeconds: number,
   periodLength: number,
   onPeriodEnd: () => void,
 ) {
   const [matchSeconds, setMatchSeconds] = useState(initialMatchSeconds);
-  const [periodSeconds, setPeriodSeconds] = useState(0);
-  const calledRef = useRef(false);
+  const [periodSeconds, setPeriodSeconds] = useState(initialPeriodSeconds);
+  const calledRef = useRef(initialPeriodSeconds >= periodLength * 60);
   const cbRef = useRef(onPeriodEnd);
   useEffect(() => { cbRef.current = onPeriodEnd; });
 

@@ -16,15 +16,21 @@ import { useDrillStore } from "../store/useDrillStore";
 import { deleteDrill } from "../utils/drillStorage";
 import { usePlayerStore } from "../store/usePlayerStore";
 import { useSettingsStore } from "../store/useSettingsStore";
+import { useAuthStore } from "../store/useAuthStore";
+import { useAppStore } from "../store/useAppStore";
 import { Card } from "../components/ui/Card";
 import { Button } from "../components/ui/Button";
 import { Badge } from "../components/ui/Badge";
 import { Modal } from "../components/ui/Modal";
 import { Input, Textarea, Select } from "../components/ui/Input";
+import { TrainingAddModal } from "../components/training/TrainingAddModal";
+import { TrainingSessionModal } from "../components/dashboard/TrainingSessionModal";
 import { format } from "date-fns";
 import type { TrainingSession, Exercise, ExerciseCategory, Drill } from "../types";
 
-type ViewMode = "library" | "sessions";
+type ViewMode = "trainings" | "sessions" | "library";
+
+const FI_MONTHS = ['tammi', 'helmi', 'maalis', 'huhti', 'touko', 'kesä', 'heinä', 'elo', 'syys', 'loka', 'marras', 'joulu'];
 
 const EXERCISE_TAGS = [
   "1v1",
@@ -196,7 +202,10 @@ const emptyExForm = () => ({
 export function Training() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { sessions, deleteSession } = useTrainingStore();
+  const { sessions: allSessions, deleteSession } = useTrainingStore();
+  const { activeSeason, seasons: allSeasons } = useAppStore();
+  const isFirstSeason = allSeasons[0] === activeSeason;
+  const sessions = allSessions.filter((s) => s.season === activeSeason || (!s.season && isFirstSeason));
   const {
     exercises: custom,
     addExercise,
@@ -207,8 +216,12 @@ export function Training() {
   const drills = useDrillStore((s) => s.drills);
 
   const [view, setView] = useState<ViewMode>(
-    searchParams.get("view") === "library" ? "library" : "sessions"
+    searchParams.get("view") === "library" ? "library"
+    : searchParams.get("view") === "sessions" ? "sessions"
+    : "trainings"
   );
+  const [showTrainingAddModal, setShowTrainingAddModal] = useState(false);
+  const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<
@@ -301,6 +314,9 @@ export function Training() {
     if (pdfLoadingId) return;
     setPdfLoadingId(s.id);
     const { settings } = useSettingsStore.getState();
+    const { teams: authTeams } = useAuthStore.getState();
+    const { activeTeamId: currentTeamId } = useAppStore.getState();
+    const activeTeamName = authTeams.find((t) => t.id === currentTeamId)?.name ?? '';
 
     const groupSets = s.groupSets ?? [];
 
@@ -326,7 +342,9 @@ export function Training() {
 
     const startTime = s.startTime ? ` · klo ${s.startTime}` : "";
 
-    const html = `<!DOCTYPE html><html><head><title>${s.title}</title>
+    const safeTitle = s.title.trim().replace(/\.+$/, '');
+
+    const html = `<!DOCTYPE html><html><head><title>${safeTitle}</title>
   <style>
     * { box-sizing: border-box; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; max-width: 780px; margin: 0 auto; color: #111827; background: #f9fafb; }
@@ -390,7 +408,7 @@ export function Training() {
           <span>📅 ${format(new Date(s.date), "dd.MM.yyyy")}${startTime}</span>
           <span>⏱ ${s.duration} min</span>
           ${settings.coachName ? `<span>👤 ${settings.coachName}</span>` : ""}
-          ${settings.teamName ? `<span>${settings.teamName}</span>` : ""}
+          ${activeTeamName ? `<span>${activeTeamName}</span>` : ""}
         </div>
       </div>
       ${s.notes ? `
@@ -424,21 +442,26 @@ export function Training() {
 
   </body></html>`;
 
+    // Inject auto-print script so the tab triggers the print dialog on load
+    const printHtml = html.replace(
+      '</body>',
+      `<script>window.addEventListener('load', function() { setTimeout(function() { window.print(); }, 400); });<\/script></body>`
+    );
+
     try {
-      const win = window.open('', '_blank');
-      if (!win) throw new Error('Popup blocked');
-      win.document.open();
-      win.document.write(html);
-      win.document.close();
-      await new Promise<void>((resolve) => {
-        const check = () => win.document.readyState === 'complete' ? resolve() : setTimeout(check, 30);
-        check();
-      });
-      // Wait for images (drill canvases) to render
-      await new Promise((r) => setTimeout(r, 300));
-      win.focus();
-      win.print();
-      win.close();
+      const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
+      const win = window.open(blobUrl, '_blank');
+      if (win) {
+        win.onafterprint = () => { win.close(); URL.revokeObjectURL(blobUrl); };
+      } else {
+        // Popup blocked — fall back to direct download as HTML
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = `${s.title.replace(/[^a-zA-Z0-9äöåÄÖÅ _-]/g, '')}.html`;
+        a.click();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+      }
     } catch (err) {
       console.error('PDF-lataus epäonnistui:', err);
     } finally {
@@ -449,45 +472,44 @@ export function Training() {
   return (
     <div className="space-y-5">
       {/* Tab bar */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="flex rounded-lg border border-gray-200 dark:border-slate-700 overflow-hidden">
-          <button
-            onClick={() => setView("sessions")}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors ${
-              view === "sessions"
-                ? "bg-gray-800 text-white"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
-            }`}
-          >
-            <CalendarDays size={14} /> Harjoitussuunnitelmat
-          </button>
-          <button
-            onClick={() => setView("library")}
-            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-l border-gray-200 dark:border-slate-700 transition-colors ${
-              view === "library"
-                ? "bg-gray-800 text-white"
-                : "bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700"
-            }`}
-          >
-            <BookOpen size={14} /> Harjoitekirjasto
-          </button>
+      <div className="space-y-2">
+        <div className="flex p-1 rounded-xl bg-gray-200 dark:bg-slate-700 gap-0.5">
+          {([
+            { id: 'trainings', icon: <CalendarDays size={14} />, label: 'Harjoitukset' },
+            { id: 'sessions',  icon: <FileText size={14} />,     label: 'Suunnitelmat' },
+            { id: 'library',   icon: <BookOpen size={14} />,     label: 'Kirjasto' },
+          ] as const).map(({ id, icon, label }) => (
+            <button
+              key={id}
+              onClick={() => setView(id)}
+              className={`flex-1 flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
+                view === id
+                  ? "bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm"
+                  : "text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200"
+              }`}
+            >
+              {icon}
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
-        {view === "library" && (
-          <Button
-            icon={<Plus size={15} />}
-            onClick={() => navigate("/training/new-drill")}
-          >
-            Uusi harjoite
-          </Button>
-        )}
-        {view === "sessions" && (
-          <Button
-            icon={<Plus size={15} />}
-            onClick={() => navigate("/training/new")}
-          >
-            Uusi suunnitelma
-          </Button>
-        )}
+        <div className="flex justify-end">
+          {view === "trainings" && (
+            <Button icon={<Plus size={15} />} onClick={() => setShowTrainingAddModal(true)}>
+              Lisää harjoitus
+            </Button>
+          )}
+          {view === "sessions" && (
+            <Button icon={<Plus size={15} />} onClick={() => navigate("/training/new")}>
+              Uusi suunnitelma
+            </Button>
+          )}
+          {view === "library" && (
+            <Button icon={<Plus size={15} />} onClick={() => navigate("/training/new-drill")}>
+              Uusi harjoite
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* ── LIBRARY VIEW ── */}
@@ -627,10 +649,81 @@ export function Training() {
         </div>
       )}
 
+      {/* ── TRAININGS VIEW ── */}
+      {view === "trainings" && (
+        <div className="space-y-3">
+          {sessions.length === 0 && (
+            <Card>
+              <p className="text-center text-gray-400 dark:text-slate-500 py-8">
+                Ei harjoituksia. Lisää ensimmäinen!
+              </p>
+            </Card>
+          )}
+          {(() => {
+            const today = format(new Date(), 'yyyy-MM-dd');
+            const upcoming = sessions.filter((s) => s.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+            const past = sessions.filter((s) => s.date < today).sort((a, b) => b.date.localeCompare(a.date));
+            const renderRow = (s: TrainingSession) => (
+              <div
+                key={s.id}
+                className={`border border-gray-100 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 overflow-hidden transition-opacity ${s.date < today ? 'opacity-70 hover:opacity-100' : ''}`}
+              >
+                <div className="flex items-stretch">
+                  <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 dark:bg-slate-700/40 border-r border-gray-100 dark:border-slate-700">
+                    <p className={`text-2xl font-bold leading-tight ${s.date < today ? 'text-gray-400 dark:text-slate-500' : 'text-gray-900 dark:text-slate-100'}`}>{format(new Date(s.date + 'T12:00:00'), 'dd')}</p>
+                    <p className="text-xs text-gray-400 dark:text-slate-500">{FI_MONTHS[new Date(s.date + 'T12:00:00').getMonth()]}</p>
+                  </div>
+                  <div className="flex-1 flex items-center justify-between px-4 py-3 gap-3 min-w-0">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm truncate">{s.title}</p>
+                      <p className="text-xs text-gray-500 dark:text-slate-400 mt-0.5">
+                        {s.startTime ? `klo ${s.startTime} · ` : ''}{s.duration} min
+                        {s.exercises.length > 0
+                          ? ` · ${s.exercises.length} harjoitetta`
+                          : ' · Ei suunnitelmaa'}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<Pencil size={13} />}
+                        onClick={() => s.exercises.length > 0 ? setViewingSession(s) : navigate(`/training/${s.id}/edit`)}
+                      >
+                        <span className="hidden sm:inline">{s.exercises.length > 0 ? 'Suunnitelma' : 'Luo suunnitelma'}</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Trash2 size={13} />}
+                        onClick={() => setConfirmDeleteSessionId(s.id)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+            return (
+              <>
+                {upcoming.map(renderRow)}
+                {upcoming.length > 0 && past.length > 0 && (
+                  <div className="flex items-center gap-3 py-1 pt-2">
+                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                    <span className="text-xs text-gray-400 dark:text-slate-500 font-semibold uppercase tracking-widest">Pidetyt</span>
+                    <div className="flex-1 h-px bg-gray-200 dark:bg-slate-700" />
+                  </div>
+                )}
+                {past.map(renderRow)}
+              </>
+            );
+          })()}
+        </div>
+      )}
+
       {/* ── SESSIONS VIEW ── */}
       {view === "sessions" && (
         <div className="space-y-3">
-          {sessions.length === 0 && (
+          {sessions.filter((s) => s.exercises.length > 0).length === 0 && (
             <Card>
               <p className="text-center text-gray-400 dark:text-slate-500 py-8">
                 Ei harjoitussuunnitelmia. Luo ensimmäinen!
@@ -638,6 +731,7 @@ export function Training() {
             </Card>
           )}
           {sessions
+            .filter((s) => s.exercises.length > 0)
             .slice()
             .sort(
               (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -661,7 +755,7 @@ export function Training() {
                     </p>
                   </div>
                   <div
-                    className="flex items-center gap-2"
+                    className="flex items-center gap-1.5"
                     onClick={(evt) => evt.stopPropagation()}
                   >
                     <Button
@@ -671,7 +765,7 @@ export function Training() {
                       onClick={() => downloadSessionPDF(s)}
                       disabled={!!pdfLoadingId}
                     >
-                      {pdfLoadingId === s.id ? 'Ladataan...' : 'Lataa PDF'}
+                      <span className="hidden sm:inline">{pdfLoadingId === s.id ? 'Ladataan...' : 'PDF'}</span>
                     </Button>
                     <Button
                       variant="secondary"
@@ -679,7 +773,7 @@ export function Training() {
                       icon={<Pencil size={13} />}
                       onClick={() => navigate(`/training/${s.id}/edit`)}
                     >
-                      Muokkaa
+                      <span className="hidden sm:inline">Muokkaa</span>
                     </Button>
                     <Button
                       variant="ghost"
@@ -687,18 +781,10 @@ export function Training() {
                       icon={<Trash2 size={13} />}
                       onClick={() => setConfirmDeleteSessionId(s.id)}
                     />
-                    {expanded === s.id ? (
-                      <ChevronUp
-                        size={16}
-                        className="text-gray-400 dark:text-slate-500 cursor-pointer"
-                        onClick={() => setExpanded(null)}
-                      />
-                    ) : (
-                      <ChevronDown
-                        size={16}
-                        className="text-gray-400 dark:text-slate-500"
-                      />
-                    )}
+                    {expanded === s.id
+                      ? <ChevronUp size={16} className="text-gray-400 dark:text-slate-500" />
+                      : <ChevronDown size={16} className="text-gray-400 dark:text-slate-500" />
+                    }
                   </div>
                 </div>
                 {expanded === s.id && (
@@ -973,6 +1059,14 @@ export function Training() {
             </Button>
           </div>
         </Modal>
+      )}
+
+      {viewingSession && (
+        <TrainingSessionModal session={viewingSession} onClose={() => setViewingSession(null)} />
+      )}
+
+      {showTrainingAddModal && (
+        <TrainingAddModal onClose={() => setShowTrainingAddModal(false)} />
       )}
     </div>
   );

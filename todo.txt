@@ -41,7 +41,7 @@ Silloin piirtotyökalu näyttää vain jalkapalloon liittyvät pohjat.
 - Keksi joku parempi nimi sovellukselle. 
 
 
-### Landing page ###
+### Landing page ###/
 - Olisi hyvä tehdä landingpage appille. 
 
 ### Login/Logout ###
@@ -57,6 +57,9 @@ valita joukkueen.
     -> AI auttaa varmasti.
 
 
-
-
+### Käyttäjähallinta ###
+- Lisätään optiot Päävalmentajan/pääkäyttäjän eli sen joka on luonut joukkueenn
+    -> Lisätä käyttäjille tittelit esim valmentaja, joukkueenjohtaja tjs
+    -> Ja poistetaan esim perusvalmentajalta mahdollisuus muuttaa päätietoja, kuten joukkueita, 
+    pelaajatietojen näkyvyyttä ym.
     

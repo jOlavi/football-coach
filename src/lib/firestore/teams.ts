@@ -34,6 +34,10 @@ export async function removeCoachFromTeam(teamId: string, userId: string): Promi
   await updateDoc(doc(db, 'teams', teamId), { coaches: arrayRemove(userId) });
 }
 
+export async function updateFirebaseTeamName(teamId: string, name: string): Promise<void> {
+  await updateDoc(doc(db, 'teams', teamId), { name });
+}
+
 export async function deleteFirebaseTeam(teamId: string): Promise<void> {
   const subcollections = ['players', 'matches', 'ownTeams', 'trainingSessions'];
   await Promise.all(

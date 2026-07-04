@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF — Yhdistetty ehdotus</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #e8e8e4; padding: 32px 24px; color: #111; }
+
+  .page-header { text-align: center; margin-bottom: 28px; }
+  .page-header h1 { font-size: 13px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: #888; margin-bottom: 6px; }
+  .page-header p { font-size: 12px; color: #aaa; }
+
+  .a4 { width: 780px; margin: 0 auto; background: #fff; box-shadow: 0 8px 40px rgba(0,0,0,0.15); border-radius: 4px; overflow: hidden; }
+
+  /* ── Header ── */
+  .doc-header {
+    background: #15803d;
+    color: #fff;
+    padding: 16px 24px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .doc-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+  }
+  .doc-header-left { flex: 1; min-width: 0; }
+  .doc-title { font-size: 18px; font-weight: 700; margin: 0 0 4px; }
+  .doc-meta { font-size: 11px; color: #bbf7d0; display: flex; gap: 10px; flex-wrap: wrap; }
+  .doc-notes {
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+    background: rgba(0,0,0,0.12);
+    border-radius: 5px;
+    padding: 5px 8px;
+    line-height: 1.4;
+    flex-shrink: 0;
+    max-width: 280px;
+  }
+  .doc-notes-label { font-size: 9px; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: #86efac; margin-bottom: 2px; }
+
+  /* ── Groups full-width row ── */
+  .doc-groups-row {
+    border-top: 1px solid rgba(255,255,255,0.15);
+    padding-top: 10px;
+    display: flex;
+    gap: 16px;
+  }
+  .groupset { flex: 1; min-width: 0; }
+  .groupset-label {
+    font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: #86efac; margin-bottom: 5px;
+  }
+  .groupset-chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .group-chip {
+    background: rgba(255,255,255,0.13);
+    border: 1px solid rgba(255,255,255,0.22);
+    border-radius: 5px;
+    padding: 4px 7px;
+    min-width: 68px;
+  }
+  .group-chip-name {
+    font-size: 9px; font-weight: 700; color: #bbf7d0;
+    text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 3px;
+  }
+  .group-chip-player { font-size: 10px; color: #fff; line-height: 1.45; }
+
+  /* ── Content ── */
+  .doc-content { padding: 16px 24px 24px; }
+  .section-label {
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #16a34a; margin: 0 0 8px;
+  }
+
+  /* ── Exercise list ── */
+  .ex-list { border: 1px solid #e5e7eb; border-radius: 7px; overflow: hidden; }
+  .ex-row {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 10px; border-bottom: 1px solid #f0f0ee;
+  }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-num { width: 16px; min-width: 16px; font-size: 11px; font-weight: 700; color: #9ca3af; padding-top: 1px; text-align: right; flex-shrink: 0; }
+  .ex-body { flex: 1; min-width: 0; }
+  .ex-top { display: flex; align-items: center; gap: 7px; margin-bottom: 3px; flex-wrap: wrap; }
+  .ex-name { font-size: 12.5px; font-weight: 700; color: #111; }
+  .ex-cat { font-size: 9.5px; font-weight: 600; color: #15803d; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1px 6px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+  .ex-dur { font-size: 10.5px; color: #9ca3af; margin-left: auto; white-space: nowrap; flex-shrink: 0; }
+  .ex-desc { font-size: 11.5px; color: #6b7280; line-height: 1.45; }
+  .ex-goals { font-size: 11px; color: #15803d; margin-top: 3px; }
+  .ex-img { width: 130px; min-width: 130px; height: auto; border-radius: 5px; border: 1px solid #e5e7eb; display: block; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>PDF — Yhdistetty layout-ehdotus</h1>
+  <p>Kompakti lista · kaksi ryhmäjakoa · muistiinpanot otsikossa · pitkät tekstit</p>
+</div>
+
+<div class="a4">
+  <!-- ── GREEN HEADER ── -->
+  <div class="doc-header">
+
+    <!-- Top row: title+meta left, notes right -->
+    <div class="doc-header-top">
+      <div class="doc-header-left">
+        <div class="doc-title">⚽ Tiistaharjoitus — Tekninen kehitys</div>
+        <div class="doc-meta">
+          <span>📅 03.06.2025 · klo 17:00</span>
+          <span>⏱ 90 min</span>
+          <span>👤 Juhani Laitinen</span>
+          <span>U12 Siniset</span>
+        </div>
+      </div>
+      <div class="doc-notes">
+        <div class="doc-notes-label">📝 Muistiinpanot</div>
+        Kentälle siirto klo 17:45. Tarkista, että kaikilla on omat pallot mukana. Varakenttä B jos kenttä 1 on varattu.
+      </div>
+    </div>
+
+    <!-- Full-width group sets row -->
+    <div class="doc-groups-row">
+
+      <div class="groupset">
+        <div class="groupset-label">Harjoitusryhmät</div>
+        <div class="groupset-chips">
+          <div class="group-chip">
+            <div class="group-chip-name">Ryhmä A</div>
+            <div class="group-chip-player">Aaro</div>
+            <div class="group-chip-player">Nikko</div>
+            <div class="group-chip-player">Sisu</div>
+            <div class="group-chip-player">Ville</div>
+          </div>
+          <div class="group-chip">
+            <div class="group-chip-name">Ryhmä B</div>
+            <div class="group-chip-player">Eetu</div>
+            <div class="group-chip-player">Lauri</div>
+            <div class="group-chip-player">Mikael</div>
+            <div class="group-chip-player">Otso</div>
+          </div>
+          <div class="group-chip">
+            <div class="group-chip-name">Ryhmä C</div>
+            <div class="group-chip-player">Patrik</div>
+            <div class="group-chip-player">Rasmus</div>
+            <div class="group-chip-player">Tomi</div>
+            <div class="group-chip-player">Aleksi</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="groupset">
+        <div class="groupset-label">Pelijaot</div>
+        <div class="groupset-chips">
+          <div class="group-chip">
+            <div class="group-chip-name">Joukkue 1</div>
+            <div class="group-chip-player">Aaro</div>
+            <div class="group-chip-player">Eetu</div>
+            <div class="group-chip-player">Patrik</div>
+            <div class="group-chip-player">Tomi</div>
+          </div>
+          <div class="group-chip">
+            <div class="group-chip-name">Joukkue 2</div>
+            <div class="group-chip-player">Nikko</div>
+            <div class="group-chip-player">Lauri</div>
+            <div class="group-chip-player">Rasmus</div>
+            <div class="group-chip-player">Ville</div>
+          </div>
+          <div class="group-chip">
+            <div class="group-chip-name">Joukkue 3</div>
+            <div class="group-chip-player">Sisu</div>
+            <div class="group-chip-player">Mikael</div>
+            <div class="group-chip-player">Otso</div>
+            <div class="group-chip-player">Aleksi</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kolmas ryhmäjako mahtuu tähän automaattisesti -->
+
+    </div>
+  </div>
+
+  <!-- ── EXERCISES ── -->
+  <div class="doc-content">
+    <div class="section-label">Harjoitteet</div>
+    <div class="ex-list">
+
+      <div class="ex-row">
+        <div class="ex-num">1</div>
+        <div class="ex-body">
+          <div class="ex-top"><span class="ex-name">Koordinaatiorata — tasapaino ja askeleet</span><span class="ex-cat">Lämmittely</span><span class="ex-dur">⏱ 15 min · 👥 12</span></div>
+          <div class="ex-desc">Pelaajat kulkevat vuorotellen radan läpi eri tekniikoilla: ensin tasajalkahypyt renkaiden läpi, sitten sivuttaisaskeleet keppien yli, lopuksi takaperin kävely. Jokainen suoritus hitaasti ja hallitusti. Toista 3 kierrosta. Valmentaja korjaa tekniikkaa tarvittaessa yksilöllisesti.</div>
+          <div class="ex-goals">🎯 Koordinaation, kehontuntemuksen ja keskittymiskyvyn kehittäminen ennen varsinaista harjoittelua</div>
+        </div>
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='140' viewBox='0 0 260 140'%3E%3Crect width='260' height='140' fill='%23f0fdf4'/%3E%3Ccircle cx='30' cy='70' r='7' fill='%2316a34a'/%3E%3Ccircle cx='70' cy='40' r='7' fill='%2316a34a'/%3E%3Ccircle cx='110' cy='70' r='7' fill='%2316a34a'/%3E%3Ccircle cx='150' cy='40' r='7' fill='%2316a34a'/%3E%3Ccircle cx='190' cy='70' r='7' fill='%2316a34a'/%3E%3Cpolyline points='30,70 70,40 110,70 150,40 190,70' fill='none' stroke='%2316a34a' stroke-width='2' stroke-dasharray='4'/%3E%3C/svg%3E" class="ex-img" />
+      </div>
+
+      <div class="ex-row">
+        <div class="ex-num">2</div>
+        <div class="ex-body">
+          <div class="ex-top"><span class="ex-name">Pallonhallinta ja ohittaminen 1v1</span><span class="ex-cat">Tekninen</span><span class="ex-dur">⏱ 20 min · 👥 2</span></div>
+          <div class="ex-desc">Pareittain pienessä 5×5m neliössä. Hyökkääjän tavoitteena on ohittaa puolustaja ja viedä pallo vastakkaiselle viivalle. Puolustaja pyrkii riistämään pallon. Vaihda roolit aina kun pallo siirtyy. Vaihda parit 3 min välein. Valmentaja seuraa ja antaa yksilöllistä palautetta käytetyistä tekniikoista.</div>
+          <div class="ex-goals">🎯 Ohitustaito, pallonsuojaus ja 1v1-tilanteiden rohkeus</div>
+        </div>
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='140' viewBox='0 0 260 140'%3E%3Crect width='260' height='140' fill='%23eff6ff'/%3E%3Crect x='55' y='25' width='150' height='90' fill='none' stroke='%233b82f6' stroke-width='2'/%3E%3Ccircle cx='95' cy='70' r='9' fill='%2315803d'/%3E%3Ccircle cx='165' cy='70' r='9' fill='%23dc2626'/%3E%3Ccircle cx='130' cy='70' r='5' fill='%23111'/%3E%3C/svg%3E" class="ex-img" />
+      </div>
+
+      <div class="ex-row">
+        <div class="ex-num">3</div>
+        <div class="ex-body">
+          <div class="ex-top"><span class="ex-name">Syöttöharjoitus kolmioissa — liike pallotta</span><span class="ex-cat">Tekninen</span><span class="ex-dur">⏱ 15 min · 👥 3</span></div>
+          <div class="ex-desc">Kolme pelaajaa kolmion muodossa, noin 8 metrin etäisyydellä toisistaan. Syöttö ja välitön liike uuteen paikkaan. Ensin ilman vastustajaa, sitten yksi passiivinen puolustaja häiritsemään. Painotetaan terävää ensikosketusta ja nopeaa liikettä syötön jälkeen.</div>
+        </div>
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='140' viewBox='0 0 260 140'%3E%3Crect width='260' height='140' fill='%23faf5ff'/%3E%3Cpolygon points='130,15 55,125 205,125' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-dasharray='5'/%3E%3Ccircle cx='130' cy='15' r='9' fill='%2315803d'/%3E%3Ccircle cx='55' cy='125' r='9' fill='%2315803d'/%3E%3Ccircle cx='205' cy='125' r='9' fill='%2315803d'/%3E%3C/svg%3E" class="ex-img" />
+      </div>
+
+      <div class="ex-row">
+        <div class="ex-num">4</div>
+        <div class="ex-body">
+          <div class="ex-top"><span class="ex-name">Loppupeli 4v4 pienessä kentässä</span><span class="ex-cat">Peli</span><span class="ex-dur">⏱ 25 min</span></div>
+          <div class="ex-desc">Vapaa peli pienessä kentässä. Sääntörajoitus: max 2 kosketusta per pelaaja. Maali lasketaan vain jos joukkue on ensin vienyt pallon oman kentän puoliskolle. Vaihda joukkueet puolivälissä.</div>
+          <div class="ex-goals">🎯 Opittujen taitojen soveltaminen oikeassa pelitilanteessa paineen alla</div>
+        </div>
+        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='140' viewBox='0 0 260 140'%3E%3Crect width='260' height='140' fill='%23f0fdf4'/%3E%3Crect x='15' y='15' width='230' height='110' fill='none' stroke='%2316a34a' stroke-width='2'/%3E%3Crect x='15' y='47' width='14' height='46' fill='none' stroke='%2316a34a' stroke-width='2'/%3E%3Crect x='231' y='47' width='14' height='46' fill='none' stroke='%2316a34a' stroke-width='2'/%3E%3Cline x1='130' y1='15' x2='130' y2='125' stroke='%2316a34a' stroke-width='1' stroke-dasharray='4'/%3E%3C/svg%3E" class="ex-img" />
+      </div>
+
+      <div class="ex-row">
+        <div class="ex-num">5</div>
+        <div class="ex-body">
+          <div class="ex-top"><span class="ex-name">Jäähdyttely ja venyttely</span><span class="ex-cat">Fyysinen</span><span class="ex-dur">⏱ 10 min</span></div>
+          <div class="ex-desc">Rauhallinen kävely piirin muodossa 2 min. Staattiset venytykset: reisi, pohje, lonkankoukistaja, hartia. Jokainen venytys 30 sekuntia. Muista hengittää rauhallisesti.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, Pencil, Trash2, Search, LayoutGrid, List } from 'lucide-react';
+import { UserPlus, Pencil, Trash2, Search, LayoutGrid, List, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useSettingsStore } from '../store/useSettingsStore';
@@ -38,42 +38,68 @@ export function Players() {
   const matches = useMatchStore((s) => s.matches);
   const { showParentInfo, showDateOfBirth, showPosition } = useSettingsStore((s) => s.settings);
 
+  type SortKey = 'name' | 'number' | 'skillLevel' | 'position' | 'matchCount' | 'goals' | 'participation';
+
   const [search, setSearch] = useState('');
-  const [viewMode, setViewMode] = useState<ViewMode>('grid');
-  const [sortBy, setSortBy] = useState<'name' | 'skillLevel' | 'position' | 'number'>('name');
+  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [sortBy, setSortBy] = useState<SortKey>('number');
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   const [filterLevel, setFilterLevel] = useState<0 | 1 | 2 | 3>(0);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<Player | null>(null);
   const [form, setForm] = useState(emptyPlayer());
+  const [numberError, setNumberError] = useState('');
   const [viewPlayer, setViewPlayer] = useState<Player | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  function handleSortColumn(col: SortKey) {
+    if (sortBy === col) setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    else { setSortBy(col); setSortDir('asc'); }
+  }
 
   const filtered = players
     .filter((p) => p.active)
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .filter((p) => filterLevel === 0 || p.skillLevel === filterLevel)
     .sort((a, b) => {
-      if (sortBy === 'name') return a.name.localeCompare(b.name, 'fi');
-      if (sortBy === 'skillLevel') return a.skillLevel - b.skillLevel;
-      if (sortBy === 'position') return a.position.localeCompare(b.position);
-      if (sortBy === 'number') return a.number - b.number;
-      return 0;
+      let diff = 0;
+      if (sortBy === 'name') diff = a.name.localeCompare(b.name, 'fi');
+      else if (sortBy === 'number') diff = a.number - b.number;
+      else if (sortBy === 'skillLevel') diff = a.skillLevel - b.skillLevel;
+      else if (sortBy === 'position') diff = a.position.localeCompare(b.position);
+      else if (sortBy === 'matchCount') diff = getPlayerMatchCount(a.id, matches) - getPlayerMatchCount(b.id, matches);
+      else if (sortBy === 'goals') diff = getPlayerGoals(a.id, matches) - getPlayerGoals(b.id, matches);
+      else if (sortBy === 'participation') diff = getPlayerParticipation(a.id, matches) - getPlayerParticipation(b.id, matches);
+      return sortDir === 'asc' ? diff : -diff;
     });
 
   function openAdd() {
     setEditing(null);
     setForm(emptyPlayer());
+    setNumberError('');
     setShowModal(true);
   }
 
   function openEdit(p: Player) {
     setEditing(p);
     setForm({ ...p });
+    setNumberError('');
     setShowModal(true);
   }
 
   function handleSave() {
     if (!form.name.trim()) return;
+    if (form.number < 1 || form.number > 99) {
+      setNumberError('Numeron täytyy olla välillä 1–99');
+      return;
+    }
+    const duplicate = players.find(
+      (p) => p.number === form.number && p.id !== editing?.id
+    );
+    if (duplicate) {
+      setNumberError(`Numero ${form.number} on jo pelaajalla ${duplicate.name}`);
+      return;
+    }
     if (editing) {
       updatePlayer(editing.id, form);
     } else {
@@ -98,16 +124,18 @@ export function Players() {
               className="pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
             />
           </div>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
-            className="text-sm border border-gray-200 rounded-lg px-2.5 py-2 bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
-          >
-            <option value="name">Nimi</option>
-            <option value="skillLevel">Taso</option>
-            <option value="position">Pelipaikka</option>
-            <option value="number">Numero</option>
-          </select>
+          {viewMode === 'grid' && (
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortKey)}
+              className="text-sm border border-gray-200 rounded-lg px-2.5 py-2 bg-white dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"
+            >
+              <option value="name">Nimi</option>
+              <option value="number">Numero</option>
+              <option value="skillLevel">Taso</option>
+              <option value="position">Pelipaikka</option>
+            </select>
+          )}
           <Badge label={`${filtered.length} pelaajaa`} color="green" />
         </div>
 
@@ -218,17 +246,36 @@ export function Players() {
 
       {/* ── LIST VIEW ── */}
       {filtered.length > 0 && viewMode === 'list' && (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
+        <div className="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden shadow-sm overflow-x-auto">
+          <table className="w-full text-sm min-w-[500px]">
             <thead>
               <tr className="bg-gray-100 dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">#</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Nimi</th>
-                {showPosition && <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Pelipaikka</th>}
-                <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Taito</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Ottelut</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Maalit</th>
-                <th className="text-center px-3 py-3 text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Os.%</th>
+                {(
+                  [
+                    { col: 'number' as SortKey, label: '#', align: 'left', px: 'px-4' },
+                    { col: 'name' as SortKey, label: 'Nimi', align: 'left', px: 'px-4' },
+                    ...(showPosition ? [{ col: 'position' as SortKey, label: 'Pelipaikka', align: 'left', px: 'px-4' }] : []),
+                    { col: 'skillLevel' as SortKey, label: 'Taito', align: 'center', px: 'px-3' },
+                    { col: 'matchCount' as SortKey, label: 'Ottelut', align: 'center', px: 'px-3' },
+                    { col: 'goals' as SortKey, label: 'Maalit', align: 'center', px: 'px-3' },
+                    { col: 'participation' as SortKey, label: 'Os.%', align: 'center', px: 'px-3' },
+                  ] as { col: SortKey; label: string; align: string; px: string }[]
+                ).map(({ col, label, align, px }) => {
+                  const active = sortBy === col;
+                  const Icon = active ? (sortDir === 'asc' ? ChevronUp : ChevronDown) : ChevronsUpDown;
+                  return (
+                    <th
+                      key={col}
+                      onClick={() => handleSortColumn(col)}
+                      className={`${px} py-3 text-xs font-semibold uppercase tracking-wide cursor-pointer select-none transition-colors hover:text-brand-600 dark:hover:text-brand-400 text-${align} ${active ? 'text-brand-600 dark:text-brand-400' : 'text-gray-500 dark:text-slate-400'}`}
+                    >
+                      <span className={`inline-flex items-center gap-0.5 ${align === 'center' ? 'justify-center w-full' : ''}`}>
+                        {label}
+                        <Icon size={12} className="flex-shrink-0" />
+                      </span>
+                    </th>
+                  );
+                })}
                 <th className="px-3 py-3" />
               </tr>
             </thead>
@@ -278,7 +325,24 @@ export function Players() {
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-3">
               <Input label="Nimi" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Pelaajan nimi" />
-              <Input label="Pelaajanumero" type="number" value={form.number} onChange={(e) => setForm({ ...form, number: +e.target.value })} min={1} max={99} />
+              <Input
+                label="Pelaajanumero"
+                type="text"
+                inputMode="numeric"
+                placeholder="1–99"
+                value={form.number === 0 ? '' : String(form.number)}
+                error={numberError}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').slice(0, 2);
+                  const num = parseInt(raw, 10);
+                  setForm({ ...form, number: raw ? num : 0 });
+                  if (!raw || num < 1 || num > 99) {
+                    setNumberError('Anna numero väliltä 1–99');
+                  } else {
+                    setNumberError('');
+                  }
+                }}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3">
               {showPosition && (

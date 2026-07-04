@@ -4,6 +4,7 @@ import { CheckCircle, ChevronRight } from 'lucide-react';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useTeamStore } from '../store/useTeamStore';
+import { useAppStore } from '../store/useAppStore';
 import { format } from 'date-fns';
 
 interface Reminder {
@@ -19,8 +20,12 @@ type FilterTab = 'all' | 'warning' | 'info';
 export function Reminders() {
   const navigate = useNavigate();
   const players = usePlayerStore((s) => s.players);
-  const matches = useMatchStore((s) => s.matches);
+  const allMatches = useMatchStore((s) => s.matches);
   const teams = useTeamStore((s) => s.teams);
+  const { activeSeason, seasons } = useAppStore();
+  const isFirstSeason = seasons[0] === activeSeason;
+  const inSeason = (s?: string) => s === activeSeason || (!s && isFirstSeason);
+  const matches = allMatches.filter((m) => inSeason(m.season));
   const [filter, setFilter] = useState<FilterTab>('all');
 
   const activePlayers = players.filter((p) => p.active);

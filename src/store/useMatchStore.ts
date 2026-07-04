@@ -17,9 +17,10 @@ export const useMatchStore = create<MatchStore>()((set, get) => ({
   matches: [],
   setAll: (matches) => set({ matches }),
   addMatch: (match) => {
-    const { activeTeamId } = useAppStore.getState();
-    if (activeTeamId) writeTeamDoc(activeTeamId, 'matches', match);
-    set((s) => ({ matches: [...s.matches, match] }));
+    const { activeTeamId, activeSeason } = useAppStore.getState();
+    const tagged = { ...match, season: activeSeason };
+    if (activeTeamId) writeTeamDoc(activeTeamId, 'matches', tagged);
+    set((s) => ({ matches: [...s.matches, tagged] }));
   },
   updateMatch: (id, updates) => {
     const match = get().matches.find((m) => m.id === id);

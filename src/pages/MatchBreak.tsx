@@ -9,7 +9,7 @@ export function MatchBreak() {
   const navigate = useNavigate();
   const location = useLocation();
   const { id: matchId } = useParams<{ id: string }>();
-  const { updateMatch, setResult } = useMatchStore();
+  const { updateMatch } = useMatchStore();
 
   const session = location.state as MatchSessionState | null;
   const config = session?.config;
@@ -85,6 +85,9 @@ export function MatchBreak() {
         },
       ],
       matchSeconds: session!.matchSeconds,
+      periodSeconds: 0,
+      goalEntries: session!.goalEntries,
+      opponentGoalTimes: session!.opponentGoalTimes,
     };
 
     navigate(`/matches/${matchId}/live`, { state: nextSession });
@@ -96,17 +99,21 @@ export function MatchBreak() {
     const goalsFor = isHome ? scores.home : scores.away;
     const goalsAgainst = isHome ? scores.away : scores.home;
 
-    setResult(matchId!, { goalsFor, goalsAgainst, scorers: [] });
+    const playerMinutes: Record<string, number> = {};
+    for (const p of session?.players ?? []) {
+      playerMinutes[p.id] = p.accumulatedSeconds;
+    }
+
+    const scorerCounts: Record<string, number> = {};
+    for (const entry of session?.goalEntries ?? []) {
+      scorerCounts[entry.playerId] = (scorerCounts[entry.playerId] ?? 0) + 1;
+    }
+    const scorers = Object.entries(scorerCounts).map(([playerId, count]) => ({ playerId, count }));
 
     updateMatch(matchId!, {
       lineupConfirmed: true,
-      notes: [
-        `Tulos: ${goalsFor}–${goalsAgainst}`,
-        `Pelaajaminuutit:`,
-        ...(session?.players ?? []).map(
-          (p) => `  ${p.name}: ${Math.floor(p.accumulatedSeconds / 60)} min`
-        ),
-      ].join('\n'),
+      result: { goalsFor, goalsAgainst, scorers },
+      playerMinutes,
     });
 
     navigate('/matches');
@@ -121,67 +128,148 @@ export function MatchBreak() {
   }
 
   return (
-    <div className="min-h-screen pb-10" style={{ backgroundColor: 'var(--match-dark)' }}>
+    <div className="min-h-dvh pb-10" style={{ backgroundColor: 'var(--match-dark)' }}>
       {/* Header */}
-      <div className="px-4 pt-10 pb-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
-        <button
-          onClick={() => navigate(-1)}
-          className="flex items-center gap-2 mb-3 min-h-[48px]"
-          style={{ color: 'var(--match-text-muted)' }}
-        >
-          <ArrowLeft size={18} />
-          <span className="text-sm">Takaisin</span>
-        </button>
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-xl font-bold" style={{ color: 'var(--match-text-primary)' }}>Erätauko</h1>
-            <p className="text-sm mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
+      <div className="px-3 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+        <div className="relative flex items-center justify-center min-h-[48px]">
+          <button
+            onClick={() => navigate(`/matches/${matchId}/live`, { state: session, replace: true })}
+            className="absolute left-0 flex items-center gap-1.5 min-h-[48px]"
+            style={{ color: 'var(--match-text-muted)' }}
+          >
+            <ArrowLeft size={18} />
+            <span className="text-sm">Takaisin</span>
+          </button>
+          <div className="text-center px-20">
+            <h1 className="text-base font-bold" style={{ color: 'var(--match-text-primary)' }}>
+              {isFinalBreak ? 'Ottelu päättyi' : 'Erätauko'}
+            </h1>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
               {currentPeriod}. erä päättyi
-              {!isFinalBreak && ` · Seuraava: ${currentPeriod + 1}. erä`}
             </p>
           </div>
-          <div className="text-right">
-            <p className="text-xs mb-1" style={{ color: 'var(--match-text-muted)' }}>Tulos</p>
-            <p className="text-3xl font-bold tabular-nums" style={{ color: 'var(--match-text-primary)' }}>
-              {session.scores.home} – {session.scores.away}
+          <div className="absolute right-0 text-right">
+            <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Tulos</p>
+            <p className="text-xl font-bold tabular-nums" style={{ color: 'var(--match-text-primary)' }}>
+              {session.scores.home}–{session.scores.away}
             </p>
           </div>
         </div>
       </div>
 
-      <div className="px-4 py-5 space-y-6 max-w-lg mx-auto">
+      <div className="px-3 py-4 space-y-5 max-w-lg mx-auto">
 
-        {/* Player time summary */}
-        <section>
-          <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>
-            Pelaajaminuutit — {currentPeriod}. erä
-          </p>
-          <div className="grid grid-cols-3 gap-2">
-            {players.map((p) => {
-              const wasOnField = session.players.find((sp) => sp.id === p.id)?.onField;
-              return (
-                <div
-                  key={p.id}
-                  className="rounded-xl border p-3"
-                  style={
-                    wasOnField
-                      ? { borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }
-                      : { borderColor: '#334155', backgroundColor: 'var(--match-dark-mid)', opacity: 0.6 }
-                  }
-                >
-                  <p className="text-xs font-bold" style={{ color: wasOnField ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>#{p.number}</p>
-                  <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: wasOnField ? 'var(--match-field-name)' : 'var(--match-text-muted)' }}>{p.name}</p>
-                  {p.isGoalkeeper && (
-                    <span className="inline-block text-xs font-bold bg-yellow-400 text-yellow-900 rounded px-1 mt-0.5">MV</span>
-                  )}
-                  <p className="text-xs font-mono mt-1" style={{ color: 'var(--match-active)' }}>
-                    {fmtTime(p.accumulatedSeconds)}
-                  </p>
-                </div>
-              );
-            })}
-          </div>
-        </section>
+        {/* Final summary */}
+        {isFinalBreak ? (
+          <>
+            {/* Result */}
+            <section className="rounded-xl py-4 text-center" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: 'var(--match-text-muted)' }}>
+                {(() => {
+                  const own = config.teamName ?? 'Oma joukkue';
+                  return config.location === 'home' ? `${own} – ${config.opponent}` : `${config.opponent} – ${own}`;
+                })()}
+              </p>
+              <p className="text-5xl font-bold tabular-nums" style={{ color: 'var(--match-text-primary)' }}>
+                {session.scores.home}–{session.scores.away}
+              </p>
+              {(() => {
+                const isHome = config.location === 'home';
+                const gf = isHome ? session.scores.home : session.scores.away;
+                const ga = isHome ? session.scores.away : session.scores.home;
+                const label = gf > ga ? 'Voitto' : gf < ga ? 'Tappio' : 'Tasapeli';
+                const color = gf > ga ? 'var(--match-active)' : gf < ga ? 'var(--match-out-border)' : '#f59e0b';
+                return <p className="text-sm font-bold mt-1" style={{ color }}>{label}</p>;
+              })()}
+            </section>
+
+            {/* Goals timeline */}
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Maalit</p>
+              {(() => {
+                const ourMap = new Map<string, { name: string; times: number[] }>();
+                for (const g of session.goalEntries ?? []) {
+                  const name = session.players.find((p) => p.id === g.playerId)?.name ?? 'Tuntematon';
+                  if (!ourMap.has(g.playerId)) ourMap.set(g.playerId, { name, times: [] });
+                  ourMap.get(g.playerId)!.times.push(g.matchMinute);
+                }
+                const opponentTimes = [...(session.opponentGoalTimes ?? [])].sort((a, b) => a - b);
+                const rows = [
+                  ...[...ourMap.values()].map((v) => ({
+                    label: v.name,
+                    times: [...v.times].sort((a, b) => a - b),
+                    ours: true,
+                  })),
+                  ...(opponentTimes.length > 0 ? [{ label: config?.opponent ?? 'Vastustaja', times: opponentTimes, ours: false }] : []),
+                ].sort((a, b) => a.times[0] - b.times[0]);
+                if (rows.length === 0) return (
+                  <p className="text-sm py-2" style={{ color: 'var(--match-text-muted)' }}>Ei kirjattuja maaleja</p>
+                );
+                return rows.map((row, i) => (
+                  <div key={i} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: 'var(--match-border)' }}>
+                    <span className="text-base">{row.ours ? '⚽' : '🔴'}</span>
+                    <span className="text-sm font-medium" style={{ color: row.ours ? 'var(--match-field-name)' : 'var(--match-out-text)' }}>{row.label}</span>
+                    {row.times.length > 1 && (
+                      <span className="text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: row.ours ? 'var(--match-active)' : 'var(--match-out-border)', color: '#fff' }}>
+                        {row.times.length}
+                      </span>
+                    )}
+                    <span className="flex-1 text-right text-xs font-mono font-semibold" style={{ color: 'var(--match-text-muted)' }}>{row.times.map((t) => `${t}'`).join(', ')}</span>
+                  </div>
+                ));
+              })()}
+            </section>
+
+            {/* Player times — ranked list with bar */}
+            <section>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--match-text-muted)' }}>Peliajat</p>
+              {(() => {
+                const maxSeconds = (config?.periods ?? 2) * (config?.periodLength ?? 15) * 60;
+                return [...players]
+                  .sort((a, b) => b.accumulatedSeconds - a.accumulatedSeconds)
+                  .map((p) => {
+                    const pct = maxSeconds > 0 ? Math.min(100, (p.accumulatedSeconds / maxSeconds) * 100) : 0;
+                    return (
+                      <div key={p.id} className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-bold w-6 text-right flex-shrink-0" style={{ color: 'var(--match-text-muted)' }}>#{p.number}</span>
+                        <span className="text-sm font-medium w-24 truncate flex-shrink-0" style={{ color: 'var(--match-text-primary)' }}>{p.name}</span>
+                        <div className="flex-1 rounded-full h-2" style={{ backgroundColor: 'var(--match-border)' }}>
+                          <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct > 0 ? 'var(--match-active)' : 'transparent' }} />
+                        </div>
+                        <span className="text-xs font-mono w-10 text-right flex-shrink-0" style={{ color: 'var(--match-active)' }}>{fmtTime(p.accumulatedSeconds)}</span>
+                      </div>
+                    );
+                  });
+              })()}
+            </section>
+          </>
+        ) : (
+          /* Player time summary for mid-game breaks */
+          <section>
+            <p className="text-xs font-semibold uppercase tracking-wide mb-3" style={{ color: 'var(--match-text-muted)' }}>
+              Peliajat — {currentPeriod}. erä
+            </p>
+            {(() => {
+              const maxSeconds = currentPeriod * (config?.periodLength ?? 15) * 60;
+              return [...players]
+                .sort((a, b) => b.accumulatedSeconds - a.accumulatedSeconds)
+                .map((p) => {
+                  const wasOnField = session.players.find((sp) => sp.id === p.id)?.onField;
+                  const pct = maxSeconds > 0 ? Math.min(100, (p.accumulatedSeconds / maxSeconds) * 100) : 0;
+                  return (
+                    <div key={p.id} className="flex items-center gap-2 mb-2">
+                      <span className="text-xs font-bold w-6 text-right flex-shrink-0" style={{ color: wasOnField ? 'var(--match-field-num)' : 'var(--match-text-muted)' }}>#{p.number}</span>
+                      <span className="text-sm font-medium w-24 truncate flex-shrink-0" style={{ color: wasOnField ? 'var(--match-text-primary)' : 'var(--match-text-muted)' }}>{p.name}</span>
+                      <div className="flex-1 rounded-full h-2" style={{ backgroundColor: 'var(--match-border)' }}>
+                        <div className="h-2 rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: pct > 0 ? 'var(--match-active)' : 'transparent' }} />
+                      </div>
+                      <span className="text-xs font-mono w-10 text-right flex-shrink-0" style={{ color: wasOnField ? 'var(--match-active)' : 'var(--match-text-muted)' }}>{fmtTime(p.accumulatedSeconds)}</span>
+                    </div>
+                  );
+                });
+            })()}
+          </section>
+        )}
 
         {/* Next lineup (only if not final) */}
         {!isFinalBreak && (
@@ -205,7 +293,7 @@ export function MatchBreak() {
                     style={
                       onField
                         ? isGK
-                          ? { borderColor: '#facc15', backgroundColor: '#fefce8' }
+                          ? { borderColor: '#facc15', backgroundColor: 'var(--match-field-bg)' }
                           : { borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }
                         : { borderColor: '#334155', backgroundColor: 'var(--match-dark-mid)' }
                     }
@@ -219,7 +307,7 @@ export function MatchBreak() {
                         {fmtTime(p.accumulatedSeconds)}
                       </p>
                       {isGK && (
-                        <span className="inline-block mt-1 text-xs font-bold bg-yellow-400 text-yellow-900 rounded px-1.5 py-0.5">MV</span>
+                        <span className="inline-block mt-1 text-xs font-bold rounded px-1 border" style={{ backgroundColor: 'transparent', borderColor: '#facc15', color: '#facc15' }}>MV</span>
                       )}
                     </button>
                     {onField && (
@@ -228,7 +316,7 @@ export function MatchBreak() {
                         className="absolute top-1.5 right-1.5 w-7 h-7 rounded-full text-xs font-bold border-2 transition-colors"
                         style={
                           isGK
-                            ? { backgroundColor: '#facc15', borderColor: '#facc15', color: '#713f12' }
+                            ? { backgroundColor: 'transparent', borderColor: '#facc15', color: '#facc15' }
                             : { backgroundColor: 'var(--match-dark)', borderColor: '#334155', color: 'var(--match-text-muted)' }
                         }
                       >

@@ -1,5 +1,5 @@
 {
-  "name": "football-coach",
+  "name": "pitchside",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,6 +11,15 @@
     "emulator": "firebase emulators:start --import=./emulator-data --export-on-exit=./emulator-data"
   },
   "dependencies": {
+    "@tiptap/extension-placeholder": "^3.27.1",
+    "@tiptap/extension-table": "^3.27.1",
+    "@tiptap/extension-table-cell": "^3.27.1",
+    "@tiptap/extension-table-header": "^3.27.1",
+    "@tiptap/extension-table-row": "^3.27.1",
+    "@tiptap/extension-text-align": "^3.27.1",
+    "@tiptap/extension-underline": "^3.27.1",
+    "@tiptap/react": "^3.27.1",
+    "@tiptap/starter-kit": "^3.27.1",
     "date-fns": "^4.1.0",
     "firebase": "^12.13.0",
     "html2canvas": "^1.4.1",

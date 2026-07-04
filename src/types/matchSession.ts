@@ -7,6 +7,14 @@ export interface MatchConfig {
   periodLength: number;
   location: 'home' | 'away';
   opponent: string;
+  trackScorers: boolean;
+  teamName?: string;
+}
+
+export interface GoalEntry {
+  playerId: string;
+  period: number;
+  matchMinute: number;
 }
 
 export interface MatchPlayer {
@@ -40,6 +48,9 @@ export interface MatchSessionState {
   substitutions: SubEntry[];
   periodHistory: PeriodSnapshot[];
   matchSeconds: number;
+  periodSeconds: number;
+  goalEntries: GoalEntry[];
+  opponentGoalTimes: number[];
 }
 
 export const FORMAT_SIZES: Record<TeamFormat, number> = {

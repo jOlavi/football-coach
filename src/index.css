@@ -53,75 +53,101 @@ html.dark {
   }
 }
 
-/* ── Forest theme ─────────────────────────────────────────────────────────── */
-html.forest {
-  color-scheme: dark;
-  /* Pelinhallinta — forest theme (original dark green) */
-  --match-dark: #0f1a14;
-  --match-dark-mid: #1a2e22;
-  --match-active: #2d9e5f;
-  --match-text-primary: #ffffff;
-  --match-text-muted: #9ab5a8;
-  --match-border: #1e3a28;
-  --match-field-bg: #e8f5ee;
-  --match-field-border: #2d9e5f;
-  --match-field-num: #1a6b3c;
-  --match-field-name: #3d5449;
-  --match-out-bg: #fdf0ee;
-  --match-out-border: #e85d4a;
-  --match-out-text: #c0392b;
-  --match-hint-bg: #eef3fb;
-  --match-hint-border: #c6d8f5;
-  --match-hint-text: #1a4a8a;
+input[type="datetime-local"].dark-input::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.4);
+  cursor: pointer;
 }
 
-/* Surfaces */
-html.forest .bg-white          { background-color: #1a2e22 !important; }
-html.forest .bg-gray-50        { background-color: #0f1a14 !important; }
-html.forest .bg-gray-100       { background-color: #162b1d !important; }
-html.forest .bg-gray-200       { background-color: #1e3a28 !important; }
-
-/* Borders */
-html.forest .border-gray-100   { border-color: #1e3a28 !important; }
-html.forest .border-gray-200   { border-color: #253d2c !important; }
-html.forest .border-gray-300   { border-color: #2e4a35 !important; }
-
-/* Text */
-html.forest .text-gray-900     { color: #e2ede7 !important; }
-html.forest .text-gray-800     { color: #ccddd5 !important; }
-html.forest .text-gray-700     { color: #b5cfc4 !important; }
-html.forest .text-gray-600     { color: #9ab5a8 !important; }
-html.forest .text-gray-500     { color: #7a9e90 !important; }
-html.forest .text-gray-400     { color: #6a8a7c !important; }
-html.forest .text-gray-300     { color: #4d7a6a !important; }
-
-/* Hover states */
-html.forest .hover\:bg-gray-100:hover  { background-color: #162b1d !important; }
-html.forest .hover\:bg-gray-50:hover   { background-color: #1a2e22 !important; }
-html.forest .hover\:bg-gray-200:hover  { background-color: #1e3a28 !important; }
-html.forest .hover\:text-gray-900:hover { color: #e2ede7 !important; }
-
-/* Form inputs */
-html.forest input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
-html.forest select,
-html.forest textarea {
-  background-color: #1a2e22 !important;
-  color: #e2ede7 !important;
-  border-color: #253d2c !important;
+/* TipTap editor styles */
+.ProseMirror {
+  color: #111827;
 }
-html.forest input::placeholder,
-html.forest textarea::placeholder { color: #6a8a7c !important; }
+.dark .ProseMirror {
+  color: #f1f5f9;
+}
+.ProseMirror h1 { font-size: 1.5em; font-weight: 700; margin: 0.5em 0 0.3em; }
+.ProseMirror h2 { font-size: 1.25em; font-weight: 700; margin: 0.5em 0 0.3em; }
+.ProseMirror h3 { font-size: 1.1em; font-weight: 600; margin: 0.4em 0 0.2em; }
+.ProseMirror p { margin: 0.3em 0; }
+.ProseMirror p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  color: #9ca3af;
+  pointer-events: none;
+  height: 0;
+}
+.ProseMirror table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.ProseMirror table td,
+.ProseMirror table th {
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  min-width: 60px;
+  vertical-align: top;
+}
+.ProseMirror table th {
+  background: #f9fafb;
+  font-weight: 700;
+}
+.dark .ProseMirror table td,
+.dark .ProseMirror table th {
+  border-color: #334155;
+}
+.dark .ProseMirror table th {
+  background: #1e293b;
+}
+.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+}
+.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.5em;
+}
+.ProseMirror ul ul { list-style-type: circle; }
+.ProseMirror ul ul ul { list-style-type: square; }
+.ProseMirror blockquote {
+  border-left: 3px solid #16a34a;
+  padding-left: 1em;
+  color: #6b7280;
+  margin: 0.5em 0;
+}
+.ProseMirror code {
+  background: #f3f4f6;
+  padding: 0.1em 0.3em;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.dark .ProseMirror code {
+  background: #1e293b;
+}
+.ProseMirror hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 1em 0;
+}
+.dark .ProseMirror hr {
+  border-top-color: #334155;
+}
 
-/* Dividers */
-html.forest .divide-gray-100 > * + * { border-color: #1e3a28 !important; }
-html.forest .divide-gray-200 > * + * { border-color: #253d2c !important; }
+/* Note read view */
+.note-content h1 { font-size: 1.5em; font-weight: 700; margin: 0.6em 0 0.3em; }
+.note-content h2 { font-size: 1.25em; font-weight: 700; margin: 0.5em 0 0.3em; }
+.note-content h3 { font-size: 1.1em; font-weight: 600; margin: 0.4em 0 0.2em; }
+.note-content p { margin: 0.3em 0; }
+.note-content ul { list-style: disc; padding-left: 1.5em; margin: 0.4em 0; }
+.note-content ol { list-style: decimal; padding-left: 1.5em; margin: 0.4em 0; }
+.note-content blockquote { border-left: 3px solid #16a34a; padding-left: 1em; color: #6b7280; margin: 0.5em 0; }
+.note-content code { background: #f3f4f6; padding: 0.1em 0.3em; border-radius: 4px; font-size: 0.85em; }
+.dark .note-content code { background: #1e293b; }
+.note-content table { border-collapse: collapse; width: 100%; margin: 0.8em 0; }
+.note-content table td, .note-content table th { border: 1px solid #e5e7eb; padding: 6px 10px; }
+.note-content table th { background: #f9fafb; font-weight: 700; }
+.dark .note-content table td, .dark .note-content table th { border-color: #334155; }
+.dark .note-content table th { background: #1e293b; }
+.note-content hr { border: none; border-top: 2px solid #e5e7eb; margin: 1em 0; }
+.dark .note-content hr { border-top-color: #334155; }
 
-/* Sidebar (uses gray-900/800/700 directly, not via dark:) */
-html.forest .bg-gray-900       { background-color: #0a1410 !important; }
-html.forest .bg-gray-800       { background-color: #122018 !important; }
-html.forest .bg-gray-700       { background-color: #1a2e22 !important; }
-html.forest .border-gray-700   { border-color: #1e3a28 !important; }
-html.forest .text-gray-300     { color: #b5cfc4 !important; }
-html.forest .hover\:bg-gray-800:hover { background-color: #162b1d !important; }
-html.forest .hover\:bg-gray-700:hover { background-color: #1a2e22 !important; }
-html.forest .hover\:text-white:hover  { color: #e2ede7 !important; }

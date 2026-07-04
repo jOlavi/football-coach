@@ -8,7 +8,7 @@ import { useAppStore } from '../../store/useAppStore';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { setUser, setTeams, setAuthLoading } = useAuthStore();
-  const { activeTeamId, setActiveTeamId } = useAppStore();
+  const { setActiveTeamId } = useAppStore();
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -28,8 +28,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         try {
           const teams = await getTeamsForUser(firebaseUser.uid);
           setTeams(teams);
-          if (teams.length > 0 && !activeTeamId) {
-            setActiveTeamId(teams[0].id);
+          // Keep activeTeamId if it still refers to a valid team; otherwise clear it
+          // so TeamGuard redirects the user to /teams/select to choose.
+          const currentActiveId = useAppStore.getState().activeTeamId;
+          if (currentActiveId && !teams.find((t) => t.id === currentActiveId)) {
+            setActiveTeamId(null);
           }
         } catch (err) {
           console.error('Failed to load teams:', err);

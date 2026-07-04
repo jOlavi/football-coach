@@ -4,7 +4,7 @@ import { Layout } from './components/layout/Layout';
 import { AuthProvider } from './components/auth/AuthProvider';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { useAuthStore } from './store/useAuthStore';
-import { useSettingsStore } from './store/useSettingsStore';
+import { useAppStore } from './store/useAppStore';
 
 import { Dashboard } from './pages/Dashboard';
 import { Players } from './pages/Players';
@@ -16,28 +16,30 @@ import { TrainingBuilder } from './pages/TrainingBuilder';
 import { NewDrillPage } from './pages/NewDrillPage';
 import { Communication } from './pages/Communication';
 import { Reminders } from './pages/Reminders';
+import { Notes } from './pages/Notes';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { CreateTeam } from './pages/CreateTeam';
+import { SelectTeam } from './pages/SelectTeam';
 import { JoinTeam } from './pages/JoinTeam';
 import { MatchSetup } from './pages/MatchSetup';
 import { MatchLive } from './pages/MatchLive';
 import { MatchBreak } from './pages/MatchBreak';
 
 function ThemeSync() {
-  const theme = useSettingsStore((s) => s.settings.theme);
   useEffect(() => {
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.documentElement.classList.toggle('forest', theme === 'forest');
-  }, [theme]);
+    document.documentElement.classList.add('dark');
+  }, []);
   return null;
 }
 
 function TeamGuard({ children }: { children: React.ReactNode }) {
   const teams = useAuthStore((s) => s.teams);
   const authLoading = useAuthStore((s) => s.authLoading);
+  const activeTeamId = useAppStore((s) => s.activeTeamId);
   if (authLoading) return null;
-  if (teams.length === 0) return <Navigate to="/teams/new" replace />;
+  const activeExists = teams.some((t) => t.id === activeTeamId);
+  if (!activeExists) return <Navigate to="/teams/select" replace />;
   return <>{children}</>;
 }
 
@@ -49,6 +51,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/join" element={<JoinTeam />} />
+          <Route path="/teams/select" element={
+            <ProtectedRoute><SelectTeam /></ProtectedRoute>
+          } />
           <Route path="/teams/new" element={
             <ProtectedRoute><CreateTeam /></ProtectedRoute>
           } />
@@ -81,6 +86,7 @@ export default function App() {
             <Route path="training/drills/:id/edit" element={<NewDrillPage />} />
             <Route path="communication" element={<Communication />} />
             <Route path="reminders" element={<Reminders />} />
+            <Route path="notes" element={<Notes />} />
             <Route path="settings" element={<Settings />} />
           </Route>
         </Routes>

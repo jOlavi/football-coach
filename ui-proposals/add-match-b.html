@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisää ottelu – B: Yksisivuinen</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: rgba(0,0,0,.5);
+  display: flex; align-items: flex-end;
+  min-height: 100vh;
+  padding-bottom: 0;
+}
+
+/* Bottom sheet */
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 24px 24px 0 0;
+  overflow: hidden;
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Drag handle */
+.handle { height: 20px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.handle-bar { width: 36px; height: 4px; background: #e5e7eb; border-radius: 2px; }
+
+/* Sheet header - white */
+.sheet-header {
+  padding: 0 20px 14px;
+  border-bottom: 1px solid #f3f4f6;
+  flex-shrink: 0;
+}
+.sheet-title-row { display: flex; align-items: center; justify-content: space-between; }
+.sheet-title { font-size: 17px; font-weight: 800; color: #111827; }
+.close-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  border: none; cursor: pointer;
+  color: #6b7280;
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Scrollable body */
+.sheet-body { overflow-y: auto; padding: 16px 20px; flex: 1; display: flex; flex-direction: column; gap: 16px; }
+
+/* Team selector */
+.team-select-row { display: flex; gap: 8px; }
+.team-pill-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid #e5e7eb;
+  background: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 8px;
+  transition: all .15s;
+}
+.team-pill-btn:hover { border-color: #d1d5db; }
+.team-pill-btn.active { border-color: #16a34a; background: #f0fdf4; }
+.t-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.t-name { font-size: 12px; font-weight: 700; color: #374151; }
+.team-pill-btn.active .t-name { color: #166534; }
+.t-fmt { margin-left: auto; font-size: 10px; font-weight: 800; color: #9ca3af; background: #f3f4f6; padding: 2px 6px; border-radius: 6px; }
+.team-pill-btn.active .t-fmt { background: #dcfce7; color: #15803d; }
+
+/* Field group */
+.field-group { display: flex; flex-direction: column; gap: 4px; }
+.field-label { font-size: 11px; font-weight: 700; color: #9ca3af; text-transform: uppercase; letter-spacing: .07em; }
+.field-input {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 11px 14px;
+  font-size: 14px; font-weight: 500;
+  color: #111827;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+  font-family: inherit;
+}
+.field-input:focus { border-color: #16a34a; background: #fff; }
+.field-input::placeholder { color: #d1d5db; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+/* Big location buttons */
+.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.loc-card {
+  padding: 14px;
+  border-radius: 16px;
+  border: 2px solid #e5e7eb;
+  background: #f9fafb;
+  cursor: pointer;
+  transition: all .15s;
+  text-align: center;
+}
+.loc-card:hover { border-color: #d1d5db; }
+.loc-card .icon { font-size: 26px; display: block; margin-bottom: 4px; }
+.loc-card .label { font-size: 13px; font-weight: 700; color: #6b7280; }
+.loc-card .sub { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+.loc-card.home { border-color: #16a34a; background: #f0fdf4; }
+.loc-card.home .label { color: #166534; }
+.loc-card.home .sub { color: #4ade80; }
+.loc-card.away:hover { border-color: #93c5fd; }
+
+/* Type toggle */
+.type-row { display: flex; gap: 6px; }
+.type-btn {
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  font-size: 13px; font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .15s;
+}
+.type-btn.active { background: #111827; border-color: #111827; color: #fff; }
+
+/* Section header */
+.sec-head { font-size: 12px; font-weight: 800; color: #374151; display: flex; align-items: center; gap: 6px; }
+.sec-head::after { content: ''; flex: 1; height: 1px; background: #f3f4f6; }
+
+/* Footer */
+.sheet-footer {
+  padding: 12px 20px 28px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  background: #fff;
+}
+.btn-cancel {
+  padding: 13px 18px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  border: none;
+  font-size: 13px; font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+.btn-save {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  background: #16a34a;
+  border: none;
+  font-size: 14px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<div class="sheet">
+  <div class="handle"><div class="handle-bar"></div></div>
+
+  <div class="sheet-header">
+    <div class="sheet-title-row">
+      <h2 class="sheet-title">Lisää ottelu</h2>
+      <button class="close-btn">✕</button>
+    </div>
+  </div>
+
+  <div class="sheet-body">
+
+    <!-- Joukkue -->
+    <div>
+      <p class="sec-head">Joukkue</p>
+      <div class="team-select-row" style="margin-top:10px">
+        <button class="team-pill-btn active">
+          <span class="t-dot" style="background:#ef4444"></span>
+          <span class="t-name">Muury Reds</span>
+          <span class="t-fmt">5v5</span>
+        </button>
+        <button class="team-pill-btn">
+          <span class="t-dot" style="background:#3b82f6"></span>
+          <span class="t-name">Muury Blues</span>
+          <span class="t-fmt">7v7</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Päivä + vastustaja -->
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Päivä ja aika</label>
+        <input class="field-input" type="datetime-local" value="2026-07-04T17:00">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Vastustaja</label>
+        <input class="field-input" type="text" placeholder="Joukkueen nimi" value="FC Viikingit">
+      </div>
+    </div>
+
+    <!-- Koti / vieras -->
+    <div>
+      <p class="sec-head">Pelipaikkka</p>
+      <div class="loc-grid" style="margin-top:10px">
+        <div class="loc-card home">
+          <span class="icon">🏠</span>
+          <span class="label">Kotipeli</span>
+          <span class="sub">Oma kenttä</span>
+        </div>
+        <div class="loc-card">
+          <span class="icon">✈️</span>
+          <span class="label" style="color:#6b7280">Vieraspeli</span>
+          <span class="sub">Vastustajan kenttä</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tyyppi -->
+    <div>
+      <p class="sec-head">Tyyppi</p>
+      <div class="type-row" style="margin-top:10px">
+        <button class="type-btn active">Sarja</button>
+        <button class="type-btn">Harjoitusottelu</button>
+      </div>
+    </div>
+
+    <!-- Paikka -->
+    <div class="two-col">
+      <div class="field-group">
+        <label class="field-label">Kenttä / halli</label>
+        <input class="field-input" type="text" placeholder="Kenttä" value="Muurame Arena">
+      </div>
+      <div class="field-group">
+        <label class="field-label">Osoite</label>
+        <input class="field-input" type="text" placeholder="Valinnainen">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sheet-footer">
+    <button class="btn-cancel">Peruuta</button>
+    <button class="btn-save">Lisää ottelu</button>
+  </div>
+</div>
+
+</body>
+</html>

@@ -17,9 +17,10 @@ export const useTrainingStore = create<TrainingStore>()((set, get) => ({
   sessions: [],
   setAll: (sessions) => set({ sessions }),
   addSession: (session) => {
-    const { activeTeamId } = useAppStore.getState();
-    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', serializeSession(session));
-    set((s) => ({ sessions: [...s.sessions, session] }));
+    const { activeTeamId, activeSeason } = useAppStore.getState();
+    const tagged = { ...session, season: activeSeason };
+    if (activeTeamId) writeTeamDoc(activeTeamId, 'trainingSessions', serializeSession(tagged));
+    set((s) => ({ sessions: [...s.sessions, tagged] }));
   },
   updateSession: (id, updates) => {
     const session = get().sessions.find((t) => t.id === id);

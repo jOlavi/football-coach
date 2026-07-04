@@ -39,6 +39,7 @@ export interface PlayerAvailability {
 
 export interface Match {
   id: string;
+  season?: string;
   date: string;
   opponent: string;
   level: MatchLevel;
@@ -52,8 +53,33 @@ export interface Match {
   absentPlayerIds?: string[];
   lineupConfirmed?: boolean;
   result?: MatchResult;
+  playerMinutes?: Record<string, number>;
   ownTeamId?: string;
+  tournamentId?: string;
   notes: string;
+  createdAt: string;
+}
+
+export interface TournamentMatch {
+  id: string;
+  time?: string;
+  field?: string;
+  opponent: string;
+  location?: 'home' | 'away';
+  result?: { goalsFor: number; goalsAgainst: number };
+}
+
+export interface Tournament {
+  id: string;
+  season?: string;
+  name: string;
+  date?: string;
+  venue?: string;
+  address?: string;
+  notes?: string;
+  ownTeamId?: string;
+  level?: string;
+  matches: TournamentMatch[];
   createdAt: string;
 }
 
@@ -81,6 +107,7 @@ export interface GroupSet {
 
 export interface TrainingSession {
   id: string;
+  season?: string;
   date: string;
   startTime?: string;
   title: string;
@@ -177,4 +204,16 @@ export interface FirebaseUser {
   email: string;
   displayName: string;
   photoURL: string | null;
+}
+
+export type NoteCategory = 'general' | 'season-plan' | 'player-notes' | 'tactics';
+
+export interface Note {
+  id: string;
+  title: string;
+  content: string; // TipTap HTML
+  category: NoteCategory;
+  season?: string;
+  createdAt: string;
+  updatedAt: string;
 }

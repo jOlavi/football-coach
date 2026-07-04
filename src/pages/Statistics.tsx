@@ -6,7 +6,7 @@ import {
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
 import { useTeamStore } from '../store/useTeamStore';
-import { useSettingsStore } from '../store/useSettingsStore';
+import { useAppStore } from '../store/useAppStore';
 import { Card, StatCard } from '../components/ui/Card';
 import { Trophy, Target, TrendingUp, Users } from 'lucide-react';
 import { getPlayerGoals, getPlayerMatchCount, getTeamRecord, getTopScorers } from '../utils/stats';
@@ -14,12 +14,19 @@ import { format } from 'date-fns';
 
 export function Statistics() {
   const players = usePlayerStore((s) => s.players);
-  const allMatches = useMatchStore((s) => s.matches);
+  const rawMatches = useMatchStore((s) => s.matches);
   const teams = useTeamStore((s) => s.teams);
-  const isDark = useSettingsStore((s) => s.settings.theme === 'dark');
+  const isDark = true;
+  const { activeSeason, seasons } = useAppStore();
   const tickColor = isDark ? '#94a3b8' : '#6b7280';
   const gridColor = isDark ? '#334155' : '#f0f0f0';
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+
+  const isFirstSeason = seasons[0] === activeSeason;
+  const allMatches = useMemo(
+    () => rawMatches.filter((m) => m.season === activeSeason || (!m.season && isFirstSeason)),
+    [rawMatches, activeSeason, isFirstSeason]
+  );
 
   const matches = useMemo(
     () => selectedTeamId ? allMatches.filter((m) => m.ownTeamId === selectedTeamId) : allMatches,

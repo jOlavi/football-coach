@@ -33,6 +33,13 @@ const CAT_LABELS: Record<ExerciseCategory, string> = {
 const CAT_COLORS: Record<ExerciseCategory, 'yellow' | 'blue' | 'purple' | 'red' | 'green'> = {
   warmup: 'yellow', technical: 'blue', tactical: 'purple', physical: 'red', game: 'green',
 };
+const CAT_PILL_ACTIVE: Record<ExerciseCategory, string> = {
+  warmup:    'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400',
+  technical: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400',
+  tactical:  'bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-400',
+  physical:  'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400',
+  game:      'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400',
+};
 const DURATION_PRESETS = [45, 60, 75, 90, 105, 120];
 
 function addMinutes(time: string, minutes: number): string {
@@ -169,6 +176,10 @@ export function TrainingBuilder() {
 
   function updateExerciseDescription(id: string, description: string) {
     setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, description } : e)));
+  }
+
+  function updateExerciseCategory(id: string, category: ExerciseCategory) {
+    setExercises((prev) => prev.map((e) => (e.id === id ? { ...e, category } : e)));
   }
 
   function handleGroupSave(result: GroupModalResult) {
@@ -397,10 +408,23 @@ export function TrainingBuilder() {
               <div className="flex-1 min-w-0">
                 {e.isTextSection ? (
                   <>
+                    <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                      {(Object.keys(CAT_LABELS) as ExerciseCategory[]).map((cat) => (
+                        <button
+                          key={cat}
+                          type="button"
+                          onClick={(ev) => { ev.stopPropagation(); updateExerciseCategory(e.id, cat); }}
+                          className={`text-xs font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                            e.category === cat
+                              ? CAT_PILL_ACTIVE[cat]
+                              : 'bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-500 hover:bg-gray-200 dark:hover:bg-slate-600'
+                          }`}
+                        >
+                          {CAT_LABELS[cat]}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 shrink-0">
-                        Tekstiosio
-                      </span>
                       <input
                         value={e.name}
                         onChange={(ev) => updateExerciseName(e.id, ev.target.value)}

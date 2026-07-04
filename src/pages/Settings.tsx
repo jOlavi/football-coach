@@ -15,7 +15,7 @@ import { Input } from '../components/ui/Input';
 import { Modal } from '../components/ui/Modal';
 import { getCoachProfiles } from '../lib/firestore/userData';
 import { createInvitation } from '../lib/firestore/invitations';
-import { removeCoachFromTeam, deleteFirebaseTeam } from '../lib/firestore/teams';
+import { removeCoachFromTeam, deleteFirebaseTeam, updateFirebaseTeamName } from '../lib/firestore/teams';
 
 function CollapsibleCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   const [open, setOpen] = useState(true);
@@ -79,6 +79,7 @@ export function Settings() {
   const { addMatch } = useMatchStore();
   const { addSession } = useTrainingStore();
   const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
+  const { activeSeason, seasons, setActiveSeason, addSeason, renameSeason, removeSeason } = useAppStore();
 
   type TeamModalDraft = { name: string; color: string; format: TeamFormat; minLineupSize: number };
   const emptyTeamDraft = (): TeamModalDraft => ({ name: '', color: PRESET_COLORS[0], format: '7v7', minLineupSize: 7 });
@@ -109,13 +110,53 @@ export function Settings() {
     }
   }
 
-  const [draft, setDraft] = useState(settings);
+  const [newSeasonInput, setNewSeasonInput] = useState('');
+  const [confirmSeasonSwitch, setConfirmSeasonSwitch] = useState<string | null>(null);
+  const [editingSeason, setEditingSeason] = useState<string | null>(null);
+  const [editingSeasonDraft, setEditingSeasonDraft] = useState('');
+  const [confirmDeleteSeason, setConfirmDeleteSeason] = useState<string | null>(null);
+
+  function handleSaveSeasonName() {
+    const name = editingSeasonDraft.trim();
+    if (!name || !editingSeason || (name !== editingSeason && seasons.includes(name))) return;
+    if (name !== editingSeason) renameSeason(editingSeason, name);
+    setEditingSeason(null);
+  }
+
+  function handleCreateSeason() {
+    const name = newSeasonInput.trim();
+    if (!name || seasons.includes(name)) return;
+    addSeason(name);
+    setActiveSeason(name);
+    setNewSeasonInput('');
+    setShowNewSeasonInput(false);
+  }
+
+  const [draft, setDraft] = useState({
+    showPosition: settings.showPosition,
+    showParentInfo: settings.showParentInfo,
+    showDateOfBirth: settings.showDateOfBirth,
+  });
   const [saved, setSaved] = useState(false);
   const [showDeleteSuccess, setShowDeleteSuccess] = useState(false);
   const deletedTeamName = useRef('');
-  const isDirty = JSON.stringify(draft) !== JSON.stringify(settings);
+  const isDirty =
+    draft.showPosition !== settings.showPosition ||
+    draft.showParentInfo !== settings.showParentInfo ||
+    draft.showDateOfBirth !== settings.showDateOfBirth;
 
-  useEffect(() => { setDraft(settings); }, [settings]);
+  useEffect(() => {
+    setDraft({
+      showPosition: settings.showPosition,
+      showParentInfo: settings.showParentInfo,
+      showDateOfBirth: settings.showDateOfBirth,
+    });
+  }, [settings]);
+
+  const [editingCoachName, setEditingCoachName] = useState(false);
+  const [coachNameDraft, setCoachNameDraft] = useState(settings.coachName);
+  const [editingTeamName, setEditingTeamName] = useState(false);
+  const [showNewSeasonInput, setShowNewSeasonInput] = useState(false);
 
   const navigate = useNavigate();
   const authUser = useAuthStore((s) => s.user);
@@ -124,6 +165,26 @@ export function Settings() {
     (s) => s.teams.find((t) => t.id === activeTeamId) ?? null
   );
   const isHeadCoach = activeTeam?.headCoachId === authUser?.uid;
+
+  const [teamNameDraft, setTeamNameDraft] = useState(activeTeam?.name ?? '');
+  const [teamNameSaving, setTeamNameSaving] = useState(false);
+  const [teamNameSaved, setTeamNameSaved] = useState(false);
+  const teamNameDirty = teamNameDraft.trim() !== (activeTeam?.name ?? '');
+
+  async function handleSaveTeamName() {
+    if (!activeTeamId || !teamNameDraft.trim()) return;
+    setTeamNameSaving(true);
+    try {
+      await updateFirebaseTeamName(activeTeamId, teamNameDraft.trim());
+      const { teams: authTeams, setTeams } = useAuthStore.getState();
+      setTeams(authTeams.map((t) => t.id === activeTeamId ? { ...t, name: teamNameDraft.trim() } : t));
+      setTeamNameSaved(true);
+      setEditingTeamName(false);
+      setTimeout(() => setTeamNameSaved(false), 2500);
+    } finally {
+      setTeamNameSaving(false);
+    }
+  }
 
   const [coachProfiles, setCoachProfiles] = useState<
     { uid: string; displayName: string; email: string }[]
@@ -221,12 +282,20 @@ export function Settings() {
     e.target.value = '';
   }
 
+  const [deleteError, setDeleteError] = useState('');
+
   async function deleteCurrentTeam() {
     if (!activeTeamId) return;
-    deletedTeamName.current = activeTeam?.name ?? 'Joukkue';
-    await deleteFirebaseTeam(activeTeamId);
-    setClearConfirm(false);
-    setShowDeleteSuccess(true);
+    setDeleteError('');
+    try {
+      deletedTeamName.current = activeTeam?.name ?? 'Joukkue';
+      await deleteFirebaseTeam(activeTeamId);
+      setClearConfirm(false);
+      setShowDeleteSuccess(true);
+    } catch (err) {
+      console.error('Failed to delete team:', err);
+      setDeleteError('Joukkueen poistaminen epäonnistui. Tarkista internetyhteys.');
+    }
   }
 
   function handleDeleteSuccessClose() {
@@ -257,25 +326,83 @@ export function Settings() {
 
       <CollapsibleCard className="break-inside-avoid mb-6" title="Joukkueen tiedot">
         <div className="space-y-3">
-          <Input
-            label="Joukkueen nimi"
-            value={draft.teamName}
-            onChange={(e) => setDraft({ ...draft, teamName: e.target.value })}
-            placeholder="esim. FC Tähdet U13"
-          />
-          <div className="grid grid-cols-2 gap-3">
-            <Input
-              label="Kausi"
-              value={draft.season}
-              onChange={(e) => setDraft({ ...draft, season: e.target.value })}
-              placeholder="esim. 2026"
-            />
-            <Input
-              label="Valmentajan nimi"
-              value={draft.coachName}
-              onChange={(e) => setDraft({ ...draft, coachName: e.target.value })}
-              placeholder="Oma nimesi"
-            />
+          {activeTeam && (
+            <div>
+              <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Joukkueen nimi</p>
+              {editingTeamName ? (
+                <div className="flex gap-2 items-end">
+                  <div className="flex-1">
+                    <Input
+                      autoFocus
+                      value={teamNameDraft}
+                      onChange={(e) => setTeamNameDraft(e.target.value)}
+                      placeholder="Joukkueen nimi"
+                    />
+                  </div>
+                  <Button
+                    onClick={handleSaveTeamName}
+                    disabled={!teamNameDirty || teamNameSaving || !teamNameDraft.trim()}
+                    icon={<Save size={14} />}
+                  >
+                    {teamNameSaving ? 'Tallennetaan…' : 'Tallenna'}
+                  </Button>
+                  <Button variant="secondary" onClick={() => { setTeamNameDraft(activeTeam.name ?? ''); setEditingTeamName(false); }}>
+                    Peruuta
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-700">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{activeTeam.name || '—'}</p>
+                  {isHeadCoach ? (
+                    <button
+                      onClick={() => setEditingTeamName(true)}
+                      className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 font-medium transition-colors"
+                    >
+                      <Pencil size={12} /> Muokkaa
+                    </button>
+                  ) : (
+                    <p className="text-xs text-gray-400 dark:text-slate-500">Vain päävalmentaja voi muuttaa.</p>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          <div>
+            <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1">Valmentajan nimi</p>
+            {editingCoachName ? (
+              <div className="flex gap-2 items-end">
+                <div className="flex-1">
+                  <Input
+                    autoFocus
+                    value={coachNameDraft}
+                    onChange={(e) => setCoachNameDraft(e.target.value)}
+                    placeholder="Oma nimesi"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { updateSettings({ coachName: coachNameDraft.trim() }); setEditingCoachName(false); }
+                      if (e.key === 'Escape') { setCoachNameDraft(settings.coachName); setEditingCoachName(false); }
+                    }}
+                  />
+                </div>
+                <Button size="sm" icon={<Check size={14} />} onClick={() => { updateSettings({ coachName: coachNameDraft.trim() }); setEditingCoachName(false); }}>
+                  Tallenna
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => { setCoachNameDraft(settings.coachName); setEditingCoachName(false); }}>
+                  Peruuta
+                </Button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between px-3 py-2.5 bg-gray-50 dark:bg-slate-900 rounded-lg border border-gray-100 dark:border-slate-700">
+                <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">
+                  {settings.coachName || <span className="italic font-normal text-gray-400 dark:text-slate-500">Ei asetettu</span>}
+                </p>
+                <button
+                  onClick={() => { setCoachNameDraft(settings.coachName); setEditingCoachName(true); }}
+                  className="flex items-center gap-1 text-xs text-brand-600 dark:text-brand-400 hover:text-brand-700 font-medium transition-colors"
+                >
+                  <Pencil size={12} /> Muokkaa
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
@@ -309,6 +436,100 @@ export function Settings() {
             >
               <Plus size={14} /> Lisää joukkue
             </button>
+          </div>
+
+          {/* Season management */}
+          <div className="pt-2 border-t border-gray-100 dark:border-slate-700">
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Kaudet</p>
+            <div className="space-y-1.5 mb-2">
+              {[...seasons].reverse().map((s) => (
+                <div key={s} className="bg-gray-50 dark:bg-slate-900 rounded-lg px-3 py-2 flex items-center justify-between gap-3">
+                  {editingSeason === s ? (
+                    <div className="flex items-center gap-2 flex-1">
+                      <input
+                        autoFocus
+                        value={editingSeasonDraft}
+                        onChange={(e) => setEditingSeasonDraft(e.target.value)}
+                        onKeyDown={(e) => { if (e.key === 'Enter') handleSaveSeasonName(); if (e.key === 'Escape') setEditingSeason(null); }}
+                        className="flex-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                      />
+                      <Button size="sm" onClick={handleSaveSeasonName} disabled={!editingSeasonDraft.trim()}>Tallenna</Button>
+                      <Button variant="secondary" size="sm" onClick={() => setEditingSeason(null)}>Peruuta</Button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm text-gray-800 dark:text-slate-200">Kausi {s}</span>
+                        <button
+                          onClick={() => { setEditingSeason(s); setEditingSeasonDraft(s); setConfirmSeasonSwitch(null); setConfirmDeleteSeason(null); }}
+                          className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        {seasons.length > 1 && (
+                          <button
+                            onClick={() => { setConfirmDeleteSeason(s); setConfirmSeasonSwitch(null); setEditingSeason(null); }}
+                            className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors"
+                          >
+                            <X size={13} />
+                          </button>
+                        )}
+                      </div>
+                      {confirmDeleteSeason === s ? (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-xs text-red-500 font-medium">Poistetaanko kausi?</span>
+                          <Button variant="danger" size="sm" onClick={() => { removeSeason(s); setConfirmDeleteSeason(null); }}>Poista</Button>
+                          <Button variant="secondary" size="sm" onClick={() => setConfirmDeleteSeason(null)}>Peruuta</Button>
+                        </div>
+                      ) : s === activeSeason ? (
+                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                          Aktiivinen
+                        </span>
+                      ) : confirmSeasonSwitch === s ? (
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="text-xs text-gray-500 dark:text-slate-400">Vaihdetaanko?</span>
+                          <Button size="sm" onClick={() => { setActiveSeason(s); setConfirmSeasonSwitch(null); }}>Kyllä</Button>
+                          <Button variant="secondary" size="sm" onClick={() => setConfirmSeasonSwitch(null)}>Peruuta</Button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setConfirmSeasonSwitch(s); setEditingSeason(null); }}
+                          className="text-xs font-medium text-gray-500 dark:text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition-colors flex-shrink-0"
+                        >
+                          Vaihda
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+            {showNewSeasonInput ? (
+              <div className="flex gap-2">
+                <input
+                  autoFocus
+                  value={newSeasonInput}
+                  onChange={(e) => setNewSeasonInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleCreateSeason(); if (e.key === 'Escape') { setNewSeasonInput(''); setShowNewSeasonInput(false); } }}
+                  placeholder="esim. 2027"
+                  className="flex-1 rounded-lg border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"
+                />
+                <Button size="sm" onClick={handleCreateSeason} disabled={!newSeasonInput.trim() || seasons.includes(newSeasonInput.trim())}>
+                  Luo kausi
+                </Button>
+                <Button variant="secondary" size="sm" onClick={() => { setNewSeasonInput(''); setShowNewSeasonInput(false); }}>
+                  Peruuta
+                </Button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowNewSeasonInput(true)}
+                className="flex items-center gap-1.5 text-sm text-brand-600 dark:text-brand-400 hover:text-brand-700 dark:hover:text-brand-300 font-medium transition-colors"
+              >
+                <Plus size={14} /> Lisää kausi
+              </button>
+            )}
           </div>
         </div>
       </CollapsibleCard>
@@ -402,28 +623,6 @@ export function Settings() {
         )}
       </CollapsibleCard>
 
-      <CollapsibleCard className="break-inside-avoid mb-6" title="Teema">
-        <p className="text-xs text-gray-500 dark:text-slate-400 mb-3">Valitse sovelluksen värimaailma</p>
-        <div className="flex gap-2">
-          {([
-            { value: 'light', label: 'Vaalea', icon: '☀️' },
-            { value: 'dark', label: 'Tumma', icon: '🌙' },
-            { value: 'forest', label: 'Metsä', icon: '🌲' },
-          ] as const).map(({ value, label, icon }) => (
-            <button
-              key={value}
-              onClick={() => setDraft({ ...draft, theme: value })}
-              className={`flex-1 py-2.5 rounded-lg text-sm font-medium border-2 transition-colors min-h-[44px] ${
-                draft.theme === value
-                  ? 'bg-brand-600 text-white border-brand-600'
-                  : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600'
-              }`}
-            >
-              {icon} {label}
-            </button>
-          ))}
-        </div>
-      </CollapsibleCard>
 
       <CollapsibleCard className="break-inside-avoid mb-6" title="Pelaajan tietojen näkyvyys">
         <p className="text-xs text-gray-400 dark:text-slate-500 mb-3">Valitse mitä tietoja näytetään pelaajalistassa ja -korteissa.</p>
@@ -493,10 +692,13 @@ export function Settings() {
                 <p className="text-xs text-red-400 dark:text-red-500">Poistaa joukkueen ja kaiken sen datan pysyvästi</p>
               </div>
               {clearConfirm ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-red-600 font-medium">Oletko varma?</span>
-                  <Button variant="danger" size="sm" onClick={deleteCurrentTeam}>Kyllä, poista</Button>
-                  <Button variant="secondary" size="sm" onClick={() => setClearConfirm(false)}>Peruuta</Button>
+                <div className="flex flex-col items-end gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-red-600 font-medium">Oletko varma?</span>
+                    <Button variant="danger" size="sm" onClick={deleteCurrentTeam}>Kyllä, poista</Button>
+                    <Button variant="secondary" size="sm" onClick={() => { setClearConfirm(false); setDeleteError(''); }}>Peruuta</Button>
+                  </div>
+                  {deleteError && <p className="text-xs text-red-500">{deleteError}</p>}
                 </div>
               ) : (
                 <Button variant="danger" size="sm" icon={<Trash2 size={14} />} onClick={() => setClearConfirm(true)}>

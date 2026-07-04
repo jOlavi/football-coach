@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisää ottelu – C: Tumma hero</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: rgba(0,0,0,.5);
+  display: flex;
+  align-items: flex-end;
+  min-height: 100vh;
+}
+
+/* Bottom sheet */
+.sheet {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  overflow: hidden;
+  border-radius: 24px 24px 0 0;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.4);
+  max-height: 96vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Drag handle on dark */
+.handle {
+  background: #111827;
+  padding: 10px 0 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.handle-bar { width: 36px; height: 4px; background: rgba(255,255,255,.15); border-radius: 2px; }
+
+/* Dark hero */
+.hero {
+  background: #111827;
+  padding: 14px 20px 20px;
+  flex-shrink: 0;
+}
+
+.hero-toprow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.hero-title { font-size: 17px; font-weight: 800; color: #fff; }
+.close-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.1);
+  border: none; cursor: pointer;
+  color: rgba(255,255,255,.5);
+  font-size: 14px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Team pills in hero */
+.team-row { display: flex; gap: 6px; margin-bottom: 16px; }
+.team-hero-btn {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 2px solid rgba(255,255,255,.1);
+  background: rgba(255,255,255,.05);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .15s;
+}
+.team-hero-btn:hover { background: rgba(255,255,255,.08); }
+.team-hero-btn.active { border-color: rgba(255,255,255,.5); background: rgba(255,255,255,.12); }
+.t-avatar { width: 26px; height: 26px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 900; color: #fff; flex-shrink: 0; }
+.t-name-hero { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.7); }
+.team-hero-btn.active .t-name-hero { color: #fff; }
+.t-fmt-hero { margin-left: auto; font-size: 10px; font-weight: 800; padding: 2px 7px; border-radius: 7px; background: rgba(255,255,255,.1); color: rgba(255,255,255,.4); }
+.team-hero-btn.active .t-fmt-hero { background: rgba(22,163,74,.3); color: #86efac; }
+
+/* Date + Opponent in hero */
+.hero-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.hero-field {}
+.hero-label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,.3); text-transform: uppercase; letter-spacing: .1em; margin-bottom: 5px; }
+.hero-input {
+  background: rgba(255,255,255,.08);
+  border: 1.5px solid rgba(255,255,255,.1);
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 600;
+  color: #fff;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+  font-family: inherit;
+}
+.hero-input:focus { border-color: rgba(255,255,255,.3); }
+.hero-input::placeholder { color: rgba(255,255,255,.2); }
+input[type="datetime-local"]::-webkit-calendar-picker-indicator { filter: invert(1) opacity(.3); }
+
+/* Location in hero */
+.loc-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.loc-btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 2px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.04);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all .15s;
+}
+.loc-btn:hover { background: rgba(255,255,255,.08); }
+.loc-icon { font-size: 16px; }
+.loc-label { font-size: 12px; font-weight: 700; color: rgba(255,255,255,.4); }
+.loc-btn.home-on { border-color: #16a34a; background: rgba(22,163,74,.15); }
+.loc-btn.home-on .loc-label { color: #86efac; }
+.loc-btn.away-on { border-color: #3b82f6; background: rgba(59,130,246,.15); }
+.loc-btn.away-on .loc-label { color: #93c5fd; }
+
+/* White bottom */
+.sheet-body {
+  background: #fff;
+  overflow-y: auto;
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.sec-label {
+  font-size: 10px; font-weight: 800;
+  color: #9ca3af;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 8px;
+}
+
+/* Type pills */
+.pill-row { display: flex; gap: 6px; }
+.pill {
+  padding: 8px 16px;
+  border-radius: 99px;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  font-size: 13px; font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all .15s;
+}
+.pill.active { background: #111827; border-color: #111827; color: #fff; }
+.pill:hover:not(.active) { border-color: #d1d5db; }
+
+/* Venue */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.light-input {
+  background: #f9fafb;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 500;
+  color: #111827;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+  font-family: inherit;
+}
+.light-input:focus { border-color: #16a34a; background: #fff; }
+.light-input::placeholder { color: #d1d5db; }
+
+/* Footer */
+.sheet-footer {
+  background: #fff;
+  padding: 10px 20px 28px;
+  border-top: 1px solid #f3f4f6;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.btn-cancel {
+  padding: 13px 18px;
+  border-radius: 14px;
+  background: #f3f4f6;
+  border: none;
+  font-size: 13px; font-weight: 600;
+  color: #6b7280;
+  cursor: pointer;
+}
+.btn-save {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  background: #16a34a;
+  border: none;
+  font-size: 14px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+}
+.btn-save:hover { background: #15803d; }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <div class="handle"><div class="handle-bar"></div></div>
+
+  <!-- Dark hero -->
+  <div class="hero">
+    <div class="hero-toprow">
+      <h2 class="hero-title">Lisää ottelu</h2>
+      <button class="close-btn">✕</button>
+    </div>
+
+    <!-- Joukkueet -->
+    <div class="team-row">
+      <button class="team-hero-btn active">
+        <div class="t-avatar" style="background:#ef4444">MR</div>
+        <span class="t-name-hero">Muury Reds</span>
+        <span class="t-fmt-hero">5v5</span>
+      </button>
+      <button class="team-hero-btn">
+        <div class="t-avatar" style="background:#3b82f6">MB</div>
+        <span class="t-name-hero">Muury Blues</span>
+        <span class="t-fmt-hero">7v7</span>
+      </button>
+    </div>
+
+    <!-- Päivä + vastustaja -->
+    <div class="hero-fields">
+      <div class="hero-field">
+        <p class="hero-label">Päivä ja aika</p>
+        <input class="hero-input" type="datetime-local" value="2026-07-04T17:00">
+      </div>
+      <div class="hero-field">
+        <p class="hero-label">Vastustaja</p>
+        <input class="hero-input" type="text" placeholder="Joukkueen nimi" value="FC Viikingit">
+      </div>
+    </div>
+
+    <!-- Koti / vieras -->
+    <div class="loc-row">
+      <button class="loc-btn home-on">
+        <span class="loc-icon">🏠</span>
+        <span class="loc-label">Kotipeli</span>
+      </button>
+      <button class="loc-btn">
+        <span class="loc-icon">✈️</span>
+        <span class="loc-label">Vieraspeli</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- White body -->
+  <div class="sheet-body">
+
+    <div>
+      <p class="sec-label">Tyyppi</p>
+      <div class="pill-row">
+        <button class="pill active">Sarja</button>
+        <button class="pill">Harjoitusottelu</button>
+      </div>
+    </div>
+
+    <div>
+      <p class="sec-label">Paikka</p>
+      <div class="two-col">
+        <input class="light-input" type="text" placeholder="Kenttä / halli" value="Muurame Arena">
+        <input class="light-input" type="text" placeholder="Osoite">
+      </div>
+    </div>
+
+  </div>
+
+  <div class="sheet-footer">
+    <button class="btn-cancel">Peruuta</button>
+    <button class="btn-save">Lisää ottelu</button>
+  </div>
+
+</div>
+
+</body>
+</html>

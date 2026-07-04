@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lisää ottelu – A: Askeleet</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #111827; display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 24px; }
+
+.modal-wrap {
+  width: 100%; max-width: 420px;
+  background: #1f2937;
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 32px 80px rgba(0,0,0,.6);
+}
+
+/* Step indicator */
+.steps-bar {
+  background: #111827;
+  padding: 18px 20px 14px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+.step-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  position: relative;
+}
+.step-item + .step-item::before {
+  content: '';
+  position: absolute;
+  left: -50%;
+  top: 13px;
+  width: 100%;
+  height: 2px;
+  background: #374151;
+}
+.step-item.done + .step-item::before { background: #16a34a; }
+.step-circle {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #374151;
+  color: #6b7280;
+  font-size: 11px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 1;
+}
+.step-item.active .step-circle { background: #16a34a; color: #fff; }
+.step-item.done .step-circle { background: #15803d; color: #fff; }
+.step-label { font-size: 10px; font-weight: 600; color: #6b7280; }
+.step-item.active .step-label { color: #86efac; }
+.step-item.done .step-label { color: #4ade80; }
+
+/* Header */
+.modal-header {
+  background: #111827;
+  padding: 0 20px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.modal-title { font-size: 18px; font-weight: 800; color: #fff; }
+.close-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.08);
+  border: none; cursor: pointer;
+  color: rgba(255,255,255,.5);
+  font-size: 16px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* Body */
+.modal-body { padding: 20px; }
+
+/* Team cards */
+.section-label {
+  font-size: 10px; font-weight: 800;
+  color: #6b7280;
+  text-transform: uppercase; letter-spacing: .1em;
+  margin-bottom: 10px;
+}
+
+.team-cards { display: flex; flex-direction: column; gap: 8px; }
+.team-card {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 2px solid #374151;
+  background: #111827;
+  cursor: pointer;
+  transition: all .15s;
+}
+.team-card:hover { border-color: #4b5563; }
+.team-card.selected { border-color: #16a34a; background: rgba(22,163,74,.08); }
+
+.team-avatar {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 900; color: #fff;
+  flex-shrink: 0;
+}
+.team-name { font-size: 14px; font-weight: 700; color: #f9fafb; }
+.team-meta { font-size: 11px; color: #6b7280; margin-top: 2px; }
+.team-format {
+  margin-left: auto;
+  font-size: 11px; font-weight: 800;
+  background: #1f2937;
+  color: #9ca3af;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.team-card.selected .team-format { background: rgba(22,163,74,.2); color: #86efac; }
+.check { margin-left: 8px; color: #16a34a; font-size: 16px; opacity: 0; transition: opacity .15s; }
+.team-card.selected .check { opacity: 1; }
+
+/* Divider */
+.divider { height: 1px; background: #374151; margin: 16px 0; }
+
+/* Date + Opponent */
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-label { font-size: 10px; font-weight: 800; color: #6b7280; text-transform: uppercase; letter-spacing: .08em; }
+.field input, .field select {
+  background: #111827;
+  border: 1.5px solid #374151;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 500;
+  color: #f9fafb;
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+.field input:focus, .field select:focus { border-color: #16a34a; }
+.field input::placeholder { color: #4b5563; }
+.field select option { background: #1f2937; }
+
+/* Location toggle */
+.loc-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+.loc-btn {
+  padding: 12px;
+  border-radius: 14px;
+  border: 2px solid #374151;
+  background: #111827;
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+}
+.loc-btn:hover { border-color: #4b5563; }
+.loc-btn .loc-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+.loc-btn .loc-label { font-size: 12px; font-weight: 700; color: #6b7280; }
+.loc-btn.home-active { border-color: #16a34a; background: rgba(22,163,74,.12); }
+.loc-btn.home-active .loc-label { color: #86efac; }
+.loc-btn.away-active { border-color: #3b82f6; background: rgba(59,130,246,.12); }
+.loc-btn.away-active .loc-label { color: #93c5fd; }
+
+/* Type pills */
+.pill-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.pill {
+  padding: 7px 14px;
+  border-radius: 99px;
+  border: 1.5px solid #374151;
+  background: #111827;
+  font-size: 12px; font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+  transition: all .15s;
+}
+.pill.active { background: #16a34a; border-color: #16a34a; color: #fff; }
+
+/* Venue */
+.field-full { margin-bottom: 12px; }
+.field-full input {
+  background: #111827;
+  border: 1.5px solid #374151;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-size: 13px; font-weight: 500;
+  color: #f9fafb;
+  outline: none;
+  width: 100%;
+  transition: border-color .15s;
+}
+.field-full input:focus { border-color: #16a34a; }
+.field-full input::placeholder { color: #4b5563; }
+
+/* Footer */
+.modal-footer {
+  padding: 0 20px 20px;
+  display: flex;
+  gap: 8px;
+}
+.btn-cancel {
+  padding: 13px 18px;
+  border-radius: 14px;
+  background: #374151;
+  border: none;
+  font-size: 13px; font-weight: 600;
+  color: #9ca3af;
+  cursor: pointer;
+}
+.btn-save {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  background: #16a34a;
+  border: none;
+  font-size: 14px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-save:hover { background: #15803d; }
+.btn-next {
+  flex: 1;
+  padding: 13px;
+  border-radius: 14px;
+  background: #16a34a;
+  border: none;
+  font-size: 14px; font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+</style>
+</head>
+<body>
+
+<!-- Näkymä A: Askel 1 - Joukkueen valinta -->
+<div style="display:flex;flex-direction:column;gap:40px;width:100%;max-width:420px">
+
+  <div>
+    <p style="color:#6b7280;font-size:12px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em">Askel 1 / 2</p>
+    <div class="modal-wrap">
+      <div class="steps-bar">
+        <div class="step-item active">
+          <div class="step-circle">1</div>
+          <span class="step-label">Joukkue</span>
+        </div>
+        <div class="step-item">
+          <div class="step-circle">2</div>
+          <span class="step-label">Tiedot</span>
+        </div>
+      </div>
+      <div class="modal-header">
+        <h2 class="modal-title">Lisää ottelu</h2>
+        <button class="close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="section-label">Kenelle joukkueelle?</p>
+        <div class="team-cards">
+          <div class="team-card selected">
+            <div class="team-avatar" style="background:#ef4444">MR</div>
+            <div>
+              <p class="team-name">Muury Reds</p>
+              <p class="team-meta">Sarja · Kenttäpelaajat</p>
+            </div>
+            <span class="team-format">5v5</span>
+            <span class="check">✓</span>
+          </div>
+          <div class="team-card">
+            <div class="team-avatar" style="background:#3b82f6">MB</div>
+            <div>
+              <p class="team-name">Muury Blues</p>
+              <p class="team-meta">Sarja · Kenttäpelaajat</p>
+            </div>
+            <span class="team-format">7v7</span>
+            <span class="check">✓</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel">Peruuta</button>
+        <button class="btn-next">Jatka →</button>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <p style="color:#6b7280;font-size:12px;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em">Askel 2 / 2</p>
+    <div class="modal-wrap">
+      <div class="steps-bar">
+        <div class="step-item done">
+          <div class="step-circle">✓</div>
+          <span class="step-label">Joukkue</span>
+        </div>
+        <div class="step-item active">
+          <div class="step-circle">2</div>
+          <span class="step-label">Tiedot</span>
+        </div>
+      </div>
+      <div class="modal-header">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="team-avatar" style="background:#ef4444;width:28px;height:28px;border-radius:8px;font-size:10px">MR</div>
+          <span style="font-size:15px;font-weight:800;color:#fff">Muury Reds</span>
+          <span style="font-size:11px;background:rgba(22,163,74,.2);color:#86efac;padding:2px 8px;border-radius:8px;font-weight:700">5v5</span>
+        </div>
+        <button class="close-btn">✕</button>
+      </div>
+      <div class="modal-body">
+
+        <p class="section-label" style="margin-bottom:10px">Päivä ja vastustaja</p>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Päivä ja aika</label>
+            <input type="datetime-local" value="2026-07-04T17:00">
+          </div>
+          <div class="field">
+            <label class="field-label">Vastustaja</label>
+            <input type="text" placeholder="Joukkueen nimi" value="FC Viikingit">
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <p class="section-label" style="margin-bottom:10px">Koti vai vieras?</p>
+        <div class="loc-toggle">
+          <div class="loc-btn home-active">
+            <span class="loc-icon">🏠</span>
+            <span class="loc-label">Kotipeli</span>
+          </div>
+          <div class="loc-btn">
+            <span class="loc-icon">✈️</span>
+            <span class="loc-label">Vieraspeli</span>
+          </div>
+        </div>
+
+        <div class="divider"></div>
+        <p class="section-label" style="margin-bottom:10px">Ottelun tyyppi</p>
+        <div class="pill-row">
+          <span class="pill active">Sarja</span>
+          <span class="pill">Harjoitusottelu</span>
+        </div>
+
+        <div class="divider"></div>
+        <p class="section-label" style="margin-bottom:10px">Paikka</p>
+        <div class="field-row">
+          <div class="field">
+            <label class="field-label">Kenttä / halli</label>
+            <input type="text" placeholder="Kenttä" value="Muurame Arena">
+          </div>
+          <div class="field">
+            <label class="field-label">Osoite</label>
+            <input type="text" placeholder="Osoite">
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn-cancel">← Takaisin</button>
+        <button class="btn-save">Lisää ottelu</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
