@@ -77,117 +77,6 @@ const CATEGORIES: Array<{ value: ExerciseCategory | "all"; label: string }> = [
   { value: "game", label: "Peli" },
 ];
 
-const BUILT_IN: Exercise[] = [
-  {
-    id: "b-warmup1",
-    name: "Hölkkä & venyttely",
-    category: "warmup",
-    duration: 10,
-    tags: ["koordinaatio"],
-    description: "Kevyt hölkkä kentän ympäri ja dynaaminen venyttely.",
-    goals: "Kehon lämmittely ja loukkaantumisten ehkäisy.",
-  },
-  {
-    id: "b-warmup2",
-    name: "Rondo 4v1",
-    category: "warmup",
-    duration: 10,
-    tags: ["4v4", "syöttäminen", "yhteistyö"],
-    description: "Pieni syöttöympyrä hallinnan ja liikkeen herättelyyn.",
-    goals: "Pallonhallinta ja liike pallotta.",
-    playerCount: 5,
-  },
-  {
-    id: "b-tech1",
-    name: "Syöttöharjoitus pareittain",
-    category: "technical",
-    duration: 15,
-    tags: ["2v2", "syöttäminen"],
-    description:
-      "Lyhyet syöttöyhdistelmät pareittain. Painopiste ensimmäisessä kosketuksessa ja tarkkuudessa.",
-    goals: "Parantaa syöttötarkkuutta ja vastaanottotekniikkaa.",
-    playerCount: 2,
-  },
-  {
-    id: "b-tech2",
-    name: "Laukausharjoitus",
-    category: "technical",
-    duration: 15,
-    tags: ["laukaus", "maalivahti"],
-    description:
-      "Laukauksia eri kulmista. Sisällytetään volleyt ja syöttö–laukaus-yhdistelmät.",
-    goals: "Kehittää laukaustekniikkaa ja tarkkuutta.",
-  },
-  {
-    id: "b-tact1",
-    name: "1v1 puolustus",
-    category: "tactical",
-    duration: 15,
-    tags: ["1v1", "puolustaminen"],
-    description:
-      "Yksilöpuolustusharjoitus, painopiste asemoinnissa ja jalkatyössä.",
-    goals: "Hidastaa pallollista ja pakottaa suunta.",
-  },
-  {
-    id: "b-tact2",
-    name: "2v1 hyökkäys",
-    category: "tactical",
-    duration: 15,
-    tags: ["2v2", "hyökkääminen"],
-    description:
-      "Kaksi hyökkääjää vastaan yksi puolustaja. Ylivoiman hyödyntäminen.",
-    goals: "Luoda maalipaikka ylivoimatilanteessa.",
-  },
-  {
-    id: "b-tact3",
-    name: "Prässimuoto",
-    category: "tactical",
-    duration: 20,
-    tags: ["puolustaminen", "yhteistyö"],
-    description:
-      "Koordinoitu puolustava prässi 7v7-asetelmassa. Laukaisijat ja varjostukset.",
-    goals: "Tehokas joukkueprässi ja pallonriisto.",
-  },
-  {
-    id: "b-tact4",
-    name: "Vakiotilanteet",
-    category: "tactical",
-    duration: 15,
-    tags: ["hyökkääminen", "puolustaminen"],
-    description:
-      "Kulmapotkulut ja vapaapotkut — hyökkäys- ja puolustusasetelmat.",
-    goals: "Tehokkuus vakiotilanteissa molempiin suuntiin.",
-  },
-  {
-    id: "b-phys1",
-    name: "Juoksuintervallit",
-    category: "physical",
-    duration: 10,
-    tags: ["nopeus", "kondis"],
-    description:
-      "10x20m spurtit 30s levolla. Painopiste kiihdytyksessä ja maksimivauhdissa.",
-    goals: "Kehittää kiihdytyskykyä ja nopeuskestävyyttä.",
-  },
-  {
-    id: "b-game1",
-    name: "Pienpeli 5v5",
-    category: "game",
-    duration: 20,
-    tags: ["5v5", "yhteistyö"],
-    description:
-      "5v5 tai 7v7. Sovelletaan harjoituksen teemaa vapaassa pelitilanteessa.",
-    goals: "Opitun soveltaminen pelissä.",
-  },
-  {
-    id: "b-game2",
-    name: "Koko kentän harjoitusottelu",
-    category: "game",
-    duration: 30,
-    tags: ["yhteistyö"],
-    description: "Täysimittainen ottelu normaalisäännöillä.",
-    goals: "Joukkuepeli ja kokonaiskuva.",
-  },
-];
 
 const emptyExForm = () => ({
   name: "",
@@ -253,7 +142,6 @@ export function Training() {
 
     const exItems: LibraryItem[] = [
       ...custom.map((e) => ({ kind: 'exercise' as const, data: e, isCustom: true })),
-      ...BUILT_IN.map((e) => ({ kind: 'exercise' as const, data: e, isCustom: false })),
     ].filter(({ data: e }) => {
       if (filterCat !== 'all' && e.category !== filterCat) return false;
       if (filterTag !== 'all' && !(e.tags ?? []).includes(filterTag)) return false;
