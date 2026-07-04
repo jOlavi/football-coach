@@ -8,6 +8,7 @@ export function Login() {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
   const setUser = useAuthStore((s) => s.setUser);
+  const accessDenied = useAuthStore((s) => s.accessDenied);
 
   async function handleGoogleSignIn() {
     setLoading(true);
@@ -31,6 +32,12 @@ export function Login() {
           <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Pitchside</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Kirjaudu sisään jatkaaksesi</p>
         </div>
+        {accessDenied && (
+          <div className="w-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-center">
+            <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Sovellus ei ole vielä julkinen</p>
+            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">Rekisteröityminen on tällä hetkellä suljettu.</p>
+          </div>
+        )}
         {error && (
           <p className="text-sm text-red-500 text-center">{error}</p>
         )}

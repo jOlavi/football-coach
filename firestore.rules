@@ -33,6 +33,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Access config — readable without auth so login page can check before sign-in
+    match /appConfig/{docId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /invitations/{token} {
       allow read: if request.auth != null;
       allow create: if request.auth != null
