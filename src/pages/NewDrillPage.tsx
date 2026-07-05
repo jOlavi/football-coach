@@ -277,77 +277,6 @@ export function NewDrillPage() {
           </div>
 
           <div className="relative w-full">
-            {/* Floating selection toolbar */}
-            {board.selectedShape && (() => {
-              const sel = board.selectedShape;
-              const hasSize = 'size' in sel;
-              const hasColor = 'color' in sel;
-              return (
-                <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 rounded-xl border border-gray-200 bg-white px-2 py-1.5 shadow-lg dark:border-slate-700 dark:bg-slate-800">
-                  {hasSize && (
-                    <>
-                      {(['small', 'normal', 'large'] as SizeKey[]).map((s) => (
-                        <button
-                          key={s}
-                          onClick={() => board.updateSelectedSize(s)}
-                          className={`h-7 w-7 rounded text-xs font-bold transition-colors ${
-                            (sel as { size: SizeKey }).size === s
-                              ? 'bg-brand-600 text-white'
-                              : 'text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700'
-                          }`}
-                        >
-                          {s === 'small' ? 'S' : s === 'normal' ? 'M' : 'L'}
-                        </button>
-                      ))}
-                      {hasColor && <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />}
-                    </>
-                  )}
-                  {hasColor && (
-                    <>
-                      {COLORS.map((c) => (
-                        <button
-                          key={c}
-                          onClick={() => board.updateSelectedColor(c)}
-                          className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
-                            (sel as { color: string }).color === c
-                              ? 'scale-110 border-brand-500'
-                              : 'border-gray-300 dark:border-slate-600'
-                          }`}
-                          style={{ background: c }}
-                        />
-                      ))}
-                    </>
-                  )}
-                  {sel.type === 'goal' && (
-                    <>
-                      <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
-                      <button
-                        onClick={() => board.updateSelectedRotation(-45)}
-                        title="Kierrä vasemmalle"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
-                      >
-                        <RotateCcw size={14} />
-                      </button>
-                      <button
-                        onClick={() => board.updateSelectedRotation(45)}
-                        title="Kierrä oikealle"
-                        className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
-                      >
-                        <RotateCw size={14} />
-                      </button>
-                    </>
-                  )}
-                  <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
-                  <button
-                    onClick={board.deleteSelected}
-                    title="Poista"
-                    className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 size={14} />
-                  </button>
-                </div>
-              );
-            })()}
             <canvas
               ref={canvasRef}
               width={800}
@@ -392,6 +321,78 @@ export function NewDrillPage() {
               </div>
             )}
           </div>
+
+          {/* Selection toolbar — below canvas, visible when shape is selected */}
+          {board.selectedShape && (() => {
+            const sel = board.selectedShape;
+            const hasSize = 'size' in sel;
+            const hasColor = 'color' in sel;
+            return (
+              <div className="flex flex-wrap items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white px-3 py-2 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                {hasSize && (
+                  <>
+                    {(['small', 'normal', 'large'] as SizeKey[]).map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => board.updateSelectedSize(s)}
+                        className={`h-7 w-7 rounded text-xs font-bold transition-colors ${
+                          (sel as { size: SizeKey }).size === s
+                            ? 'bg-brand-600 text-white'
+                            : 'text-gray-500 hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {s === 'small' ? 'S' : s === 'normal' ? 'M' : 'L'}
+                      </button>
+                    ))}
+                    {hasColor && <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />}
+                  </>
+                )}
+                {hasColor && (
+                  <>
+                    {COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => board.updateSelectedColor(c)}
+                        className={`h-5 w-5 rounded-full border-2 transition-transform hover:scale-110 ${
+                          (sel as { color: string }).color === c
+                            ? 'scale-110 border-brand-500'
+                            : 'border-gray-300 dark:border-slate-600'
+                        }`}
+                        style={{ background: c }}
+                      />
+                    ))}
+                  </>
+                )}
+                {sel.type === 'goal' && (
+                  <>
+                    <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
+                    <button
+                      onClick={() => board.updateSelectedRotation(-45)}
+                      title="Kierrä vasemmalle"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                    >
+                      <RotateCcw size={14} />
+                    </button>
+                    <button
+                      onClick={() => board.updateSelectedRotation(45)}
+                      title="Kierrä oikealle"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 dark:text-slate-400 dark:hover:bg-slate-700"
+                    >
+                      <RotateCw size={14} />
+                    </button>
+                  </>
+                )}
+                <div className="mx-1 h-5 w-px bg-gray-200 dark:bg-slate-700" />
+                <button
+                  onClick={board.deleteSelected}
+                  title="Poista"
+                  className="flex h-7 w-7 items-center justify-center rounded-lg text-red-500 transition-colors hover:bg-red-50 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 size={14} />
+                </button>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Right panel — metadata form */}
