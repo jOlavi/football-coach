@@ -5,6 +5,7 @@ import type { FieldType, SizeKey, ToolType, Shape } from '../types';
 const SIZE_PX: Record<SizeKey, number> = { small: 10, normal: 15, large: 21 };
 const MAX_HISTORY = 50;
 const HIT_RADIUS = 20;
+const SNAP_THRESHOLD = 10;
 
 // ── Field helpers ──────────────────────────────────────────────────────────
 
@@ -548,6 +549,8 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     curvedPoints: [] as [number, number][],
   });
 
+  const snapLinesRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+
   const pushHistory = useCallback((s: Shape[]) => {
     historyRef.current = [...historyRef.current.slice(-(MAX_HISTORY - 1)), s];
   }, []);
@@ -651,6 +654,22 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
       drawField(ctx, canvas.width, canvas.height, fieldType);
     }
     shapes.forEach((s) => drawShape(ctx, s, s.id === selectedId));
+
+    // Draw snap guide lines on top
+    const snap = snapLinesRef.current;
+    if (snap.x !== null || snap.y !== null) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 210, 255, 0.85)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      if (snap.x !== null) {
+        ctx.beginPath(); ctx.moveTo(snap.x, 0); ctx.lineTo(snap.x, canvas.height); ctx.stroke();
+      }
+      if (snap.y !== null) {
+        ctx.beginPath(); ctx.moveTo(0, snap.y); ctx.lineTo(canvas.width, snap.y); ctx.stroke();
+      }
+      ctx.restore();
+    }
   }, [shapes, fieldType, selectedId, canvasRef]);
 
   // Cache canvas bounding rect — avoids layout reflow on every pointer event
@@ -768,9 +787,37 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     const d = drawing.current;
     if (!d.active || !canvasRef.current) return;
     const [x, y] = getCanvasPos(canvasRef.current, e, rectRef.current);
-    const { activeTool: tool } = stateRef.current;
+    const { activeTool: tool, shapes: currentShapes } = stateRef.current;
 
     if (tool === 'select') {
+      // Compute snap for point-based shapes (not arrows, not zone handles)
+      const dragged = currentShapes.find((s) => s.id === d.tempId);
+      let finalX = x - d.dragOffX;
+      let finalY = y - d.dragOffY;
+      let snapX: number | null = null;
+      let snapY: number | null = null;
+
+      if (dragged && 'x' in dragged && !d.zoneHandle) {
+        const cw = canvasRef.current.width;
+        const ch = canvasRef.current.height;
+        // Snap targets: canvas center + other shapes' positions
+        const targetsX: number[] = [cw / 2];
+        const targetsY: number[] = [ch / 2];
+        currentShapes.forEach((s) => {
+          if (s.id === d.tempId || !('x' in s)) return;
+          targetsX.push((s as { x: number }).x);
+          targetsY.push((s as { y: number }).y);
+        });
+        for (const tx of targetsX) {
+          if (Math.abs(finalX - tx) <= SNAP_THRESHOLD) { finalX = tx; snapX = tx; break; }
+        }
+        for (const ty of targetsY) {
+          if (Math.abs(finalY - ty) <= SNAP_THRESHOLD) { finalY = ty; snapY = ty; break; }
+        }
+      }
+      snapLinesRef.current = { x: snapX, y: snapY };
+
+      const sx = finalX, sy = finalY;
       setShapes((prev) => prev.map((s) => {
         if (s.id !== d.tempId) return s;
         if (s.type === 'arrow') {
@@ -795,7 +842,7 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
           if (d.zoneHandle === 'ne') return { ...s, y, w: x - s.x, h: r2y - y };
           if (d.zoneHandle === 'sw') return { ...s, x, w: r2x - x, h: y - s.y };
         }
-        if ('x' in s) return { ...s, x: x - d.dragOffX, y: y - d.dragOffY } as Shape;
+        if ('x' in s) return { ...s, x: sx, y: sy } as Shape;
         return s;
       }));
       return;
@@ -824,6 +871,7 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     const d = drawing.current;
     d.active = false;
     d.curvedPoints = [];
+    snapLinesRef.current = { x: null, y: null };
     if (d.zoneHandle) {
       d.zoneHandle = null;
       setShapes((prev) => prev.map((s) => {
