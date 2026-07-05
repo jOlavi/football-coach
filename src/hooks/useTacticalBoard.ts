@@ -805,8 +805,12 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
         const targetsY: number[] = [ch / 2];
         currentShapes.forEach((s) => {
           if (s.id === d.tempId || !('x' in s)) return;
-          targetsX.push((s as { x: number }).x);
-          targetsY.push((s as { y: number }).y);
+          const ox = (s as { x: number }).x;
+          const oy = (s as { y: number }).y;
+          targetsX.push(ox);          // kohdistus samalle linjalle
+          targetsX.push(cw - ox);     // peilattu sijainti
+          targetsY.push(oy);          // kohdistus samalle linjalle
+          targetsY.push(ch - oy);     // peilattu sijainti
         });
         for (const tx of targetsX) {
           if (Math.abs(finalX - tx) <= SNAP_THRESHOLD) { finalX = tx; snapX = tx; break; }
