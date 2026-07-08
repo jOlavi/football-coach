@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="fi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Info 4 — Keskustelupohjainen lomake</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, sans-serif; background: #0f172a; color: #e2e8f0; height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+
+  .topbar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0;
+  }
+  .topbar-left { display: flex; align-items: center; gap: 8px; }
+  .back-btn { background: none; border: none; color: #94a3b8; font-size: 13px; cursor: pointer; padding: 5px 8px; border-radius: 8px; }
+  .name-input { background: #0f172a; border: 1px solid #334155; color: #f1f5f9; font-size: 14px; font-weight: 600; padding: 5px 10px; border-radius: 8px; width: 200px; }
+  .step-indicator { display: flex; align-items: center; gap: 6px; flex: 1; justify-content: center; }
+  .step { display: flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+  .step-num { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+  .step.done { color: #4ade80; } .step.done .step-num { background: #14532d; color: #4ade80; }
+  .step.active { color: #e2e8f0; background: #1e3a5f; } .step.active .step-num { background: #3b82f6; color: #fff; }
+  .step-arrow { color: #334155; font-size: 14px; }
+  .save-btn { background: #16a34a; color: #fff; border: none; padding: 6px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+
+  .body { flex: 1; display: flex; overflow: hidden; }
+
+  /* Left preview */
+  .preview-panel {
+    width: 340px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 40px 16px 48px; background: #0d1b2a; border-right: 1px solid #263547;
+    position: relative; overflow: hidden;
+  }
+  .preview-label {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,41,59,0.85); border: 1px solid #334155; border-radius: 20px;
+    padding: 3px 10px; font-size: 11px; color: #64748b; white-space: nowrap;
+  }
+  .canvas-preview {
+    width: 100%; max-height: 220px; aspect-ratio: 800/560;
+    background: #2d7a3a; border-radius: 10px; border: 2px solid #2d3f50;
+    position: relative; overflow: hidden; opacity: 0.88;
+  }
+  .canvas-preview::before { content: ''; position: absolute; inset: 12px; border: 2px solid rgba(255,255,255,0.5); border-radius: 2px; }
+  .obj { position: absolute; width: 18px; height: 18px; border-radius: 50%; transform: translate(-50%,-50%); }
+  .obj-red { background: #ef4444; } .obj-blue { background: #3b82f6; }
+  .preview-edit-btn {
+    position: absolute; bottom: 16px; left: 50%; transform: translateX(-50%);
+    background: rgba(30,41,59,0.9); border: 1px solid #334155; border-radius: 20px;
+    padding: 5px 14px; font-size: 12px; color: #94a3b8; cursor: pointer; font-weight: 600; white-space: nowrap;
+  }
+
+  /* ---- Chat panel ---- */
+  .chat-panel {
+    flex: 1; display: flex; flex-direction: column; background: #0f172a; overflow: hidden;
+  }
+
+  /* Progress track at top */
+  .progress-track {
+    display: flex; align-items: center; padding: 10px 20px; gap: 0;
+    background: #1e293b; border-bottom: 1px solid #334155; flex-shrink: 0;
+  }
+  .progress-step {
+    display: flex; align-items: center; gap: 0; flex: 1;
+  }
+  .progress-dot {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; transition: all 0.2s;
+    cursor: pointer;
+  }
+  .progress-dot.done { background: #14532d; color: #4ade80; border: 2px solid #16a34a; }
+  .progress-dot.active { background: #1d4ed8; color: #fff; border: 2px solid #3b82f6; box-shadow: 0 0 0 3px rgba(59,130,246,0.2); }
+  .progress-dot.pending { background: #1e293b; color: #475569; border: 2px solid #334155; }
+  .progress-dot.done::after { content: '✓'; }
+  .progress-line { flex: 1; height: 2px; background: #334155; }
+  .progress-line.done { background: #16a34a; }
+  .progress-label {
+    position: absolute; top: 34px; font-size: 9px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.06em; color: #475569;
+    white-space: nowrap; transform: translateX(-50%);
+  }
+  .progress-step { position: relative; display: flex; align-items: center; }
+
+  /* Chat messages */
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 24px 24px 12px;
+    display: flex; flex-direction: column; gap: 16px;
+    scroll-behavior: smooth;
+  }
+
+  /* Bot message */
+  .msg-bot {
+    display: flex; gap: 10px; align-items: flex-start; max-width: 80%;
+  }
+  .bot-avatar {
+    width: 30px; height: 30px; border-radius: 50%; background: #1d4ed8;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; flex-shrink: 0; margin-top: 2px;
+  }
+  .msg-bubble {
+    background: #1e293b; border: 1px solid #334155; border-radius: 4px 14px 14px 14px;
+    padding: 10px 14px; font-size: 13px; color: #cbd5e1; line-height: 1.5;
+  }
+  .msg-bubble strong { color: #f1f5f9; }
+
+  /* User answer */
+  .msg-user {
+    display: flex; justify-content: flex-end; align-items: flex-start; gap: 10px;
+  }
+  .answer-bubble {
+    background: #052e16; border: 1px solid #16a34a;
+    border-radius: 14px 4px 14px 14px;
+    padding: 9px 14px; font-size: 13px; color: #4ade80;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .answer-edit {
+    width: 18px; height: 18px; border-radius: 4px; border: 1px solid #16a34a;
+    background: none; color: #4ade80; font-size: 10px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; opacity: 0.6;
+  }
+  .answer-edit:hover { opacity: 1; }
+
+  /* Quick-select chips */
+  .quick-chips { display: flex; flex-wrap: wrap; gap: 7px; padding: 4px 0; }
+  .chip {
+    padding: 6px 13px; border-radius: 20px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8; font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .chip:hover { border-color: #22c55e; color: #e2e8f0; }
+  .chip.selected { background: #052e16; color: #4ade80; border-color: #16a34a; }
+
+  /* Inline input area */
+  .chat-input-area {
+    padding: 12px 20px 16px;
+    border-top: 1px solid #1e293b;
+    flex-shrink: 0;
+  }
+  .input-row {
+    display: flex; gap: 10px; align-items: flex-end;
+  }
+  .chat-textarea {
+    flex: 1; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;
+    font-size: 13px; padding: 10px 14px; border-radius: 12px; resize: none;
+    font-family: inherit; line-height: 1.5; max-height: 120px;
+    outline: none; transition: border-color 0.15s;
+  }
+  .chat-textarea:focus { border-color: #22c55e; }
+  .send-btn {
+    width: 38px; height: 38px; border-radius: 10px; border: none;
+    background: #16a34a; color: #fff; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background 0.15s;
+  }
+  .send-btn:hover { background: #15803d; }
+  .input-hint { font-size: 11px; color: #475569; margin-top: 6px; padding-left: 2px; }
+
+  /* Number input inline */
+  .inline-numbers { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+  .num-group { display: flex; flex-direction: column; gap: 3px; }
+  .num-label { font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+  .num-input {
+    width: 72px; background: #1e293b; border: 1px solid #334155; color: #f1f5f9;
+    font-size: 18px; font-weight: 700; padding: 7px 10px; border-radius: 8px;
+    text-align: center; outline: none;
+  }
+  .num-input:focus { border-color: #22c55e; }
+  .num-confirm {
+    background: #16a34a; color: #fff; border: none; padding: 7px 16px;
+    border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer;
+    align-self: flex-end;
+  }
+
+  /* Tag chooser in chat */
+  .tag-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag-chip {
+    padding: 5px 11px; border-radius: 20px; font-size: 12px;
+    background: #1e293b; color: #64748b; cursor: pointer; border: 1px solid #334155;
+    transition: all 0.15s;
+  }
+  .tag-chip:hover { border-color: #475569; color: #94a3b8; }
+  .tag-chip.active { background: #052e16; color: #4ade80; border-color: #16a34a; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <button class="back-btn">← Takaisin</button>
+    <input class="name-input" value="1v1 Puolustusharjoitus">
+  </div>
+  <div class="step-indicator">
+    <div class="step done"><div class="step-num">✓</div>Piirtäminen</div>
+    <span class="step-arrow">›</span>
+    <div class="step active"><div class="step-num">2</div>Tiedot</div>
+  </div>
+  <button class="save-btn">💾 Tallenna harjoite</button>
+</div>
+
+<div class="body">
+
+  <div class="preview-panel">
+    <div class="preview-label">Piirretty harjoite</div>
+    <div class="canvas-preview">
+      <div style="position:absolute;top:12px;bottom:12px;left:50%;width:2px;background:rgba(255,255,255,0.5)"></div>
+      <div style="position:absolute;top:50%;left:50%;width:70px;height:70px;border:2px solid rgba(255,255,255,0.5);border-radius:50%;transform:translate(-50%,-50%)"></div>
+      <div class="obj obj-red" style="left:30%;top:45%"></div>
+      <div class="obj obj-red" style="left:35%;top:55%"></div>
+      <div class="obj obj-blue" style="left:62%;top:50%"></div>
+      <div style="position:absolute;left:50%;top:30%;transform:translate(-50%,-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:13px solid #eab308"></div>
+      <div style="position:absolute;left:50%;top:70%;transform:translate(-50%,-50%);width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:13px solid #eab308"></div>
+    </div>
+    <button class="preview-edit-btn">✎ Muokkaa piirtoa</button>
+  </div>
+
+  <!-- Chat panel -->
+  <div class="chat-panel">
+
+    <!-- Progress track -->
+    <div class="progress-track">
+      <div class="progress-step">
+        <div class="progress-dot done" title="Kategoria" onclick="scrollTo('q1')">1</div>
+        <div class="progress-line done"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot done" title="Kesto" onclick="scrollTo('q2')">2</div>
+        <div class="progress-line done"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot active" title="Kuvaus">3</div>
+        <div class="progress-line"></div>
+      </div>
+      <div class="progress-step">
+        <div class="progress-dot pending" title="Tavoitteet">4</div>
+        <div class="progress-line"></div>
+      </div>
+      <div class="progress-dot pending" title="Tagit">5</div>
+    </div>
+
+    <!-- Messages -->
+    <div class="chat-messages" id="chatMessages">
+
+      <!-- Q1: Kategoria — done -->
+      <div class="msg-bot" id="q1">
+        <div class="bot-avatar">⚽</div>
+        <div class="msg-bubble">Mihin <strong>kategoriaan</strong> harjoite kuuluu?</div>
+      </div>
+      <div class="msg-bot">
+        <div class="bot-avatar" style="visibility:hidden"></div>
+        <div>
+          <div class="quick-chips">
+            <span class="chip selected">Taktinen</span>
+            <span class="chip">Tekninen</span>
+            <span class="chip">Fyysinen</span>
+            <span class="chip">Lämmittely</span>
+            <span class="chip">Peli</span>
+          </div>
+        </div>
+      </div>
+      <div class="msg-user">
+        <div class="answer-bubble">
+          Taktinen
+          <button class="answer-edit" title="Muokkaa">✎</button>
+        </div>
+      </div>
+
+      <!-- Q2: Kesto + toistot — done -->
+      <div class="msg-bot" id="q2">
+        <div class="bot-avatar">⚽</div>
+        <div class="msg-bubble">Kuinka kauan harjoite kestää ja montako <strong>toistoa</strong>?</div>
+      </div>
+      <div class="msg-user">
+        <div class="answer-bubble">
+          15 min · 3 toistoa
+          <button class="answer-edit" title="Muokkaa">✎</button>
+        </div>
+      </div>
+
+      <!-- Q3: Kuvaus — active -->
+      <div class="msg-bot" id="q3">
+        <div class="bot-avatar">⚽</div>
+        <div class="msg-bubble">Hyvä! Kuvaile harjoite lyhyesti — <strong>mitä tapahtuu</strong> kentällä?</div>
+      </div>
+
+    </div>
+
+    <!-- Active input area -->
+    <div class="chat-input-area">
+      <div class="input-row">
+        <textarea class="chat-textarea" rows="2" placeholder="Kirjoita harjoitteen kuvaus..."></textarea>
+        <button class="send-btn" onclick="sendAnswer()">↑</button>
+      </div>
+      <div class="input-hint">Paina ↑ tai Enter + Shift jatkaaksesi seuraavaan kohtaan</div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const steps = [
+  { id: 'q1', label: 'Kategoria' },
+  { id: 'q2', label: 'Kesto' },
+  { id: 'q3', label: 'Kuvaus' },
+  { id: 'q4', label: 'Tavoitteet' },
+  { id: 'q5', label: 'Tagit' },
+];
+let currentStep = 3;
+
+function sendAnswer() {
+  const ta = document.querySelector('.chat-textarea');
+  const val = ta.value.trim();
+  if (!val) return;
+
+  const msgs = document.getElementById('chatMessages');
+
+  // Add user answer bubble
+  const userMsg = document.createElement('div');
+  userMsg.className = 'msg-user';
+  userMsg.innerHTML = `<div class="answer-bubble">${val}<button class="answer-edit" title="Muokkaa">✎</button></div>`;
+  msgs.appendChild(userMsg);
+
+  ta.value = '';
+  currentStep++;
+
+  // Update progress dots
+  const dots = document.querySelectorAll('.progress-dot');
+  dots.forEach((d, i) => {
+    if (i < currentStep - 1) { d.className = 'progress-dot done'; d.textContent = '✓'; }
+    else if (i === currentStep - 1) { d.className = 'progress-dot active'; d.textContent = i + 1; }
+    else { d.className = 'progress-dot pending'; d.textContent = i + 1; }
+  });
+  const lines = document.querySelectorAll('.progress-line');
+  lines.forEach((l, i) => {
+    l.className = i < currentStep - 1 ? 'progress-line done' : 'progress-line';
+  });
+
+  // Next question
+  if (currentStep === 4) {
+    appendBotMsg('⚽', 'Mikä on harjoitteen <strong>tavoite</strong>? Mitä pelaajat oppivat tai kehittävät?');
+    document.querySelector('.chat-textarea').placeholder = 'Kirjoita tavoite...';
+  } else if (currentStep === 5) {
+    appendBotMsg('⚽', 'Viimeinen kohta — valitse <strong>tagit</strong> jotka kuvaavat harjoitetta:');
+    const tagDiv = document.createElement('div');
+    tagDiv.className = 'msg-bot';
+    tagDiv.innerHTML = `<div class="bot-avatar" style="visibility:hidden"></div>
+      <div>
+        <div class="tag-chips">
+          <span class="tag-chip active" onclick="this.classList.toggle('active')">1v1</span>
+          <span class="tag-chip active" onclick="this.classList.toggle('active')">Puolustaminen</span>
+          <span class="tag-chip" onclick="this.classList.toggle('active')">2v1</span>
+          <span class="tag-chip" onclick="this.classList.toggle('active')">Syöttäminen</span>
+          <span class="tag-chip" onclick="this.classList.toggle('active')">Nopeus</span>
+          <span class="tag-chip" onclick="this.classList.toggle('active')">Laukaus</span>
+          <span class="tag-chip" onclick="this.classList.toggle('active')">Yhteistyö</span>
+        </div>
+      </div>`;
+    msgs.appendChild(tagDiv);
+    document.querySelector('.chat-input-area').innerHTML = `
+      <div style="padding:4px 2px">
+        <button onclick="finish()" style="width:100%;background:#16a34a;color:#fff;border:none;padding:11px;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;">
+          💾 Valmis — tallenna harjoite
+        </button>
+      </div>`;
+  } else if (currentStep > 5) {
+    finish();
+  }
+
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function appendBotMsg(avatar, text) {
+  const msgs = document.getElementById('chatMessages');
+  const div = document.createElement('div');
+  div.className = 'msg-bot';
+  div.innerHTML = `<div class="bot-avatar">${avatar}</div><div class="msg-bubble">${text}</div>`;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function finish() {
+  alert('Harjoite tallennettu! (demo)');
+}
+
+document.querySelector('.chat-textarea').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAnswer(); }
+});
+</script>
+</body>
+</html>

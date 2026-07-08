@@ -116,6 +116,7 @@ export function Training() {
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<
     string | null
   >(null);
+  const [confirmDeleteDrillId, setConfirmDeleteDrillId] = useState<string | null>(null);
 
   // Library filters
   const [filterCat, setFilterCat] = useState<ExerciseCategory | "all">("all");
@@ -487,7 +488,7 @@ export function Training() {
                         </div>
                         <div className="flex gap-1 shrink-0">
                           <button onClick={() => navigate(`/training/drills/${d.id}/edit`)} className="p-1 text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors" title="Muokkaa"><Pencil size={12} /></button>
-                          <button onClick={() => deleteDrill(d.id).catch(console.error)} className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors" title="Poista"><Trash2 size={12} /></button>
+                          <button onClick={() => { setPreviewDrill(d); setConfirmDeleteDrillId(d.id); }} className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors" title="Poista"><Trash2 size={12} /></button>
                         </div>
                       </div>
                       <div className="flex items-center justify-between mt-auto">
@@ -873,10 +874,10 @@ export function Training() {
       {previewDrill && (
         <Modal
           title={previewDrill.name}
-          onClose={() => setPreviewDrill(null)}
+          onClose={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); }}
           wide
         >
-          <div className="flex flex-col gap-4">
+          <div className="relative flex flex-col gap-4">
             {(previewDrill.imageUrl || previewDrill.canvasDataUrl) ? (
               <img
                 src={previewDrill.imageUrl || previewDrill.canvasDataUrl}
@@ -906,14 +907,47 @@ export function Training() {
                 <p className="text-sm text-brand-800 dark:text-brand-300 leading-relaxed">{previewDrill.goals}</p>
               </div>
             )}
-            <div className="flex justify-end gap-2 pt-1">
-              <Button variant="secondary" onClick={() => { setPreviewDrill(null); navigate(`/training/drills/${previewDrill.id}/edit`); }} icon={<Pencil size={13} />}>
-                Muokkaa
+            <div className="flex justify-between gap-2 pt-1">
+              <Button variant="danger" icon={<Trash2 size={13} />} onClick={() => setConfirmDeleteDrillId(previewDrill.id)}>
+                Poista
               </Button>
-              <Button variant="secondary" onClick={() => setPreviewDrill(null)}>
-                Sulje
-              </Button>
+              <div className="flex gap-2">
+                <Button variant="secondary" onClick={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); navigate(`/training/drills/${previewDrill.id}/edit`); }} icon={<Pencil size={13} />}>
+                  Muokkaa
+                </Button>
+                <Button variant="secondary" onClick={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); }}>
+                  Sulje
+                </Button>
+              </div>
             </div>
+
+            {/* Delete confirmation overlay */}
+            {confirmDeleteDrillId === previewDrill.id && (
+              <div className="absolute inset-0 rounded-lg bg-slate-900/85 backdrop-blur-sm flex flex-col items-center justify-center gap-5 p-6">
+                <div className="text-center">
+                  <p className="text-base font-bold text-slate-100 mb-1">Poistetaanko harjoite?</p>
+                  <p className="text-sm text-slate-400">
+                    <span className="font-semibold text-slate-200">"{previewDrill.name}"</span> poistetaan pysyvästi. Tätä ei voi peruuttaa.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" onClick={() => setConfirmDeleteDrillId(null)}>
+                    Peruuta
+                  </Button>
+                  <Button
+                    variant="danger"
+                    icon={<Trash2 size={14} />}
+                    onClick={() => {
+                      deleteDrill(previewDrill.id).catch(console.error);
+                      setConfirmDeleteDrillId(null);
+                      setPreviewDrill(null);
+                    }}
+                  >
+                    Poista harjoite
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </Modal>
       )}

@@ -5,6 +5,7 @@ import type { FieldType, SizeKey, ToolType, Shape } from '../types';
 const SIZE_PX: Record<SizeKey, number> = { small: 10, normal: 15, large: 21 };
 const MAX_HISTORY = 50;
 const HIT_RADIUS = 20;
+const SNAP_THRESHOLD = 10;
 
 // ── Field helpers ──────────────────────────────────────────────────────────
 
@@ -268,6 +269,81 @@ function drawField(ctx: CanvasRenderingContext2D, w: number, h: number, fieldTyp
 // Cached once at module load — avoids per-frame Path2D allocation
 const SHIRT_PATH = new Path2D('M20.38 3.46 16 2a4 4 0 0 1-8 0L3.62 3.46a2 2 0 0 0-1.34 2.23l.58 3.47a1 1 0 0 0 .99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 0 0 2-2V10h2.15a1 1 0 0 0 .99-.84l.58-3.47a2 2 0 0 0-1.34-2.23z');
 
+// ── Path smoothing ─────────────────────────────────────────────────────────
+
+// Ramer-Douglas-Peucker: removes points that deviate less than epsilon from
+// the straight line between their neighbours, preserving the overall shape.
+function rdp(pts: [number, number][], epsilon: number): [number, number][] {
+  if (pts.length <= 2) return pts;
+  let maxDist = 0, maxIdx = 0;
+  const [x1, y1] = pts[0];
+  const [x2, y2] = pts[pts.length - 1];
+  const lenSq = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [px, py] = pts[i];
+    let d: number;
+    if (lenSq === 0) {
+      d = Math.hypot(px - x1, py - y1);
+    } else {
+      const t = Math.max(0, Math.min(1, ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / lenSq));
+      d = Math.hypot(px - x1 - t * (x2 - x1), py - y1 - t * (y2 - y1));
+    }
+    if (d > maxDist) { maxDist = d; maxIdx = i; }
+  }
+  if (maxDist > epsilon) {
+    return [...rdp(pts.slice(0, maxIdx + 1), epsilon).slice(0, -1), ...rdp(pts.slice(maxIdx), epsilon)];
+  }
+  return [pts[0], pts[pts.length - 1]];
+}
+
+// Laplacian smoothing with obstacle awareness.
+// Each iteration nudges every interior point toward the midpoint of its
+// neighbours. If the nudged position would land inside an obstacle the point
+// stays put — it acts as a fixed anchor that the rest of the path smooths
+// around, like a rope pulled tight around a post.
+function laplacianSmooth(
+  pts: [number, number][],
+  iterations: number,
+  obstacles: Array<{ x: number; y: number; radius: number }>,
+): [number, number][] {
+  if (pts.length < 3) return pts;
+  let cur = [...pts];
+  for (let iter = 0; iter < iterations; iter++) {
+    const next: [number, number][] = [cur[0]];
+    for (let i = 1; i < cur.length - 1; i++) {
+      const nx = cur[i - 1][0] * 0.25 + cur[i][0] * 0.5 + cur[i + 1][0] * 0.25;
+      const ny = cur[i - 1][1] * 0.25 + cur[i][1] * 0.5 + cur[i + 1][1] * 0.25;
+      const blocked = obstacles.some((o) => Math.hypot(nx - o.x, ny - o.y) < o.radius);
+      next.push(blocked ? cur[i] : [nx, ny] as [number, number]);
+    }
+    next.push(cur[cur.length - 1]);
+    cur = next;
+  }
+  return cur;
+}
+
+// Draw a Catmull-Rom spline through pts — produces smooth curves that pass
+// exactly through every control point (unlike quadraticCurveTo which pulls away).
+function catmullRomPath(ctx: CanvasRenderingContext2D, pts: [number, number][]) {
+  if (pts.length < 2) return;
+  ctx.moveTo(pts[0][0], pts[0][1]);
+  if (pts.length === 2) {
+    ctx.lineTo(pts[1][0], pts[1][1]);
+    return;
+  }
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(0, i - 1)];
+    const p1 = pts[i];
+    const p2 = pts[i + 1];
+    const p3 = pts[Math.min(pts.length - 1, i + 2)];
+    ctx.bezierCurveTo(
+      p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6,
+      p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6,
+      p2[0], p2[1],
+    );
+  }
+}
+
 // ── Shape drawing ──────────────────────────────────────────────────────────
 
 function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolean) {
@@ -350,14 +426,8 @@ function drawShape(ctx: CanvasRenderingContext2D, shape: Shape, selected: boolea
       ctx.lineWidth = selected ? lw + 1.5 : lw;
       ctx.setLineDash(shape.dashed ? [8, 5] : []);
       ctx.beginPath();
-      if (shape.curved && shape.points.length >= 3) {
-        ctx.moveTo(shape.points[0][0], shape.points[0][1]);
-        for (let i = 1; i < shape.points.length - 1; i++) {
-          const mx = (shape.points[i][0] + shape.points[i + 1][0]) / 2;
-          const my = (shape.points[i][1] + shape.points[i + 1][1]) / 2;
-          ctx.quadraticCurveTo(shape.points[i][0], shape.points[i][1], mx, my);
-        }
-        ctx.lineTo(shape.points[shape.points.length - 1][0], shape.points[shape.points.length - 1][1]);
+      if (shape.curved && shape.points.length >= 2) {
+        catmullRomPath(ctx, shape.points);
       } else {
         ctx.moveTo(shape.points[0][0], shape.points[0][1]);
         ctx.lineTo(shape.points[shape.points.length - 1][0], shape.points[shape.points.length - 1][1]);
@@ -548,6 +618,8 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     curvedPoints: [] as [number, number][],
   });
 
+  const snapLinesRef = useRef<{ x: number | null; y: number | null }>({ x: null, y: null });
+
   const pushHistory = useCallback((s: Shape[]) => {
     historyRef.current = [...historyRef.current.slice(-(MAX_HISTORY - 1)), s];
   }, []);
@@ -651,6 +723,22 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
       drawField(ctx, canvas.width, canvas.height, fieldType);
     }
     shapes.forEach((s) => drawShape(ctx, s, s.id === selectedId));
+
+    // Draw snap guide lines on top
+    const snap = snapLinesRef.current;
+    if (snap.x !== null || snap.y !== null) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(0, 210, 255, 0.85)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([6, 4]);
+      if (snap.x !== null) {
+        ctx.beginPath(); ctx.moveTo(snap.x, 0); ctx.lineTo(snap.x, canvas.height); ctx.stroke();
+      }
+      if (snap.y !== null) {
+        ctx.beginPath(); ctx.moveTo(0, snap.y); ctx.lineTo(canvas.width, snap.y); ctx.stroke();
+      }
+      ctx.restore();
+    }
   }, [shapes, fieldType, selectedId, canvasRef]);
 
   // Cache canvas bounding rect — avoids layout reflow on every pointer event
@@ -768,9 +856,41 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
     const d = drawing.current;
     if (!d.active || !canvasRef.current) return;
     const [x, y] = getCanvasPos(canvasRef.current, e, rectRef.current);
-    const { activeTool: tool } = stateRef.current;
+    const { activeTool: tool, shapes: currentShapes } = stateRef.current;
 
     if (tool === 'select') {
+      // Compute snap for point-based shapes (not arrows, not zone handles)
+      const dragged = currentShapes.find((s) => s.id === d.tempId);
+      let finalX = x - d.dragOffX;
+      let finalY = y - d.dragOffY;
+      let snapX: number | null = null;
+      let snapY: number | null = null;
+
+      if (dragged && 'x' in dragged && !d.zoneHandle) {
+        const cw = canvasRef.current.width;
+        const ch = canvasRef.current.height;
+        // Snap targets: canvas center + other shapes' positions
+        const targetsX: number[] = [cw / 2];
+        const targetsY: number[] = [ch / 2];
+        currentShapes.forEach((s) => {
+          if (s.id === d.tempId || !('x' in s)) return;
+          const ox = (s as { x: number }).x;
+          const oy = (s as { y: number }).y;
+          targetsX.push(ox);          // kohdistus samalle linjalle
+          targetsX.push(cw - ox);     // peilattu sijainti
+          targetsY.push(oy);          // kohdistus samalle linjalle
+          targetsY.push(ch - oy);     // peilattu sijainti
+        });
+        for (const tx of targetsX) {
+          if (Math.abs(finalX - tx) <= SNAP_THRESHOLD) { finalX = tx; snapX = tx; break; }
+        }
+        for (const ty of targetsY) {
+          if (Math.abs(finalY - ty) <= SNAP_THRESHOLD) { finalY = ty; snapY = ty; break; }
+        }
+      }
+      snapLinesRef.current = { x: snapX, y: snapY };
+
+      const sx = finalX, sy = finalY;
       setShapes((prev) => prev.map((s) => {
         if (s.id !== d.tempId) return s;
         if (s.type === 'arrow') {
@@ -795,7 +915,7 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
           if (d.zoneHandle === 'ne') return { ...s, y, w: x - s.x, h: r2y - y };
           if (d.zoneHandle === 'sw') return { ...s, x, w: r2x - x, h: y - s.y };
         }
-        if ('x' in s) return { ...s, x: x - d.dragOffX, y: y - d.dragOffY } as Shape;
+        if ('x' in s) return { ...s, x: sx, y: sy } as Shape;
         return s;
       }));
       return;
@@ -822,8 +942,30 @@ export function useTacticalBoard(canvasRef: RefObject<HTMLCanvasElement | null>)
 
   const handlePointerUp = useCallback(() => {
     const d = drawing.current;
+    const { activeTool: tool } = stateRef.current;
     d.active = false;
+    snapLinesRef.current = { x: null, y: null };
+
+    if (tool === 'curved') {
+      const currentTempId = d.tempId;
+
+      const obstacles = stateRef.current.shapes
+        .filter((o): o is Extract<Shape, { type: 'player' | 'opponent' | 'cone' | 'ball' | 'goal' }> =>
+          o.type === 'player' || o.type === 'opponent' ||
+          o.type === 'cone'   || o.type === 'ball'     || o.type === 'goal',
+        )
+        .map((o) => ({ x: o.x, y: o.y, radius: SIZE_PX[o.size] + 14 }));
+
+      setShapes((prev) => prev.map((s) => {
+        if (s.type !== 'arrow' || !s.curved || s.id !== currentTempId) return s;
+        const simplified = rdp(s.points, 4);
+        const smoothed = laplacianSmooth(simplified, 35, obstacles);
+        return { ...s, points: smoothed.length >= 2 ? smoothed : s.points };
+      }));
+    }
+
     d.curvedPoints = [];
+
     if (d.zoneHandle) {
       d.zoneHandle = null;
       setShapes((prev) => prev.map((s) => {
