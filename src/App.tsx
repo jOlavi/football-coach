@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { useEffect } from 'react';
 import { Layout } from './components/layout/Layout';
 import { AuthProvider } from './components/auth/AuthProvider';
@@ -43,54 +43,62 @@ function TeamGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+const router = createBrowserRouter([
+  { path: '/login', element: <Login /> },
+  { path: '/join', element: <JoinTeam /> },
+  {
+    path: '/teams/select',
+    element: <ProtectedRoute><SelectTeam /></ProtectedRoute>,
+  },
+  {
+    path: '/teams/new',
+    element: <ProtectedRoute><CreateTeam /></ProtectedRoute>,
+  },
+  {
+    path: '/matches/:id/setup',
+    element: <ProtectedRoute><TeamGuard><MatchSetup /></TeamGuard></ProtectedRoute>,
+  },
+  {
+    path: '/matches/:id/live',
+    element: <ProtectedRoute><TeamGuard><MatchLive /></TeamGuard></ProtectedRoute>,
+  },
+  {
+    path: '/matches/:id/break',
+    element: <ProtectedRoute><TeamGuard><MatchBreak /></TeamGuard></ProtectedRoute>,
+  },
+  {
+    path: '/',
+    element: (
+      <ProtectedRoute>
+        <TeamGuard>
+          <Layout />
+        </TeamGuard>
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <Dashboard /> },
+      { path: 'players', element: <Players /> },
+      { path: 'matches', element: <Matches /> },
+      { path: 'planning', element: <MatchPlanning /> },
+      { path: 'statistics', element: <Statistics /> },
+      { path: 'training', element: <Training /> },
+      { path: 'training/new', element: <TrainingBuilder /> },
+      { path: 'training/:id/edit', element: <TrainingBuilder /> },
+      { path: 'training/new-drill', element: <NewDrillPage /> },
+      { path: 'training/drills/:id/edit', element: <NewDrillPage /> },
+      { path: 'communication', element: <Communication /> },
+      { path: 'reminders', element: <Reminders /> },
+      { path: 'notes', element: <Notes /> },
+      { path: 'settings', element: <Settings /> },
+    ],
+  },
+]);
+
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <ThemeSync />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/join" element={<JoinTeam />} />
-          <Route path="/teams/select" element={
-            <ProtectedRoute><SelectTeam /></ProtectedRoute>
-          } />
-          <Route path="/teams/new" element={
-            <ProtectedRoute><CreateTeam /></ProtectedRoute>
-          } />
-          {/* Full-screen match management — no sidebar layout */}
-          <Route path="/matches/:id/setup" element={
-            <ProtectedRoute><TeamGuard><MatchSetup /></TeamGuard></ProtectedRoute>
-          } />
-          <Route path="/matches/:id/live" element={
-            <ProtectedRoute><TeamGuard><MatchLive /></TeamGuard></ProtectedRoute>
-          } />
-          <Route path="/matches/:id/break" element={
-            <ProtectedRoute><TeamGuard><MatchBreak /></TeamGuard></ProtectedRoute>
-          } />
-          <Route path="/" element={
-            <ProtectedRoute>
-              <TeamGuard>
-                <Layout />
-              </TeamGuard>
-            </ProtectedRoute>
-          }>
-            <Route index element={<Dashboard />} />
-            <Route path="players" element={<Players />} />
-            <Route path="matches" element={<Matches />} />
-            <Route path="planning" element={<MatchPlanning />} />
-            <Route path="statistics" element={<Statistics />} />
-            <Route path="training" element={<Training />} />
-            <Route path="training/new" element={<TrainingBuilder />} />
-            <Route path="training/:id/edit" element={<TrainingBuilder />} />
-            <Route path="training/new-drill" element={<NewDrillPage />} />
-            <Route path="training/drills/:id/edit" element={<NewDrillPage />} />
-            <Route path="communication" element={<Communication />} />
-            <Route path="reminders" element={<Reminders />} />
-            <Route path="notes" element={<Notes />} />
-            <Route path="settings" element={<Settings />} />
-          </Route>
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <ThemeSync />
+      <RouterProvider router={router} />
+    </AuthProvider>
   );
 }
