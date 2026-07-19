@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Plus, X } from 'lucide-react';
+import { TournamentLineupModal } from './TournamentLineupModal';
 import { format } from 'date-fns';
 import { useTournamentStore } from '../../store/useTournamentStore';
 import { useTeamStore } from '../../store/useTeamStore';
@@ -40,6 +41,9 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
     };
   });
 
+  const [lineup, setLineup] = useState<string[]>(() => editing?.lineup ?? []);
+  const [showLineupModal, setShowLineupModal] = useState(false);
+
   const [draftMatches, setDraftMatches] = useState<DraftMatch[]>(() => {
     if (editing) return (editing.matches ?? []).map((m) => ({
       id: m.id, time: m.time ?? '', field: m.field ?? '', opponent: m.opponent, location: m.location ?? 'home',
@@ -53,14 +57,15 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
       .filter((m) => m.opponent.trim())
       .map((m) => ({ id: m.id, time: m.time || undefined, field: m.field || undefined, opponent: m.opponent, location: m.location }));
     if (editing) {
-      updateTournament(editing.id, { ...draft, matches: savedMatches });
+      updateTournament(editing.id, { ...draft, lineup, matches: savedMatches });
     } else {
-      addTournament({ ...draft, matches: savedMatches, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
+      addTournament({ ...draft, lineup, matches: savedMatches, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
     }
     onClose();
   }
 
   return (
+    <>
     <Modal title={editing ? 'Muokkaa turnausta' : 'Luo turnaus'} onClose={onClose} wide>
       <div className="space-y-4">
         {/* Tournament details */}
@@ -119,6 +124,12 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
           )}
           <Textarea label="Muistiinpanot" value={draft.notes}
             onChange={(e) => setDraft({ ...draft, notes: e.target.value })} />
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Kokoonpano</p>
+            <Button variant="secondary" size="sm" onClick={() => setShowLineupModal(true)}>
+              {lineup.length > 0 ? `Muokkaa kokoonpanoa (${lineup.length})` : 'Lisää kokoonpano'}
+            </Button>
+          </div>
         </div>
 
         {/* Matches */}
@@ -187,5 +198,14 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
         </div>
       </div>
     </Modal>
+    {showLineupModal && (
+      <TournamentLineupModal
+        initialLineup={lineup}
+        ownTeamId={draft.ownTeamId}
+        onSave={(ids) => { setLineup(ids); setShowLineupModal(false); }}
+        onClose={() => setShowLineupModal(false)}
+      />
+    )}
+    </>
   );
 }
