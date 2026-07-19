@@ -200,6 +200,7 @@ export function Matches() {
                 </span>
                 <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-full px-2 py-0.5 font-medium">{levelLabels[m.level]}</span>
                 {m.format && <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-600 dark:text-slate-300 rounded-full px-2 py-0.5 font-medium">{m.format}</span>}
+                {m.teamLevel && <span className="text-xs bg-brand-50 text-brand-700 border border-brand-200 dark:bg-brand-900/20 dark:text-brand-400 dark:border-brand-800 rounded-full px-2 py-0.5 font-medium">{m.teamLevel === 'taso1' ? 'T1' : 'T2'}</span>}
                 {m.venue && <span className="text-xs text-gray-400 dark:text-slate-500">{m.venue}</span>}
               </div>
             </div>
