@@ -185,6 +185,7 @@ export interface OwnTeam {
   id: string;
   name: string;
   color?: string;
+  level?: TeamLevel;
   format?: TeamFormat;
   minLineupSize?: number;
   createdAt: string;
