@@ -186,6 +186,14 @@ export function Matches() {
             <div className="min-w-0">
               <p className="font-semibold text-gray-900 dark:text-slate-100 text-sm truncate">{matchTitle}</p>
               <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {ownTeam && (
+                  <span
+                    className="text-xs font-semibold rounded-full px-2 py-0.5 text-white"
+                    style={{ backgroundColor: ownTeam.color ?? '#6b7280' }}
+                  >
+                    {ownTeam.name}
+                  </span>
+                )}
                 <span className="text-xs text-gray-400 dark:text-slate-500 font-mono">{timeStr}</span>
                 <span className={`text-xs border rounded-full px-2 py-0.5 font-medium ${m.location === 'home' ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800' : 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800'}`}>
                   {m.location === 'home' ? 'Koti' : 'Vieras'}
