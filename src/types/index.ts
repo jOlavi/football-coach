@@ -79,6 +79,7 @@ export interface Tournament {
   notes?: string;
   ownTeamId?: string;
   level?: string;
+  lineup?: string[];
   matches: TournamentMatch[];
   createdAt: string;
 }
