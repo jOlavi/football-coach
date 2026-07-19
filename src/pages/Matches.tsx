@@ -11,6 +11,7 @@ import {
   Trophy,
   X,
   MoreVertical,
+  Users,
 } from "lucide-react";
 import { useMatchStore } from "../store/useMatchStore";
 import { usePlayerStore } from "../store/usePlayerStore";
@@ -22,6 +23,7 @@ import { Button } from "../components/ui/Button";
 import { Modal } from "../components/ui/Modal";
 import { MatchFormModal } from "../components/matches/MatchFormModal";
 import { TournamentFormModal } from "../components/matches/TournamentFormModal";
+import { TournamentLineupModal } from "../components/matches/TournamentLineupModal";
 import { format } from "date-fns";
 import type { Match, MatchLevel, MatchResult, TeamFormat, Tournament } from "../types";
 
@@ -48,7 +50,7 @@ export function Matches() {
   const players = usePlayerStore((s) => s.players);
   const teams = useTeamStore((s) => s.teams);
   const allTournaments = useTournamentStore((s) => s.tournaments);
-  const { deleteTournament, addTournamentMatch, updateTournamentMatch, removeTournamentMatch } = useTournamentStore();
+  const { deleteTournament, addTournamentMatch, updateTournamentMatch, removeTournamentMatch, updateTournament } = useTournamentStore();
   const { activeSeason, seasons } = useAppStore();
   const isFirstSeason = seasons[0] === activeSeason;
   const inSeason = (s?: string) => s === activeSeason || (!s && isFirstSeason);
@@ -80,6 +82,7 @@ export function Matches() {
     initialExpanded ? new Set([initialExpanded]) : new Set()
   );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [lineupTournamentId, setLineupTournamentId] = useState<string | null>(null);
 
   const filtered = selectedTeamId
     ? matches.filter((m) => m.ownTeamId === selectedTeamId)
@@ -519,6 +522,15 @@ export function Matches() {
               </div>
               {/* Tournament matches */}
               {!isCollapsed && <div className="bg-gray-50 dark:bg-slate-900 border-t border-gray-100 dark:border-slate-700 px-4 py-3 space-y-1 rounded-b-xl">
+                {!t.lineup?.length && (
+                  <div className="flex items-center gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg px-3 py-2.5 mb-2">
+                    <Users size={16} className="text-yellow-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-yellow-800 dark:text-yellow-300">Kokoonpano puuttuu</p>
+                      <p className="text-xs text-yellow-600 dark:text-yellow-400">Lisää pelaajat turnaukseen</p>
+                    </div>
+                  </div>
+                )}
                 {(t.matches ?? []).length === 0 && (
                   <p className="text-xs text-gray-400 dark:text-slate-500 py-1">Ei otteluita vielä.</p>
                 )}
@@ -574,10 +586,18 @@ export function Matches() {
                     </div>
                   );
                 })}
-                <div className="pt-1">
+                <div className="pt-1 flex flex-wrap gap-2">
                   <Button variant="secondary" size="sm" icon={<Plus size={13} />}
                     onClick={() => addTournamentMatch(t.id, { id: crypto.randomUUID(), opponent: 'Uusi ottelu' })}>
                     Lisää ottelu
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<Users size={13} />}
+                    onClick={() => setLineupTournamentId(t.id)}
+                  >
+                    {t.lineup?.length ? `Muokkaa kokoonpanoa (${t.lineup.length})` : 'Lisää kokoonpano'}
                   </Button>
                 </div>
               </div>}
@@ -730,6 +750,22 @@ export function Matches() {
               </div>
             </div>
           </Modal>
+        );
+      })()}
+
+      {lineupTournamentId && (() => {
+        const lt = tournaments.find((x) => x.id === lineupTournamentId);
+        if (!lt) return null;
+        return (
+          <TournamentLineupModal
+            initialLineup={lt.lineup ?? []}
+            ownTeamId={lt.ownTeamId}
+            onSave={(ids) => {
+              updateTournament(lineupTournamentId, { lineup: ids });
+              setLineupTournamentId(null);
+            }}
+            onClose={() => setLineupTournamentId(null)}
+          />
         );
       })()}
     </div>
