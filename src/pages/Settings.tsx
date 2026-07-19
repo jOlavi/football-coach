@@ -1,6 +1,6 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import type { TeamFormat } from '../types';
+import type { TeamFormat, TeamLevel } from '../types';
 import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy, Pencil } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
@@ -81,8 +81,8 @@ export function Settings() {
   const { teams, addTeam, updateTeam, deleteTeam } = useTeamStore();
   const { activeSeason, seasons, setActiveSeason, addSeason, renameSeason, removeSeason } = useAppStore();
 
-  type TeamModalDraft = { name: string; color: string; format: TeamFormat; minLineupSize: number };
-  const emptyTeamDraft = (): TeamModalDraft => ({ name: '', color: PRESET_COLORS[0], format: '7v7', minLineupSize: 7 });
+  type TeamModalDraft = { name: string; color: string; format: TeamFormat; minLineupSize: number; level: TeamLevel };
+  const emptyTeamDraft = (): TeamModalDraft => ({ name: '', color: PRESET_COLORS[0], format: '7v7', minLineupSize: 7, level: 'taso1' });
   const [teamModal, setTeamModal] = useState<{ mode: 'add' | 'edit'; id?: string } | null>(null);
   const [teamDraft, setTeamDraft] = useState<TeamModalDraft>(emptyTeamDraft());
   const [teamSaveConfirm, setTeamSaveConfirm] = useState(false);
@@ -93,8 +93,8 @@ export function Settings() {
     setTeamModal({ mode: 'add' });
   }
 
-  function openEditTeam(t: { id: string; name: string; color?: string; format?: TeamFormat; minLineupSize?: number }) {
-    setTeamDraft({ name: t.name, color: t.color ?? PRESET_COLORS[0], format: t.format ?? '7v7', minLineupSize: t.minLineupSize ?? 7 });
+  function openEditTeam(t: { id: string; name: string; color?: string; format?: TeamFormat; minLineupSize?: number; level?: TeamLevel }) {
+    setTeamDraft({ name: t.name, color: t.color ?? PRESET_COLORS[0], format: t.format ?? '7v7', minLineupSize: t.minLineupSize ?? 7, level: t.level ?? 'taso1' });
     setTeamSaveConfirm(false);
     setTeamModal({ mode: 'edit', id: t.id });
   }
@@ -102,10 +102,10 @@ export function Settings() {
   function saveTeamModal() {
     if (!teamDraft.name.trim()) return;
     if (teamModal?.mode === 'add') {
-      addTeam({ id: crypto.randomUUID(), name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize, createdAt: new Date().toISOString() });
+      addTeam({ id: crypto.randomUUID(), name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize, level: teamDraft.level, createdAt: new Date().toISOString() });
       setTeamModal(null);
     } else if (teamModal?.id) {
-      updateTeam(teamModal.id, { name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize });
+      updateTeam(teamModal.id, { name: teamDraft.name.trim(), color: teamDraft.color, format: teamDraft.format, minLineupSize: teamDraft.minLineupSize, level: teamDraft.level });
       setTeamModal(null);
     }
   }
@@ -802,6 +802,26 @@ export function Settings() {
               className="w-24 rounded-lg border border-gray-200 dark:border-slate-600 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:text-slate-100"
             />
             <p className="text-xs text-gray-400 dark:text-slate-500 mt-1">Varoitus jos kokoonpanossa alle tämän verran pelaajia</p>
+          </div>
+
+          <div>
+            <p className="text-sm font-medium text-gray-700 dark:text-slate-200 mb-2">Taso</p>
+            <div className="flex gap-2">
+              {([['taso1', 'Taso 1'], ['taso2', 'Taso 2']] as const).map(([val, label]) => (
+                <button
+                  key={val}
+                  type="button"
+                  onClick={() => setTeamDraft({ ...teamDraft, level: val })}
+                  className={`px-4 py-1.5 rounded-full text-sm font-medium border transition-colors ${
+                    teamDraft.level === val
+                      ? 'bg-brand-600 text-white border-brand-600'
+                      : 'bg-white dark:bg-slate-800 text-gray-600 dark:text-slate-300 border-gray-200 dark:border-slate-600 hover:border-brand-400'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 pt-1">
