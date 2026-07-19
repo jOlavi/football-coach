@@ -56,7 +56,7 @@ export function MatchFormModal({ editing, initialDate, onClose }: Props) {
 
   function pickTeam(team: OwnTeam) {
     setSelectedTeam(team);
-    setForm((f) => ({ ...f, ownTeamId: team.id, format: team.format ?? (defaultFormat as Match['format']) }));
+    setForm((f) => ({ ...f, ownTeamId: team.id, format: team.format ?? (defaultFormat as Match['format']), teamLevel: team.level ?? 'taso1' }));
   }
 
   function handleSave() {
