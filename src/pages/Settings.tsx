@@ -414,6 +414,11 @@ export function Settings() {
                     <div className="w-3.5 h-3.5 rounded-full flex-shrink-0" style={{ backgroundColor: t.color ?? '#64748b' }} />
                     <span className="text-sm text-gray-800 dark:text-slate-200">{t.name}</span>
                     {t.format && <span className="text-xs text-gray-400 dark:text-slate-500">{t.format}</span>}
+                    {t.level && (
+                      <span className="text-xs bg-gray-100 dark:bg-slate-700 text-gray-500 dark:text-slate-400 rounded-full px-1.5 py-0.5 font-medium">
+                        {t.level === 'taso1' ? 'T1' : 'T2'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <button onClick={() => openEditTeam(t)} className="text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors">
