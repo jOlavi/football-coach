@@ -141,7 +141,9 @@ export function Matches() {
 
     const ownTeam = m.ownTeamId ? teams.find((t) => t.id === m.ownTeamId) : null;
     const matchTitle = ownTeam
-      ? (m.location === 'home' ? `${ownTeam.name} – ${m.opponent}` : `${m.opponent} – ${ownTeam.name}`)
+      ? (m.location === 'home'
+          ? <>{ownTeam.name}<span className="text-gray-400 dark:text-slate-500 font-normal"> – {m.opponent}</span></>
+          : <><span className="text-gray-400 dark:text-slate-500 font-normal">{m.opponent} – </span>{ownTeam.name}</>)
       : `vs ${m.opponent}`;
 
     const lineupPlayers = m.lineup.map((id) => players.find((p) => p.id === id)).filter(Boolean);
