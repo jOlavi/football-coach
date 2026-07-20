@@ -25,6 +25,7 @@ import { JoinTeam } from './pages/JoinTeam';
 import { MatchSetup } from './pages/MatchSetup';
 import { MatchLive } from './pages/MatchLive';
 import { MatchBreak } from './pages/MatchBreak';
+import { ErrorPage } from './pages/ErrorPage';
 
 function ThemeSync() {
   useEffect(() => {
@@ -44,30 +45,36 @@ function TeamGuard({ children }: { children: React.ReactNode }) {
 }
 
 const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
-  { path: '/join', element: <JoinTeam /> },
+  { path: '/login', element: <Login />, errorElement: <ErrorPage /> },
+  { path: '/join', element: <JoinTeam />, errorElement: <ErrorPage /> },
   {
     path: '/teams/select',
     element: <ProtectedRoute><SelectTeam /></ProtectedRoute>,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/teams/new',
     element: <ProtectedRoute><CreateTeam /></ProtectedRoute>,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/matches/:id/setup',
     element: <ProtectedRoute><TeamGuard><MatchSetup /></TeamGuard></ProtectedRoute>,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/matches/:id/live',
     element: <ProtectedRoute><TeamGuard><MatchLive /></TeamGuard></ProtectedRoute>,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/matches/:id/break',
     element: <ProtectedRoute><TeamGuard><MatchBreak /></TeamGuard></ProtectedRoute>,
+    errorElement: <ErrorPage />,
   },
   {
     path: '/',
+    errorElement: <ErrorPage />,
     element: (
       <ProtectedRoute>
         <TeamGuard>
