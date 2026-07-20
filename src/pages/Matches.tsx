@@ -50,7 +50,7 @@ export function Matches() {
   const players = usePlayerStore((s) => s.players);
   const teams = useTeamStore((s) => s.teams);
   const allTournaments = useTournamentStore((s) => s.tournaments);
-  const { deleteTournament, addTournamentMatch, updateTournamentMatch, removeTournamentMatch, updateTournament } = useTournamentStore();
+  const { deleteTournament, updateTournamentMatch, removeTournamentMatch, updateTournament } = useTournamentStore();
   const { activeSeason, seasons } = useAppStore();
   const isFirstSeason = seasons[0] === activeSeason;
   const inSeason = (s?: string) => s === activeSeason || (!s && isFirstSeason);
@@ -531,6 +531,23 @@ export function Matches() {
                     </div>
                   </div>
                 )}
+                {(t.lineup?.length ?? 0) > 0 && (
+                  <div className="mb-2">
+                    <p className="text-xs font-medium text-gray-500 dark:text-slate-400 mb-1.5">Kokoonpano ({t.lineup!.length})</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {t.lineup!.map((id) => {
+                        const p = players.find((pl) => pl.id === id);
+                        if (!p) return null;
+                        return (
+                          <span key={id} className="inline-flex items-center gap-1 px-2 py-0.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-full text-xs text-gray-700 dark:text-slate-300">
+                            <span className="w-4 h-4 rounded-full bg-brand-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">{p.number}</span>
+                            {p.name}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
                 {(t.matches ?? []).length === 0 && (
                   <p className="text-xs text-gray-400 dark:text-slate-500 py-1">Ei otteluita vielä.</p>
                 )}
@@ -588,7 +605,7 @@ export function Matches() {
                 })}
                 <div className="pt-1 flex flex-wrap gap-2">
                   <Button variant="secondary" size="sm" icon={<Plus size={13} />}
-                    onClick={() => addTournamentMatch(t.id, { id: crypto.randomUUID(), opponent: 'Uusi ottelu' })}>
+                    onClick={() => { setEditingTournamentForModal(t); setShowTournamentFormModal(true); }}>
                     Lisää ottelu
                   </Button>
                   <Button

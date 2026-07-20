@@ -58,7 +58,7 @@ function generateMessage(
         m.location === "home"
           ? `${team.name} vs ${m.opponent}`
           : `${m.opponent} vs ${team.name}`;
-      lines.push(`🕐 ${time} - ${matchup} -${m.venue ? ` ${m.venue}` : ""}`);
+      lines.push(`🕐 ${time} - ${matchup}${m.venue ? ` - ${m.venue}` : ""}`);
     }
 
     lines.push("");
@@ -94,7 +94,8 @@ function generateMessage(
 
 function generateTournamentMessage(
   tournament: Tournament,
-  teamName: string
+  teamName: string,
+  players: Player[]
 ): string {
   const lines: string[] = [];
   lines.push(`🏆 ${tournament.name} – Turnausilmoitus`);
@@ -104,14 +105,10 @@ function generateTournamentMessage(
     const d = new Date(tournament.date + "T12:00:00");
     lines.push(`📅 ${FI_DAYS[d.getDay()]} ${format(d, "dd.MM.yyyy")}`);
   }
-  if (tournament.venue)
-    lines.push(
-      `📍 ${tournament.venue}${
-        tournament.address ? `, ${tournament.address}` : ""
-      }`
-    );
   if (tournament.level) lines.push(`🏅 ${tournament.level}`);
   lines.push(`⚽ ${teamName}`);
+  if (tournament.venue)
+    lines.push(`📍 ${tournament.address ? tournament.address : ""}`);
   lines.push("");
 
   const matches = [...(tournament.matches ?? [])].sort((a, b) =>
@@ -120,16 +117,27 @@ function generateTournamentMessage(
   if (matches.length > 0) {
     lines.push("Ottelut:");
     for (const m of matches) {
-      const time = m.time ? `🕐 ${m.time}` : "🕐 —";
-      const field = m.field ? ` · ${m.field}` : "";
+      const time = m.time ?? "—";
       const matchup =
         m.location === "away"
-          ? `${m.opponent} – ${teamName}`
-          : `${teamName} – ${m.opponent}`;
-      lines.push(`${time}  ${matchup}${field}`);
+          ? `${m.opponent} vs ${teamName}`
+          : `${teamName} vs ${m.opponent}`;
+      lines.push(`🕐 ${time} - ${matchup}${m.field ? ` - ${m.field}` : ""}`);
     }
     lines.push("");
   }
+
+  const lineupIds = tournament.lineup ?? [];
+  if (lineupIds.length > 0) {
+    const lineupPlayers = lineupIds
+      .map((id) => players.find((p) => p.id === id))
+      .filter((p): p is Player => p != null);
+    lines.push("Pelaajat:");
+    lines.push(lineupPlayers.map((p) => p.name).join(", "));
+  } else {
+    lines.push("Pelaajat: (kokoonpanoa ei ole asetettu)");
+  }
+  lines.push("");
 
   if (tournament.notes) {
     lines.push(tournament.notes);
@@ -227,7 +235,7 @@ export function Communication() {
         ? generateMessage(selectedTeam, selectedDayMatches, players)
         : ""
       : selectedTournament && selectedTeam
-      ? generateTournamentMessage(selectedTournament, selectedTeam.name)
+      ? generateTournamentMessage(selectedTournament, selectedTeam.name, players)
       : "";
 
   useEffect(() => {
@@ -487,11 +495,16 @@ export function Communication() {
                             </p>
                           )}
                         </div>
-                        {(t.matches ?? []).length > 0 && (
-                          <p className="mt-1 text-xs text-gray-400 dark:text-slate-500">
-                            {(t.matches ?? []).length} ottelua
-                          </p>
-                        )}
+                        <div className="mt-1 flex items-center gap-2 flex-wrap">
+                          {(t.matches ?? []).length > 0 && (
+                            <span className="text-xs text-gray-400 dark:text-slate-500">
+                              {(t.matches ?? []).length} ottelua
+                            </span>
+                          )}
+                          <span className={`text-xs font-medium ${(t.lineup?.length ?? 0) > 0 ? 'text-green-600 dark:text-green-400' : 'text-amber-500'}`}>
+                            {(t.lineup?.length ?? 0) > 0 ? `${t.lineup!.length} pelaajaa` : 'Ei kokoonpanoa'}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </button>
