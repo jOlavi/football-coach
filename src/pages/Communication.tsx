@@ -52,17 +52,6 @@ function generateMessage(
       lines.push(`📍 ${firstMatch.address ? `${firstMatch.address}` : ""}`);
     lines.push("");
 
-    for (const m of sorted) {
-      const time = format(new Date(m.date), "HH:mm");
-      const matchup =
-        m.location === "home"
-          ? `${team.name} vs ${m.opponent}`
-          : `${m.opponent} vs ${team.name}`;
-      lines.push(`🕐 ${time} - ${matchup}${m.venue ? ` - ${m.venue}` : ""}`);
-    }
-
-    lines.push("");
-
     const lineupIds = [...new Set(dayMatches.flatMap((m) => m.lineup))];
     if (lineupIds.length > 0) {
       const lineupPlayers = lineupIds
@@ -72,6 +61,17 @@ function generateMessage(
       lines.push(lineupPlayers.map((p) => p.name).join(", "));
     } else {
       lines.push("Pelaajat: (kokoonpanoa ei ole asetettu)");
+    }
+
+    lines.push("");
+
+    for (const m of sorted) {
+      const time = format(new Date(m.date), "HH:mm");
+      const matchup =
+        m.location === "home"
+          ? `${team.name} vs ${m.opponent}`
+          : `${m.opponent} vs ${team.name}`;
+      lines.push(`🕐 ${time} - ${matchup}${m.venue ? ` - ${m.venue}` : ""}`);
     }
 
     lines.push("");
@@ -111,6 +111,18 @@ function generateTournamentMessage(
     lines.push(`📍 ${tournament.address ? tournament.address : ""}`);
   lines.push("");
 
+  const lineupIds = tournament.lineup ?? [];
+  if (lineupIds.length > 0) {
+    const lineupPlayers = lineupIds
+      .map((id) => players.find((p) => p.id === id))
+      .filter((p): p is Player => p != null);
+    lines.push("Pelaajat:");
+    lines.push(lineupPlayers.map((p) => p.name).join(", "));
+  } else {
+    lines.push("Pelaajat: (kokoonpanoa ei ole asetettu)");
+  }
+  lines.push("");
+
   const matches = [...(tournament.matches ?? [])].sort((a, b) =>
     (a.time ?? "").localeCompare(b.time ?? "")
   );
@@ -126,18 +138,6 @@ function generateTournamentMessage(
     }
     lines.push("");
   }
-
-  const lineupIds = tournament.lineup ?? [];
-  if (lineupIds.length > 0) {
-    const lineupPlayers = lineupIds
-      .map((id) => players.find((p) => p.id === id))
-      .filter((p): p is Player => p != null);
-    lines.push("Pelaajat:");
-    lines.push(lineupPlayers.map((p) => p.name).join(", "));
-  } else {
-    lines.push("Pelaajat: (kokoonpanoa ei ole asetettu)");
-  }
-  lines.push("");
 
   if (tournament.notes) {
     lines.push(tournament.notes);

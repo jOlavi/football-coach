@@ -1,7 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Check } from 'lucide-react';
 import { usePlayerStore } from '../../store/usePlayerStore';
-import { useTeamStore } from '../../store/useTeamStore';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 
@@ -12,21 +11,11 @@ interface Props {
   onClose: () => void;
 }
 
-export function TournamentLineupModal({ initialLineup, ownTeamId, onSave, onClose }: Props) {
+export function TournamentLineupModal({ initialLineup, onSave, onClose }: Props) {
   const players = usePlayerStore((s) => s.players);
-  const teams = useTeamStore((s) => s.teams);
   const [selected, setSelected] = useState<Set<string>>(() => new Set(initialLineup));
 
-  const team = ownTeamId ? teams.find((t) => t.id === ownTeamId) : null;
-
-  const filteredPlayers = useMemo(() => {
-    return players.filter((p) => {
-      if (!p.active) return false;
-      if (team?.level === 'taso1') return p.skillLevel === 1 || p.skillLevel === 3;
-      if (team?.level === 'taso2') return p.skillLevel === 2 || p.skillLevel === 3;
-      return true;
-    });
-  }, [players, team]);
+  const filteredPlayers = useMemo(() => players.filter((p) => p.active), [players]);
 
   function toggle(id: string) {
     setSelected((prev) => {
