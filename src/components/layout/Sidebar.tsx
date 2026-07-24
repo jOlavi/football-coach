@@ -216,7 +216,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-2 px-2 overflow-visible">
+      <nav className="flex-1 py-2 px-2 overflow-y-auto md:overflow-visible">
         {navGroups.map((group, gi) => {
           const isGroupCollapsed = collapsedGroups.has(group.label);
           return (
