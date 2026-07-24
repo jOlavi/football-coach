@@ -81,7 +81,7 @@ export function Layout() {
           </button>
 
           <div className="flex items-center">
-            <img src="/AppLogo.png" alt="Valmiox" className="h-8 w-auto" />
+            <img src="/logo.png" alt="Valmiox" className="h-8 w-auto" />
           </div>
           <div className="hidden sm:block w-px h-5 bg-gray-200 dark:bg-slate-700" />
           <h1 className="hidden sm:block text-sm font-medium text-gray-500 dark:text-slate-400">{title}</h1>
