@@ -93,7 +93,7 @@ export function MatchBreak() {
       opponentGoalTimes: session!.opponentGoalTimes,
     };
 
-    navigate(`/matches/${matchId}/live`, { state: nextSession });
+    navigate(`/matches/${matchId}/live`, { state: { ...nextSession, tournamentId } });
   }
 
   async function handleFinish() {
@@ -196,21 +196,30 @@ export function MatchBreak() {
             <section>
               <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Maalit</p>
               {(() => {
+                const isHome = config.location === 'home';
+                const gf = isHome ? session.scores.home : session.scores.away;
                 const ourMap = new Map<string, { name: string; times: number[] }>();
                 for (const g of session.goalEntries ?? []) {
                   const name = session.players.find((p) => p.id === g.playerId)?.name ?? 'Tuntematon';
                   if (!ourMap.has(g.playerId)) ourMap.set(g.playerId, { name, times: [] });
                   ourMap.get(g.playerId)!.times.push(g.matchMinute);
                 }
-                const opponentTimes = [...(session.opponentGoalTimes ?? [])].sort((a, b) => a - b);
-                const rows = [
-                  ...[...ourMap.values()].map((v) => ({
+                const ourRows: { label: string; times: number[]; count: number; ours: boolean }[] =
+                  [...ourMap.values()].map((v) => ({
                     label: v.name,
                     times: [...v.times].sort((a, b) => a - b),
+                    count: v.times.length,
                     ours: true,
-                  })),
-                  ...(opponentTimes.length > 0 ? [{ label: config?.opponent ?? 'Vastustaja', times: opponentTimes, ours: false }] : []),
-                ].sort((a, b) => a.times[0] - b.times[0]);
+                  }));
+                // Kun maalintekijöitä ei seurata, näytetään maalimäärä ilman pelaajanimiä
+                if (!config.trackScorers && gf > 0 && ourRows.length === 0) {
+                  ourRows.push({ label: config.teamName ?? 'Oma joukkue', times: [], count: gf, ours: true });
+                }
+                const opponentTimes = [...(session.opponentGoalTimes ?? [])].sort((a, b) => a - b);
+                const opponentRow = opponentTimes.length > 0
+                  ? [{ label: config?.opponent ?? 'Vastustaja', times: opponentTimes, count: opponentTimes.length, ours: false }]
+                  : [];
+                const rows = [...ourRows, ...opponentRow].sort((a, b) => (a.times[0] ?? 0) - (b.times[0] ?? 0));
                 if (rows.length === 0) return (
                   <p className="text-sm py-2" style={{ color: 'var(--match-text-muted)' }}>Ei kirjattuja maaleja</p>
                 );
@@ -218,12 +227,14 @@ export function MatchBreak() {
                   <div key={i} className="flex items-center gap-3 py-2 border-b" style={{ borderColor: 'var(--match-border)' }}>
                     <span className="text-base">{row.ours ? '⚽' : '🔴'}</span>
                     <span className="text-sm font-medium" style={{ color: row.ours ? 'var(--match-field-name)' : 'var(--match-out-text)' }}>{row.label}</span>
-                    {row.times.length > 1 && (
+                    {row.count > 1 && (
                       <span className="text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center flex-shrink-0" style={{ backgroundColor: row.ours ? 'var(--match-active)' : 'var(--match-out-border)', color: '#fff' }}>
-                        {row.times.length}
+                        {row.count}
                       </span>
                     )}
-                    <span className="flex-1 text-right text-xs font-mono font-semibold" style={{ color: 'var(--match-text-muted)' }}>{row.times.map((t) => `${t}'`).join(', ')}</span>
+                    {row.times.length > 0 && (
+                      <span className="flex-1 text-right text-xs font-mono font-semibold" style={{ color: 'var(--match-text-muted)' }}>{row.times.map((t) => `${t}'`).join(', ')}</span>
+                    )}
                   </div>
                 ));
               })()}
