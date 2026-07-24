@@ -338,13 +338,16 @@ export function Training() {
     );
 
     try {
-      const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
-      const blobUrl = URL.createObjectURL(blob);
-      const win = window.open(blobUrl, '_blank');
+      const win = window.open('', '_blank');
       if (win) {
-        win.onafterprint = () => { win.close(); URL.revokeObjectURL(blobUrl); };
+        win.document.open();
+        win.document.write(printHtml);
+        win.document.close();
+        win.onafterprint = () => win.close();
       } else {
         // Popup blocked — fall back to direct download as HTML
+        const blob = new Blob([printHtml], { type: 'text/html;charset=utf-8' });
+        const blobUrl = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = blobUrl;
         a.download = `${s.title.replace(/[^a-zA-Z0-9äöåÄÖÅ _-]/g, '')}.html`;
