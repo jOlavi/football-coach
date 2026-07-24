@@ -37,6 +37,11 @@ export function Layout() {
   const { activeSeason } = useAppStore();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = mobileSidebarOpen ? 'hidden' : '';
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileSidebarOpen]);
   const [editing, setEditing] = useState(false);
   const [coachName, setCoachName] = useState(settings.coachName);
   const dropdownRef = useRef<HTMLDivElement>(null);
