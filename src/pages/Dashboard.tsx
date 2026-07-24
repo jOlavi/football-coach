@@ -189,7 +189,7 @@ export function Dashboard() {
                       isSelected
                         ? 'bg-brand-600 text-white'
                         : today
-                        ? 'bg-brand-50 dark:bg-brand-900/20 font-bold'
+                        ? 'bg-slate-100 dark:bg-slate-700 font-bold'
                         : 'hover:bg-gray-50 dark:hover:bg-slate-800 cursor-pointer'
                     }`}
                   >

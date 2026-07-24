@@ -297,7 +297,7 @@ export function Matches() {
           >
             Ottelut
             {filtered.length > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'matches' ? 'bg-brand-100 text-brand-700 dark:bg-brand-900/40 dark:text-brand-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'matches' ? 'bg-brand-100 text-brand-700 dark:bg-slate-700 dark:text-brand-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
                 {filtered.length}
               </span>
             )}

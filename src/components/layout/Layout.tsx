@@ -89,7 +89,7 @@ export function Layout() {
 
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Active season badge */}
-          <span className="hidden sm:inline text-xs font-semibold text-brand-700 dark:text-brand-300 bg-brand-50 dark:bg-brand-900/20 px-2.5 py-1 rounded-full">
+          <span className="hidden sm:inline text-xs font-semibold text-brand-600 dark:text-brand-500 bg-slate-100 dark:bg-slate-700 px-2.5 py-1 rounded-full">
             Kausi {activeSeason}
           </span>
 

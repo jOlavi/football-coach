@@ -484,7 +484,7 @@ export function Settings() {
                           <Button variant="secondary" size="sm" onClick={() => setConfirmDeleteSeason(null)}>Peruuta</Button>
                         </div>
                       ) : s === activeSeason ? (
-                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-50 dark:bg-brand-900/20 px-2 py-0.5 rounded-full flex-shrink-0">
+                        <span className="text-xs font-semibold text-brand-600 dark:text-brand-400 bg-slate-100 dark:bg-slate-700 px-2 py-0.5 rounded-full flex-shrink-0">
                           Aktiivinen
                         </span>
                       ) : confirmSeasonSwitch === s ? (
@@ -550,7 +550,7 @@ export function Settings() {
                 className="flex items-center justify-between gap-3 p-2 rounded-lg bg-gray-50 dark:bg-slate-900"
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-8 h-8 rounded-full bg-brand-100 dark:bg-brand-900 flex items-center justify-center flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center flex-shrink-0">
                     <span className="text-sm font-semibold text-brand-700 dark:text-brand-300">
                       {(coach.displayName || coach.email).charAt(0).toUpperCase()}
                     </span>
@@ -562,7 +562,7 @@ export function Settings() {
                     <p className="text-xs text-gray-400 dark:text-slate-500 truncate">{coach.email}</p>
                   </div>
                   {coach.uid === activeTeam.headCoachId && (
-                    <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-brand-100 text-brand-700 dark:bg-brand-900 dark:text-brand-300">
+                    <span className="flex-shrink-0 text-xs font-medium px-2 py-0.5 rounded-full bg-slate-200 text-brand-600 dark:bg-slate-700 dark:text-brand-500">
                       Päävalmentaja
                     </span>
                   )}

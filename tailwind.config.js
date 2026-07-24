@@ -6,11 +6,19 @@ export default {
     extend: {
       colors: {
         brand: {
-          50: '#f0fdf4',
-          100: '#dcfce7',
-          500: '#22c55e',
-          600: '#16a34a',
-          700: '#15803d',
+          50: '#eef3ff',
+          100: '#dce7fe',
+          500: '#4f8ef7',
+          600: '#4f8ef7',
+          700: '#3b7de8',
+        },
+        slate: {
+          900: '#0f1929',
+          950: '#0d1117',
+        },
+        border: {
+          card: '#1e3a5f',
+          divider: '#334155',
         },
       },
     },
