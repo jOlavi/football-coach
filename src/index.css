@@ -6,14 +6,14 @@
   /* Pelinhallinta — light theme */
   --match-dark: #f1f5f9;
   --match-dark-mid: #ffffff;
-  --match-active: #16a34a;
+  --match-active: #4f8ef7;
   --match-text-primary: #0f172a;
   --match-text-muted: #64748b;
   --match-border: #e2e8f0;
-  --match-field-bg: #dcfce7;
-  --match-field-border: #16a34a;
-  --match-field-num: #15803d;
-  --match-field-name: #166534;
+  --match-field-bg: #eef3ff;
+  --match-field-border: #4f8ef7;
+  --match-field-num: #3b7de8;
+  --match-field-name: #1d4ed8;
   --match-out-bg: #fef2f2;
   --match-out-border: #ef4444;
   --match-out-text: #dc2626;
@@ -24,21 +24,21 @@
 
 html.dark {
   /* Pelinhallinta — dark theme */
-  --match-dark: #0f172a;
+  --match-dark: #0f1929;
   --match-dark-mid: #1e293b;
-  --match-active: #34d399;
+  --match-active: #4f8ef7;
   --match-text-primary: #f1f5f9;
   --match-text-muted: #94a3b8;
-  --match-border: #334155;
-  --match-field-bg: #022c22;
-  --match-field-border: #34d399;
-  --match-field-num: #6ee7b7;
-  --match-field-name: #a7f3d0;
+  --match-border: #1e3a5f;
+  --match-field-bg: #0a1e38;
+  --match-field-border: #4f8ef7;
+  --match-field-num: #93c5fd;
+  --match-field-name: #bfdbfe;
   --match-out-bg: #2d0a0a;
   --match-out-border: #f87171;
   --match-out-text: #fca5a5;
   --match-hint-bg: #1e293b;
-  --match-hint-border: #334155;
+  --match-hint-border: #1e3a5f;
   --match-hint-text: #93c5fd;
 }
 
