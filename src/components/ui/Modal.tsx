@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface ModalProps {
@@ -10,6 +10,10 @@ interface ModalProps {
 }
 
 export function Modal({ title, onClose, children, wide = false, extraWide = false }: ModalProps) {
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
   const widthClass = extraWide ? 'sm:max-w-5xl' : wide ? 'sm:max-w-2xl' : 'sm:max-w-lg';
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-center sm:p-4 bg-black/40">
