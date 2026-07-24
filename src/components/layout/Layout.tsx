@@ -80,9 +80,8 @@ export function Layout() {
             <Menu size={20} />
           </button>
 
-          <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="Valmiox" className="w-8 h-8 rounded-xl" />
-            <span className="font-bold text-gray-900 dark:text-slate-100 text-base tracking-tight">Valmiox</span>
+          <div className="flex items-center">
+            <img src="/AppLogo.png" alt="Valmiox" className="h-8 w-auto" />
           </div>
           <div className="hidden sm:block w-px h-5 bg-gray-200 dark:bg-slate-700" />
           <h1 className="hidden sm:block text-sm font-medium text-gray-500 dark:text-slate-400">{title}</h1>
