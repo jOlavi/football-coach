@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 import { ArrowLeft, Check, AlertCircle } from 'lucide-react';
 import { useMatchStore } from '../store/useMatchStore';
+import { useTournamentStore } from '../store/useTournamentStore';
 import type { MatchSessionState, MatchPlayer } from '../types/matchSession';
 import { FORMAT_SIZES, fmtTime } from '../types/matchSession';
 
@@ -10,8 +11,10 @@ export function MatchBreak() {
   const location = useLocation();
   const { id: matchId } = useParams<{ id: string }>();
   const { updateMatch } = useMatchStore();
+  const { updateTournamentMatch } = useTournamentStore();
 
-  const session = location.state as MatchSessionState | null;
+  const session = location.state as (MatchSessionState & { tournamentId?: string }) | null;
+  const tournamentId = session?.tournamentId;
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
   const isFinalBreak = currentPeriod >= (config?.periods ?? 2);
@@ -110,13 +113,19 @@ export function MatchBreak() {
     }
     const scorers = Object.entries(scorerCounts).map(([playerId, count]) => ({ playerId, count }));
 
-    updateMatch(matchId!, {
-      lineupConfirmed: true,
-      result: { goalsFor, goalsAgainst, scorers },
-      playerMinutes,
-    });
-
-    navigate('/matches');
+    if (tournamentId && matchId) {
+      updateTournamentMatch(tournamentId, matchId, {
+        result: { goalsFor, goalsAgainst },
+      });
+      navigate('/matches?tab=tournaments');
+    } else {
+      updateMatch(matchId!, {
+        lineupConfirmed: true,
+        result: { goalsFor, goalsAgainst, scorers },
+        playerMinutes,
+      });
+      navigate('/matches');
+    }
   }
 
   if (!session || !config) {

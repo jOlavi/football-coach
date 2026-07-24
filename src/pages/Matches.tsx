@@ -577,12 +577,38 @@ export function Matches() {
                             {m.result.goalsFor}–{m.result.goalsAgainst}
                           </button>
                         ) : (
-                          <button
-                            onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: 0, goalsAgainst: 0 })}
-                            className="text-xs font-medium text-brand-600 hover:underline"
-                          >
-                            Kirjaa tulos
-                          </button>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => navigate(`/matches/${m.id}/setup`, {
+                                state: {
+                                  match: {
+                                    id: m.id,
+                                    opponent: m.opponent,
+                                    location: m.location ?? 'home',
+                                    lineup: t.lineup ?? [],
+                                    format: '7v7' as const,
+                                    ownTeamId: t.ownTeamId,
+                                    venue: t.venue ?? '',
+                                    date: t.date ?? new Date().toISOString(),
+                                    level: 'tournament',
+                                    notes: '',
+                                    availability: [],
+                                    createdAt: t.createdAt,
+                                  },
+                                  tournamentId: t.id,
+                                }
+                              })}
+                              className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                            >
+                              <PlayCircle size={13} /> Pelaa
+                            </button>
+                            <button
+                              onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: 0, goalsAgainst: 0 })}
+                              className="text-xs font-medium text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                            >
+                              Kirjaa tulos
+                            </button>
+                          </div>
                         )}
                         <button onClick={() => removeTournamentMatch(t.id, m.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors ml-1">
                           <X size={13} />

@@ -10,7 +10,9 @@ export function MatchLive() {
   const location = useLocation();
   const { id: matchId } = useParams<{ id: string }>();
 
-  const session = location.state as MatchSessionState | null;
+  const locationState = location.state as (MatchSessionState & { tournamentId?: string }) | null;
+  const session = locationState;
+  const tournamentId = locationState?.tournamentId;
 
   const [isRunning, setIsRunning] = useState(true);
   const [players, setPlayers] = useState<MatchPlayer[]>(session?.players ?? []);
@@ -94,7 +96,7 @@ export function MatchLive() {
       goalEntries,
       opponentGoalTimes,
     };
-    navigate(`/matches/${matchId}/break`, { state: updatedSession });
+    navigate(`/matches/${matchId}/break`, { state: { ...updatedSession, tournamentId } });
   }
 
   const isHome = config?.location === 'home';
