@@ -174,7 +174,7 @@ export function MatchLive() {
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--match-dark)' }}>
         <div className="text-center space-y-4">
           <p style={{ color: 'var(--match-text-muted)' }}>Ei aktiivista ottelua.</p>
-          <button onClick={() => navigate('/matches')} style={{ color: 'var(--match-active)' }} className="underline">
+          <button onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches')} style={{ color: 'var(--match-active)' }} className="underline">
             Takaisin otteluihin
           </button>
         </div>

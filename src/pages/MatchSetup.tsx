@@ -19,7 +19,9 @@ export function MatchSetup() {
 
   const allPlayers = usePlayerStore((s) => s.players);
   const storeMatch = useMatchStore((s) => s.matches.find((m) => m.id === matchId));
-  const match: Match | undefined = (location.state as { match?: Match })?.match ?? storeMatch;
+  const locationState = location.state as { match?: Match; tournamentId?: string } | null;
+  const match: Match | undefined = locationState?.match ?? storeMatch;
+  const tournamentId = locationState?.tournamentId;
   const activeTeamId = useAppStore((s) => s.activeTeamId);
   const firebaseTeamName = useAuthStore((s) => s.teams.find((t) => t.id === activeTeamId)?.name ?? 'Oma joukkue');
   const ownTeams = useTeamStore((s) => s.teams);
@@ -122,7 +124,7 @@ export function MatchSetup() {
       opponentGoalTimes: [],
     };
 
-    navigate(`/matches/${matchId}/live`, { state: session });
+    navigate(`/matches/${matchId}/live`, { state: { ...session, tournamentId } });
   }
 
   if (!match && !matchId) {
@@ -139,7 +141,7 @@ export function MatchSetup() {
       <div className="fixed top-0 left-0 right-0 z-10 px-4 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)', borderBottom: '1px solid var(--match-border)' }}>
         <div className="relative flex items-center justify-center min-h-[40px]">
           <button
-            onClick={() => navigate('/matches')}
+            onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches')}
             className="absolute left-0 flex items-center gap-1.5 font-medium"
             style={{ color: 'var(--match-text-primary)' }}
           >
