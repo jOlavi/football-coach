@@ -117,7 +117,7 @@ export function MatchBreak() {
       updateTournamentMatch(tournamentId, matchId, {
         result: { goalsFor, goalsAgainst },
       });
-      navigate('/matches?tab=tournaments');
+      navigate('/matches?tab=tournaments', { state: { tournamentId } });
     } else {
       updateMatch(matchId!, {
         lineupConfirmed: true,

@@ -141,7 +141,7 @@ export function MatchSetup() {
       <div className="fixed top-0 left-0 right-0 z-10 px-4 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)', borderBottom: '1px solid var(--match-border)' }}>
         <div className="relative flex items-center justify-center min-h-[40px]">
           <button
-            onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches')}
+            onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches', tournamentId ? { state: { tournamentId } } : undefined)}
             className="absolute left-0 flex items-center gap-1.5 font-medium"
             style={{ color: 'var(--match-text-primary)' }}
           >
