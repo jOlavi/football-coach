@@ -27,7 +27,9 @@ export function Login() {
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900">
       <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-10 flex flex-col items-center gap-6 w-full max-w-sm">
-        <img src="/logo.png" alt="Valmiox" className="w-16 h-16" />
+        <div className="w-20 h-20 rounded-2xl bg-gray-900 flex items-center justify-center">
+          <img src="/transparentdarktheme.png" alt="Valmiox" className="w-16 h-16 object-contain" />
+        </div>
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Valmiox</h1>
           <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Kirjaudu sisään jatkaaksesi</p>
