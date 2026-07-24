@@ -288,43 +288,49 @@ export function Matches() {
   return (
     <div className="space-y-5">
       <div className="sticky top-0 z-10 -mt-6 -mx-6 px-6 pt-4 pb-3 bg-gray-50 dark:bg-slate-900 border-b border-gray-100 dark:border-slate-700 space-y-2">
-        <div className="flex items-center p-1.5 rounded-xl bg-gray-200 dark:bg-slate-700 gap-0.5">
-          <button
-            onClick={() => setActiveTab('matches')}
-            className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'matches'
-                ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-            }`}
-          >
-            Ottelut
-            {filtered.length > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'matches' ? 'bg-brand-100 text-brand-700 dark:bg-slate-700 dark:text-brand-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
-                {filtered.length}
-              </span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab('tournaments')}
-            className={`flex items-center gap-1.5 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'tournaments'
-                ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
-                : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
-            }`}
-          >
-            <Trophy size={14} className={activeTab === 'tournaments' ? 'text-yellow-500' : 'text-gray-400 dark:text-slate-500'} />
-            Turnaukset
-            {tournaments.length > 0 && (
-              <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'tournaments' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
-                {tournaments.length}
-              </span>
-            )}
-          </button>
-          <div className="ml-auto">
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center p-1.5 rounded-xl bg-gray-200 dark:bg-slate-700 gap-0.5 min-w-0">
+            <button
+              onClick={() => setActiveTab('matches')}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'matches'
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+              }`}
+            >
+              Ottelut
+              {filtered.length > 0 && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'matches' ? 'bg-brand-100 text-brand-700 dark:bg-slate-700 dark:text-brand-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
+                  {filtered.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('tournaments')}
+              className={`flex flex-1 items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === 'tournaments'
+                  ? 'bg-white dark:bg-slate-900 text-gray-900 dark:text-slate-100 shadow-sm'
+                  : 'text-gray-500 dark:text-slate-400 hover:text-gray-700 dark:hover:text-slate-200'
+              }`}
+            >
+              <Trophy size={14} className={activeTab === 'tournaments' ? 'text-yellow-500' : 'text-gray-400 dark:text-slate-500'} />
+              Turnaukset
+              {tournaments.length > 0 && (
+                <span className={`text-xs px-1.5 py-0.5 rounded-full font-bold ${activeTab === 'tournaments' ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400' : 'bg-gray-300 dark:bg-slate-600 text-gray-500 dark:text-slate-400'}`}>
+                  {tournaments.length}
+                </span>
+              )}
+            </button>
+          </div>
+          <div className="shrink-0">
             {activeTab === 'matches' ? (
-              <Button icon={<Plus size={15} />} onClick={() => { setEditingMatch(null); setShowMatchForm(true); }}>Lisää ottelu</Button>
+              <Button icon={<Plus size={15} />} onClick={() => { setEditingMatch(null); setShowMatchForm(true); }}>
+                <span className="hidden sm:inline">Lisää ottelu</span>
+              </Button>
             ) : (
-              <Button icon={<Plus size={15} />} onClick={() => { setEditingTournamentForModal(null); setShowTournamentFormModal(true); }}>Luo turnaus</Button>
+              <Button icon={<Plus size={15} />} onClick={() => { setEditingTournamentForModal(null); setShowTournamentFormModal(true); }}>
+                <span className="hidden sm:inline">Luo turnaus</span>
+              </Button>
             )}
           </div>
         </div>
