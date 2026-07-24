@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import {
   Plus,
   Pencil,
@@ -57,9 +57,11 @@ export function Matches() {
   const matches = allMatches.filter((m) => inSeason(m.season));
   const tournaments = allTournaments.filter((t) => inSeason(t.season));
 
-  const [activeTab, setActiveTab] = useState<'matches' | 'tournaments'>(
-    (location.state as { tab?: string } | null)?.tab === 'tournaments' ? 'tournaments' : 'matches'
-  );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') === 'tournaments' ? 'tournaments' : 'matches';
+  function setActiveTab(tab: 'matches' | 'tournaments') {
+    setSearchParams(tab === 'tournaments' ? { tab: 'tournaments' } : {}, { replace: true });
+  }
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [matchFilter, setMatchFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
   const [showMatchForm, setShowMatchForm] = useState(false);

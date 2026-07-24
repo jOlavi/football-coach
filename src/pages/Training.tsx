@@ -90,7 +90,7 @@ const emptyExForm = () => ({
 
 export function Training() {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { sessions: allSessions, deleteSession } = useTrainingStore();
   const { activeSeason, seasons: allSeasons } = useAppStore();
   const isFirstSeason = allSeasons[0] === activeSeason;
@@ -104,11 +104,11 @@ export function Training() {
   const players = usePlayerStore((s) => s.players);
   const drills = useDrillStore((s) => s.drills);
 
-  const [view, setView] = useState<ViewMode>(
-    searchParams.get("view") === "library" ? "library"
-    : searchParams.get("view") === "sessions" ? "sessions"
-    : "trainings"
-  );
+  const rawView = searchParams.get("view");
+  const view: ViewMode = rawView === "library" ? "library" : rawView === "sessions" ? "sessions" : "trainings";
+  function setView(v: ViewMode) {
+    setSearchParams(v === "trainings" ? {} : { view: v }, { replace: true });
+  }
   const [showTrainingAddModal, setShowTrainingAddModal] = useState(false);
   const [viewingSession, setViewingSession] = useState<TrainingSession | null>(null);
   const [pdfLoadingId, setPdfLoadingId] = useState<string | null>(null);

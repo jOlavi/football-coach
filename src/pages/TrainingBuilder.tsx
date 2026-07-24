@@ -13,19 +13,6 @@ import { LibraryModal } from '../components/training/LibraryModal';
 import { GroupModal } from '../components/training/GroupModal';
 import type { GroupModalResult } from '../components/training/GroupModal';
 
-const BUILT_IN: Exercise[] = [
-  { id: 'b-warmup1', name: 'Hölkkä & venyttely', category: 'warmup', duration: 10, tags: ['koordinaatio'], description: 'Kevyt hölkkä kentän ympäri ja dynaaminen venyttely.', goals: 'Kehon lämmittely ja loukkaantumisten ehkäisy.' },
-  { id: 'b-warmup2', name: 'Rondo 4v1', category: 'warmup', duration: 10, tags: ['4v4', 'syöttäminen', 'yhteistyö'], description: 'Pieni syöttöympyrä hallinnan ja liikkeen herättelyyn.', goals: 'Pallonhallinta ja liike pallotta.', playerCount: 5 },
-  { id: 'b-tech1', name: 'Syöttöharjoitus pareittain', category: 'technical', duration: 15, tags: ['2v2', 'syöttäminen'], description: 'Lyhyet syöttöyhdistelmät pareittain. Painopiste ensimmäisessä kosketuksessa ja tarkkuudessa.', goals: 'Parantaa syöttötarkkuutta ja vastaanottotekniikkaa.', playerCount: 2 },
-  { id: 'b-tech2', name: 'Laukausharjoitus', category: 'technical', duration: 15, tags: ['laukaus', 'maalivahti'], description: 'Laukauksia eri kulmista. Sisällytetään volleyt ja syöttö–laukaus-yhdistelmät.', goals: 'Kehittää laukaustekniikkaa ja tarkkuutta.' },
-  { id: 'b-tact1', name: '1v1 puolustus', category: 'tactical', duration: 15, tags: ['1v1', 'puolustaminen'], description: 'Yksilöpuolustusharjoitus, painopiste asemoinnissa ja jalkatyössä.', goals: 'Hidastaa pallollista ja pakottaa suunta.' },
-  { id: 'b-tact2', name: '2v1 hyökkäys', category: 'tactical', duration: 15, tags: ['2v2', 'hyökkääminen'], description: 'Kaksi hyökkääjää vastaan yksi puolustaja. Ylivoiman hyödyntäminen.', goals: 'Luoda maalipaikka ylivoimatilanteessa.' },
-  { id: 'b-tact3', name: 'Prässimuoto', category: 'tactical', duration: 20, tags: ['puolustaminen', 'yhteistyö'], description: 'Koordinoitu puolustava prässi 7v7-asetelmassa. Laukaisijat ja varjostukset.', goals: 'Tehokas joukkueprässi ja pallonriisto.' },
-  { id: 'b-tact4', name: 'Vakiotilanteet', category: 'tactical', duration: 15, tags: ['hyökkääminen', 'puolustaminen'], description: 'Kulmapotkulut ja vapaapotkut — hyökkäys- ja puolustusasetelmat.', goals: 'Tehokkuus vakiotilanteissa molempiin suuntiin.' },
-  { id: 'b-phys1', name: 'Juoksuintervallit', category: 'physical', duration: 10, tags: ['nopeus', 'kondis'], description: '10x20m spurtit 30s levolla. Painopiste kiihdytyksessä ja maksimivauhdissa.', goals: 'Kehittää kiihdytyskykyä ja nopeuskestävyyttä.' },
-  { id: 'b-game1', name: 'Pienpeli 5v5', category: 'game', duration: 20, tags: ['5v5', 'yhteistyö'], description: '5v5 tai 7v7. Sovelletaan harjoituksen teemaa vapaassa pelitilanteessa.', goals: 'Opitun soveltaminen pelissä.' },
-  { id: 'b-game2', name: 'Koko kentän harjoitusottelu', category: 'game', duration: 30, tags: ['yhteistyö'], description: 'Täysimittainen ottelu normaalisäännöillä.', goals: 'Joukkuepeli ja kokonaiskuva.' },
-];
 
 const CAT_LABELS: Record<ExerciseCategory, string> = {
   warmup: 'Lämmittely', technical: 'Tekninen', tactical: 'Taktinen', physical: 'Fyysinen', game: 'Peli',
@@ -79,7 +66,6 @@ export function TrainingBuilder() {
   );
 
   const libraryItems = useMemo<Exercise[]>(() => [
-    ...BUILT_IN,
     ...custom,
     ...drills.map((d) => ({
       id: d.id,
@@ -483,7 +469,7 @@ export function TrainingBuilder() {
         <div className="flex gap-2">
           <button
             onClick={() => setLibraryOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 border border-brand-200 dark:border-brand-700 rounded-xl hover:bg-brand-100 dark:hover:bg-brand-900/40 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-gray-50 dark:bg-slate-700 text-brand-600 dark:text-brand-500 border border-gray-200 dark:border-slate-600 rounded-xl hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
           >
             + Lisää harjoite
           </button>
