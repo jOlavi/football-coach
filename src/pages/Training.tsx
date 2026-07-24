@@ -397,7 +397,7 @@ export function Training() {
             </Button>
           )}
           {view === "library" && (
-            <Button icon={<Plus size={15} />} onClick={() => navigate("/training/new-drill")} className="hidden sm:inline-flex">
+            <Button icon={<Plus size={15} />} onClick={() => navigate("/training/new-drill")} className="hidden lg:inline-flex">
               Uusi harjoite
             </Button>
           )}
@@ -490,7 +490,7 @@ export function Training() {
                           )}
                         </div>
                         <div className="flex gap-1 shrink-0">
-                          <button onClick={() => navigate(`/training/drills/${d.id}/edit`)} className="hidden sm:block p-1 text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors" title="Muokkaa"><Pencil size={12} /></button>
+                          <button onClick={() => navigate(`/training/drills/${d.id}/edit`)} className="hidden lg:block p-1 text-gray-400 dark:text-slate-500 hover:text-brand-600 transition-colors" title="Muokkaa"><Pencil size={12} /></button>
                           <button onClick={() => { setPreviewDrill(d); setConfirmDeleteDrillId(d.id); }} className="p-1 text-gray-400 dark:text-slate-500 hover:text-red-500 transition-colors" title="Poista"><Trash2 size={12} /></button>
                         </div>
                       </div>
@@ -915,7 +915,7 @@ export function Training() {
                 Poista
               </Button>
               <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); navigate(`/training/drills/${previewDrill.id}/edit`); }} icon={<Pencil size={13} />} className="hidden sm:inline-flex">
+                <Button variant="secondary" onClick={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); navigate(`/training/drills/${previewDrill.id}/edit`); }} icon={<Pencil size={13} />} className="hidden lg:inline-flex">
                   Muokkaa
                 </Button>
                 <Button variant="secondary" onClick={() => { setPreviewDrill(null); setConfirmDeleteDrillId(null); }}>
