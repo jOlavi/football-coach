@@ -26,12 +26,9 @@ export function Login() {
 
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-slate-900">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg p-10 flex flex-col items-center gap-6 w-full max-w-sm">
-        <img src="/transparentdarktheme.png" alt="Valmiox" className="w-20 h-20 object-contain" />
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Valmiox</h1>
-          <p className="text-sm text-gray-500 dark:text-slate-400 mt-1">Kirjaudu sisään jatkaaksesi</p>
-        </div>
+      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg px-8 pt-14 pb-14 flex flex-col items-center gap-8 w-full max-w-sm">
+        <img src="/transparentdarktheme.png" alt="Valmiox" className="w-64 h-auto -translate-x-5" />
+        <p className="text-sm text-gray-500 dark:text-slate-400">Kirjaudu sisään jatkaaksesi</p>
         {accessDenied && (
           <div className="w-full bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl px-4 py-3 text-center">
             <p className="text-sm font-semibold text-amber-800 dark:text-amber-300">Sovellus ei ole vielä julkinen</p>
