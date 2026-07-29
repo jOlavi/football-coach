@@ -24,8 +24,9 @@ import { Modal } from "../components/ui/Modal";
 import { MatchFormModal } from "../components/matches/MatchFormModal";
 import { TournamentFormModal } from "../components/matches/TournamentFormModal";
 import { TournamentLineupModal } from "../components/matches/TournamentLineupModal";
+import { MatchSummaryModal } from "../components/matches/MatchSummaryModal";
 import { format } from "date-fns";
-import type { Match, MatchLevel, MatchResult, TeamFormat, Tournament } from "../types";
+import type { Match, MatchLevel, MatchResult, TeamFormat, Tournament, TournamentMatch } from "../types";
 
 const FI_DAYS = ['su', 'ma', 'ti', 'ke', 'to', 'pe', 'la'];
 const FI_MONTHS = ['tammi', 'helmi', 'maalis', 'huhti', 'touko', 'kesä', 'heinä', 'elo', 'syys', 'loka', 'marras', 'joulu'];
@@ -85,6 +86,8 @@ export function Matches() {
   );
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [lineupTournamentId, setLineupTournamentId] = useState<string | null>(null);
+  const [summaryMatch, setSummaryMatch] = useState<Match | null>(null);
+  const [summaryTournamentMatch, setSummaryTournamentMatch] = useState<{ match: TournamentMatch; tournament: Tournament } | null>(null);
 
   const filtered = selectedTeamId
     ? matches.filter((m) => m.ownTeamId === selectedTeamId)
@@ -181,7 +184,7 @@ export function Matches() {
 
     return (
       <div className={`bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 overflow-hidden transition-all hover:border-gray-200 dark:hover:border-slate-600 hover:shadow-sm ${isPast ? 'opacity-70 hover:opacity-100' : ''}`}>
-        <div className="flex items-stretch cursor-pointer" onClick={() => setExpanded(open ? null : m.id)}>
+        <div className="flex items-stretch cursor-pointer" onClick={() => m.result ? setSummaryMatch(m) : setExpanded(open ? null : m.id)}>
           {/* Date block */}
           <div className="w-16 flex-shrink-0 flex flex-col items-center justify-center py-4 bg-gray-50 dark:bg-slate-700/40 border-r border-gray-100 dark:border-slate-700">
             <span className="text-xs text-gray-400 dark:text-slate-500 font-medium uppercase tracking-wide">{dayAbbr}</span>
@@ -576,12 +579,20 @@ export function Matches() {
                             : `vs ${m.opponent}`}
                         </span>
                         {m.result ? (
-                          <button
-                            onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: m.result!.goalsFor, goalsAgainst: m.result!.goalsAgainst })}
-                            className={`text-sm font-bold ${m.result.goalsFor > m.result.goalsAgainst ? 'text-green-600' : m.result.goalsFor < m.result.goalsAgainst ? 'text-red-500' : 'text-gray-500 dark:text-slate-400'}`}
-                          >
-                            {m.result.goalsFor}–{m.result.goalsAgainst}
-                          </button>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => setSummaryTournamentMatch({ match: m, tournament: t })}
+                              className={`text-sm font-bold hover:underline ${m.result.goalsFor > m.result.goalsAgainst ? 'text-green-600 dark:text-green-400' : m.result.goalsFor < m.result.goalsAgainst ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-slate-400'}`}
+                            >
+                              {m.result.goalsFor}–{m.result.goalsAgainst}
+                            </button>
+                            <button
+                              onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: m.result!.goalsFor, goalsAgainst: m.result!.goalsAgainst })}
+                              className="p-1 text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
+                            >
+                              <Pencil size={11} />
+                            </button>
+                          </div>
                         ) : (
                           <div className="flex items-center gap-2">
                             <button
@@ -821,6 +832,23 @@ export function Matches() {
           />
         );
       })()}
+
+      {summaryMatch && (
+        <MatchSummaryModal
+          type="match"
+          match={summaryMatch}
+          onClose={() => setSummaryMatch(null)}
+        />
+      )}
+
+      {summaryTournamentMatch && (
+        <MatchSummaryModal
+          type="tournament"
+          tournamentMatch={summaryTournamentMatch.match}
+          tournament={summaryTournamentMatch.tournament}
+          onClose={() => setSummaryTournamentMatch(null)}
+        />
+      )}
     </div>
   );
 }

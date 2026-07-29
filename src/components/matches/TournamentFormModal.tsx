@@ -55,7 +55,17 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
     if (!draft.name.trim()) return;
     const savedMatches: TournamentMatch[] = draftMatches
       .filter((m) => m.opponent.trim())
-      .map((m) => ({ id: m.id, time: m.time || undefined, field: m.field || undefined, opponent: m.opponent, location: m.location }));
+      .map((m) => {
+        const existing = editing?.matches.find((em) => em.id === m.id);
+        return {
+          id: m.id,
+          time: m.time || undefined,
+          field: m.field || undefined,
+          opponent: m.opponent,
+          location: m.location,
+          ...(existing?.result ? { result: existing.result } : {}),
+        };
+      });
     if (editing) {
       updateTournament(editing.id, { ...draft, lineup, matches: savedMatches });
     } else {
