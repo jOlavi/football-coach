@@ -124,7 +124,7 @@ export function MatchBreak() {
         result: { goalsFor, goalsAgainst, scorers },
         playerMinutes,
       });
-      navigate('/matches');
+      navigate('/matches', { state: { matchId } });
     }
   }
 

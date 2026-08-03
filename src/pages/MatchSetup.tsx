@@ -6,6 +6,7 @@ import { useMatchStore } from '../store/useMatchStore';
 import { useAuthStore } from '../store/useAuthStore';
 import { useAppStore } from '../store/useAppStore';
 import { useTeamStore } from '../store/useTeamStore';
+import { useSettingsStore } from '../store/useSettingsStore';
 import type { Match, TeamFormat } from '../types';
 import type { MatchPlayer, MatchSessionState } from '../types/matchSession';
 import { FORMAT_SIZES } from '../types/matchSession';
@@ -26,8 +27,10 @@ export function MatchSetup() {
   const firebaseTeamName = useAuthStore((s) => s.teams.find((t) => t.id === activeTeamId)?.name ?? 'Oma joukkue');
   const ownTeams = useTeamStore((s) => s.teams);
   const teamName = (match?.ownTeamId ? ownTeams.find((t) => t.id === match.ownTeamId)?.name : null) ?? firebaseTeamName;
+  const defaultTeamFormat = useSettingsStore((s) => s.settings.defaultTeamFormat);
+  const ownTeamFormat = match?.ownTeamId ? ownTeams.find((t) => t.id === match.ownTeamId)?.format : undefined;
 
-  const [format, setFormat] = useState<TeamFormat>((match?.format ?? '7v7') as TeamFormat);
+  const [format, setFormat] = useState<TeamFormat>((match?.format ?? ownTeamFormat ?? defaultTeamFormat) as TeamFormat);
   const [periods, setPeriods] = useState(2);
   const [periodLength, setPeriodLength] = useState(15);
   const [trackScorers, setTrackScorers] = useState(false);
@@ -141,7 +144,7 @@ export function MatchSetup() {
       <div className="fixed top-0 left-0 right-0 z-10 px-4 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)', borderBottom: '1px solid var(--match-border)' }}>
         <div className="relative flex items-center justify-center min-h-[40px]">
           <button
-            onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches', tournamentId ? { state: { tournamentId } } : undefined)}
+            onClick={() => navigate(tournamentId ? '/matches?tab=tournaments' : '/matches', tournamentId ? { state: { tournamentId } } : { state: { matchId } })}
             className="absolute left-0 flex items-center gap-1.5 font-medium"
             style={{ color: 'var(--match-text-primary)' }}
           >

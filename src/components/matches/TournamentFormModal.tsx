@@ -150,45 +150,49 @@ export function TournamentFormModal({ editing, initialDate, onClose }: Props) {
           )}
           <div className="space-y-2">
             {draftMatches.map((dm, idx) => (
-              <div key={dm.id} className="flex items-center gap-2">
-                <span className="text-xs text-gray-400 w-4 text-right flex-shrink-0">{idx + 1}.</span>
-                <input
-                  type="time"
-                  value={dm.time}
-                  onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, time: e.target.value } : x))}
-                  className="w-24 text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 flex-shrink-0"
-                />
-                <input
-                  type="text"
-                  value={dm.field}
-                  onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, field: e.target.value } : x))}
-                  placeholder="Kenttä"
-                  className="w-20 text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 flex-shrink-0"
-                />
-                <button
-                  type="button"
-                  onClick={() => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, location: x.location === 'home' ? 'away' : 'home' } : x))}
-                  className={`text-xs font-semibold px-2 py-1.5 rounded-lg border flex-shrink-0 transition-colors ${
-                    dm.location === 'home'
-                      ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
-                      : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
-                  }`}
-                >
-                  {dm.location === 'home' ? 'Koti' : 'Vieras'}
-                </button>
-                <input
-                  type="text"
-                  value={dm.opponent}
-                  onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, opponent: e.target.value } : x))}
-                  placeholder="Vastustaja *"
-                  className="flex-1 text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
-                />
-                <button
-                  onClick={() => setDraftMatches(draftMatches.filter((x) => x.id !== dm.id))}
-                  className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
-                >
-                  <X size={15} />
-                </button>
+              <div key={dm.id} className="flex flex-col gap-1.5 py-1.5 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 w-4 text-right flex-shrink-0">{idx + 1}.</span>
+                  <input
+                    type="text"
+                    value={dm.opponent}
+                    onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, opponent: e.target.value } : x))}
+                    placeholder="Vastustaja *"
+                    className="flex-1 text-sm border rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, location: x.location === 'home' ? 'away' : 'home' } : x))}
+                    className={`text-xs font-semibold px-2 py-1.5 rounded-lg border flex-shrink-0 transition-colors ${
+                      dm.location === 'home'
+                        ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800'
+                        : 'bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800'
+                    }`}
+                  >
+                    {dm.location === 'home' ? 'Koti' : 'Vieras'}
+                  </button>
+                  <button
+                    onClick={() => setDraftMatches(draftMatches.filter((x) => x.id !== dm.id))}
+                    className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors flex-shrink-0"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+                <div className="flex items-center gap-2 pl-6">
+                  <input
+                    type="time"
+                    value={dm.time}
+                    onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, time: e.target.value } : x))}
+                    className="w-28 text-sm border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100 flex-shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={dm.field}
+                    onChange={(e) => setDraftMatches(draftMatches.map((x) => x.id === dm.id ? { ...x, field: e.target.value } : x))}
+                    placeholder="Kenttä"
+                    className="flex-1 min-w-0 text-sm border rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100"
+                  />
+                </div>
               </div>
             ))}
           </div>

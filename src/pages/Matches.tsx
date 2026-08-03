@@ -64,10 +64,11 @@ export function Matches() {
     setSearchParams(tab === 'tournaments' ? { tab: 'tournaments' } : {}, { replace: true });
   }
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
-  const [matchFilter, setMatchFilter] = useState<'upcoming' | 'past' | 'all'>('upcoming');
+  const returnMatchId = (location.state as { matchId?: string } | null)?.matchId;
+  const [matchFilter, setMatchFilter] = useState<'upcoming' | 'past' | 'all'>(returnMatchId ? 'past' : 'upcoming');
   const [showMatchForm, setShowMatchForm] = useState(false);
   const [editingMatch, setEditingMatch] = useState<Match | null>(null);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(returnMatchId ?? null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [resultModal, setResultModal] = useState<Match | null>(null);
   const [resultForm, setResultForm] = useState<MatchResult>({
@@ -566,80 +567,102 @@ export function Matches() {
                 )}
                 {[...(t.matches ?? [])].sort((a, b) => (a.time ?? '').localeCompare(b.time ?? '')).map((m) => {
                   const isEditingResult = editingTournamentResult?.tournamentId === t.id && editingTournamentResult?.matchId === m.id;
+                  const isAway = m.location === 'away';
+                  const resultColorClass = m.result
+                    ? m.result.goalsFor > m.result.goalsAgainst ? 'text-green-600 dark:text-green-400'
+                    : m.result.goalsFor < m.result.goalsAgainst ? 'text-red-500 dark:text-red-400'
+                    : 'text-amber-500 dark:text-amber-400'
+                    : '';
+                  const displayScore = m.result
+                    ? isAway
+                      ? `${m.result.goalsAgainst}–${m.result.goalsFor}`
+                      : `${m.result.goalsFor}–${m.result.goalsAgainst}`
+                    : '';
                   return (
                     <div key={m.id}>
-                      <div className="flex items-center gap-2 py-1.5 border-b border-gray-100 dark:border-slate-700 last:border-0">
-                        <span className="text-xs text-gray-400 dark:text-slate-500 w-10 flex-shrink-0 font-mono">{m.time || '—'}</span>
-                        {m.field && <span className="text-xs text-gray-400 dark:text-slate-500 w-20 truncate flex-shrink-0">{m.field}</span>}
-                        <span className="flex-1 text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
-                          {tournamentOwnTeam
-                            ? (m.location === 'away'
-                                ? <><span className="font-normal text-gray-500 dark:text-slate-400">{m.opponent}</span><span className="mx-1 text-gray-400 dark:text-slate-500">–</span><span className="font-bold">{tournamentOwnTeam.name}</span></>
-                                : <><span className="font-bold">{tournamentOwnTeam.name}</span><span className="mx-1 text-gray-400 dark:text-slate-500">–</span><span className="font-normal text-gray-500 dark:text-slate-400">{m.opponent}</span></>)
-                            : `vs ${m.opponent}`}
-                        </span>
-                        {m.result ? (
-                          <div className="flex items-center gap-1.5">
-                            <button
-                              onClick={() => setSummaryTournamentMatch({ match: m, tournament: t })}
-                              className={`text-sm font-bold hover:underline ${m.result.goalsFor > m.result.goalsAgainst ? 'text-green-600 dark:text-green-400' : m.result.goalsFor < m.result.goalsAgainst ? 'text-red-500 dark:text-red-400' : 'text-gray-500 dark:text-slate-400'}`}
-                            >
-                              {m.result.goalsFor}–{m.result.goalsAgainst}
-                            </button>
-                            <button
-                              onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: m.result!.goalsFor, goalsAgainst: m.result!.goalsAgainst })}
-                              className="p-1 text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
-                            >
-                              <Pencil size={11} />
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => navigate(`/matches/${m.id}/setup`, {
-                                state: {
-                                  match: {
-                                    id: m.id,
-                                    opponent: m.opponent,
-                                    location: m.location ?? 'home',
-                                    lineup: t.lineup ?? [],
-                                    format: '7v7' as const,
-                                    ownTeamId: t.ownTeamId,
-                                    venue: t.venue ?? '',
-                                    date: t.date ?? new Date().toISOString(),
-                                    level: 'tournament',
-                                    notes: '',
-                                    availability: [],
-                                    createdAt: t.createdAt,
-                                  },
-                                  tournamentId: t.id,
-                                }
-                              })}
-                              className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
-                            >
-                              <PlayCircle size={13} /> Pelaa
-                            </button>
-                            <button
-                              onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: 0, goalsAgainst: 0 })}
-                              className="text-xs font-medium text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
-                            >
-                              Kirjaa tulos
-                            </button>
+                      <div className="py-2 border-b border-gray-100 dark:border-slate-700 last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className="flex-1 text-sm font-medium text-gray-800 dark:text-slate-200 truncate">
+                            {tournamentOwnTeam
+                              ? (m.location === 'away'
+                                  ? <><span className="font-normal text-gray-500 dark:text-slate-400">{m.opponent}</span><span className="mx-1 text-gray-400 dark:text-slate-500">–</span><span className="font-bold">{tournamentOwnTeam.name}</span></>
+                                  : <><span className="font-bold">{tournamentOwnTeam.name}</span><span className="mx-1 text-gray-400 dark:text-slate-500">–</span><span className="font-normal text-gray-500 dark:text-slate-400">{m.opponent}</span></>)
+                              : `vs ${m.opponent}`}
+                          </span>
+                          {m.result ? (
+                            <div className="flex items-center gap-1.5 flex-shrink-0">
+                              <button
+                                onClick={() => setSummaryTournamentMatch({ match: m, tournament: t })}
+                                className={`text-sm font-bold hover:underline ${resultColorClass}`}
+                              >
+                                {displayScore}
+                              </button>
+                              <button
+                                onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: m.result!.goalsFor, goalsAgainst: m.result!.goalsAgainst })}
+                                className="p-1 text-gray-300 dark:text-slate-600 hover:text-gray-500 dark:hover:text-slate-400 transition-colors"
+                              >
+                                <Pencil size={11} />
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <button
+                                onClick={() => navigate(`/matches/${m.id}/setup`, {
+                                  state: {
+                                    match: {
+                                      id: m.id,
+                                      opponent: m.opponent,
+                                      location: m.location ?? 'home',
+                                      lineup: t.lineup ?? [],
+                                      ownTeamId: t.ownTeamId,
+                                      venue: t.venue ?? '',
+                                      date: t.date ?? new Date().toISOString(),
+                                      level: 'tournament',
+                                      notes: '',
+                                      availability: [],
+                                      createdAt: t.createdAt,
+                                    },
+                                    tournamentId: t.id,
+                                  }
+                                })}
+                                className="flex items-center gap-1 text-xs font-medium text-brand-600 hover:text-brand-700 transition-colors"
+                              >
+                                <PlayCircle size={13} /> Pelaa
+                              </button>
+                              <button
+                                onClick={() => setEditingTournamentResult({ tournamentId: t.id, matchId: m.id, goalsFor: 0, goalsAgainst: 0 })}
+                                className="text-xs font-medium text-gray-400 dark:text-slate-500 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                              >
+                                Kirjaa
+                              </button>
+                            </div>
+                          )}
+                          <button onClick={() => removeTournamentMatch(t.id, m.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors flex-shrink-0">
+                            <X size={13} />
+                          </button>
+                        </div>
+                        {(m.time || m.field) && (
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-xs text-gray-400 dark:text-slate-500 font-mono">{m.time || '—'}</span>
+                            {m.field && <span className="text-xs text-gray-400 dark:text-slate-500">· {m.field}</span>}
                           </div>
                         )}
-                        <button onClick={() => removeTournamentMatch(t.id, m.id)} className="text-gray-300 dark:text-slate-600 hover:text-red-400 transition-colors ml-1">
-                          <X size={13} />
-                        </button>
                       </div>
                       {isEditingResult && (
                         <div className="flex items-center gap-2 py-2 px-2 bg-white dark:bg-slate-800 rounded-lg my-1">
-                          <input type="number" min={0} value={editingTournamentResult.goalsFor}
-                            onChange={(e) => setEditingTournamentResult({ ...editingTournamentResult, goalsFor: +e.target.value })}
-                            className="w-12 text-center text-lg font-bold border rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" />
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[10px] text-gray-400 dark:text-slate-500">Oma</span>
+                            <input type="number" min={0} value={editingTournamentResult.goalsFor}
+                              onChange={(e) => setEditingTournamentResult({ ...editingTournamentResult, goalsFor: +e.target.value })}
+                              className="w-12 text-center text-lg font-bold border rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" />
+                          </div>
                           <span className="text-gray-400 font-bold">–</span>
-                          <input type="number" min={0} value={editingTournamentResult.goalsAgainst}
-                            onChange={(e) => setEditingTournamentResult({ ...editingTournamentResult, goalsAgainst: +e.target.value })}
-                            className="w-12 text-center text-lg font-bold border rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" />
+                          <div className="flex flex-col items-center gap-0.5">
+                            <span className="text-[10px] text-gray-400 dark:text-slate-500">Vast.</span>
+                            <input type="number" min={0} value={editingTournamentResult.goalsAgainst}
+                              onChange={(e) => setEditingTournamentResult({ ...editingTournamentResult, goalsAgainst: +e.target.value })}
+                              className="w-12 text-center text-lg font-bold border rounded-lg p-1 focus:outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-900 dark:border-slate-600 dark:text-slate-100" />
+                          </div>
                           <Button size="sm" onClick={() => {
                             updateTournamentMatch(t.id, m.id, { result: { goalsFor: editingTournamentResult.goalsFor, goalsAgainst: editingTournamentResult.goalsAgainst } });
                             setEditingTournamentResult(null);
