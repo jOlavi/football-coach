@@ -380,15 +380,15 @@ export function Players() {
             </div>
             <div className="grid grid-cols-3 gap-3 text-center">
               <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-                <p className="text-2xl font-bold">{getPlayerMatchCount(viewPlayer.id, matches)}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{getPlayerMatchCount(viewPlayer.id, matches)}</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400">Ottelut</p>
               </div>
               <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-                <p className="text-2xl font-bold">{getPlayerGoals(viewPlayer.id, matches)}</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{getPlayerGoals(viewPlayer.id, matches)}</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400">Maalit</p>
               </div>
               <div className="bg-gray-100 dark:bg-slate-800 rounded-lg p-3">
-                <p className="text-2xl font-bold">{getPlayerParticipation(viewPlayer.id, matches)}%</p>
+                <p className="text-2xl font-bold text-gray-900 dark:text-slate-100">{getPlayerParticipation(viewPlayer.id, matches)}%</p>
                 <p className="text-xs text-gray-500 dark:text-slate-400">Osallistuminen</p>
               </div>
             </div>
