@@ -300,14 +300,21 @@ export function MatchLive() {
         >
           {isRunning ? '⏸ Tauko' : '▶ Jatka'}
         </button>
-        <button
-          onClick={() => openSubMode()}
-          className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
-          style={{ backgroundColor: 'var(--match-dark-mid)', color: 'var(--match-text-primary)' }}
-        >
-          <ArrowLeftRight size={15} />
-          Vaihto
-        </button>
+        <div className="flex-1 relative">
+          <button
+            onClick={() => openSubMode()}
+            className="w-full py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
+            style={{ backgroundColor: 'var(--match-dark-mid)', color: 'var(--match-text-primary)' }}
+          >
+            <ArrowLeftRight size={15} />
+            Vaihto
+          </button>
+          {jokerActive && onFieldPlayers.length < fieldLimit && (
+            <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold pointer-events-none" style={{ backgroundColor: '#facc15', color: '#713f12' }}>
+              ⚡
+            </span>
+          )}
+        </div>
         <button
           onClick={handleEndPeriod}
           className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
