@@ -450,8 +450,8 @@ export function MatchLive() {
         const availableIn = benchPlayers.filter((p) => !usedInIds.has(p.id));
         const jokerAlreadyInBatch = subPairs.some((p) => p.out === 'joker');
         const jokerRemoveAlreadyInBatch = subPairs.some((p) => p.in === 'joker-remove');
-        const jokerEligible = config.jokerRule && jokerActive && !jokerAlreadyInBatch && onFieldPlayers.length < fieldLimit;
-        const jokerRemoveEligible = config.jokerRule && jokerActive && !jokerRemoveAlreadyInBatch && onFieldPlayers.length > FORMAT_SIZES[config.format];
+        const jokerEligible = jokerActive && !jokerAlreadyInBatch && onFieldPlayers.length < fieldLimit;
+        const jokerRemoveEligible = jokerActive && !jokerRemoveAlreadyInBatch && onFieldPlayers.length > FORMAT_SIZES[config.format];
         const isPickingIn = pendingOut !== null && pendingOut !== 'joker-remove';
         const isJokerRemoveMode = pendingOut === 'joker-remove';
         return (
