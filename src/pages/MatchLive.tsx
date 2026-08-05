@@ -29,8 +29,8 @@ export function MatchLive() {
   const [jokerActive, setJokerActive] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [subMode, setSubMode] = useState(false);
-  const [subPairs, setSubPairs] = useState<{ out: MatchPlayer | 'joker'; in: MatchPlayer }[]>([]);
-  const [pendingOut, setPendingOut] = useState<MatchPlayer | 'joker' | null>(null);
+  const [subPairs, setSubPairs] = useState<{ out: MatchPlayer | 'joker'; in: MatchPlayer | 'joker-remove' }[]>([]);
+  const [pendingOut, setPendingOut] = useState<MatchPlayer | 'joker' | 'joker-remove' | null>(null);
 
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -148,8 +148,13 @@ export function MatchLive() {
   }
 
   function handleSubPickIn(inPlayer: MatchPlayer) {
-    if (pendingOut === null) return;
+    if (pendingOut === null || pendingOut === 'joker-remove') return;
     setSubPairs((prev) => [...prev, { out: pendingOut, in: inPlayer }]);
+    setPendingOut(null);
+  }
+
+  function handleJokerRemovePickOut(player: MatchPlayer) {
+    setSubPairs((prev) => [...prev, { out: player, in: 'joker-remove' }]);
     setPendingOut(null);
   }
 
@@ -162,12 +167,12 @@ export function MatchLive() {
     const minute = Math.floor(matchSeconds / 60);
     const gkWentOut = subPairs.some((pair) => pair.out !== 'joker' && (pair.out as MatchPlayer).isGoalkeeper);
     const outIds = new Set(subPairs.filter((p) => p.out !== 'joker').map((p) => (p.out as MatchPlayer).id));
-    const inIds = new Set(subPairs.map((p) => p.in.id));
+    const inIds = new Set(subPairs.filter((p) => p.in !== 'joker-remove').map((p) => (p.in as MatchPlayer).id));
     setSubstitutions((s) => [
       ...s,
       ...subPairs.map(({ out, in: inP }) => ({
         outId: out === 'joker' ? 'joker' : (out as MatchPlayer).id,
-        inId: inP.id,
+        inId: inP === 'joker-remove' ? 'joker-remove' : (inP as MatchPlayer).id,
         matchMinute: minute,
         period: currentPeriod,
       })),
@@ -309,7 +314,7 @@ export function MatchLive() {
             <ArrowLeftRight size={15} />
             Vaihto
           </button>
-          {jokerActive && onFieldPlayers.length < fieldLimit && (
+          {jokerActive && (
             <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold pointer-events-none" style={{ backgroundColor: '#facc15', color: '#713f12' }}>
               ⚡
             </span>
@@ -442,12 +447,15 @@ export function MatchLive() {
       {/* Substitution sheet */}
       {subMode && (() => {
         const usedOutIds = new Set(subPairs.filter((p) => p.out !== 'joker').map((p) => (p.out as MatchPlayer).id));
-        const usedInIds = new Set(subPairs.map((p) => p.in.id));
+        const usedInIds = new Set(subPairs.filter((p) => p.in !== 'joker-remove').map((p) => (p.in as MatchPlayer).id));
         const availableOut = onFieldPlayers.filter((p) => !usedOutIds.has(p.id));
         const availableIn = benchPlayers.filter((p) => !usedInIds.has(p.id));
         const jokerAlreadyInBatch = subPairs.some((p) => p.out === 'joker');
+        const jokerRemoveAlreadyInBatch = subPairs.some((p) => p.in === 'joker-remove');
         const jokerEligible = config.jokerRule && jokerActive && !jokerAlreadyInBatch && onFieldPlayers.length < fieldLimit;
-        const isPickingIn = pendingOut !== null;
+        const jokerRemoveEligible = config.jokerRule && jokerActive && !jokerRemoveAlreadyInBatch && onFieldPlayers.length > FORMAT_SIZES[config.format];
+        const isPickingIn = pendingOut !== null && pendingOut !== 'joker-remove';
+        const isJokerRemoveMode = pendingOut === 'joker-remove';
         return (
           <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <div className="rounded-t-2xl p-5 max-h-[85dvh] flex flex-col" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
@@ -468,7 +476,9 @@ export function MatchLive() {
                         {pair.out === 'joker' ? '⚡ Jokeri' : `#${(pair.out as MatchPlayer).number} ${(pair.out as MatchPlayer).name}`}
                       </span>
                       <ArrowRight size={12} className="shrink-0" style={{ color: 'var(--match-text-muted)' }} />
-                      <span className="text-xs font-semibold flex-1" style={{ color: 'var(--match-field-name)' }}>#{pair.in.number} {pair.in.name}</span>
+                      <span className="text-xs font-semibold flex-1" style={{ color: pair.in === 'joker-remove' ? '#facc15' : 'var(--match-field-name)' }}>
+                        {pair.in === 'joker-remove' ? '⚡ Poistuu' : `#${(pair.in as MatchPlayer).number} ${(pair.in as MatchPlayer).name}`}
+                      </span>
                       <button onClick={() => removeSubPair(i)} className="shrink-0 p-0.5 rounded" style={{ color: 'var(--match-text-muted)' }}>
                         <X size={13} />
                       </button>
@@ -498,7 +508,32 @@ export function MatchLive() {
 
               {/* Scrollable player grid */}
               <div className="flex-1 overflow-y-auto min-h-0">
-                {!isPickingIn ? (
+                {isJokerRemoveMode ? (
+                  <>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>⚡ Kuka poistuu kentältä?</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {availableOut.map((p) => (
+                        <button
+                          key={p.id}
+                          onClick={() => handleJokerRemovePickOut(p)}
+                          className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
+                          style={{ backgroundColor: 'rgba(250,204,21,0.08)', borderColor: '#facc15' }}
+                        >
+                          <p className="text-xs font-bold" style={{ color: '#facc15' }}>#{p.number}</p>
+                          <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-text-primary)' }}>{p.name}</p>
+                          {p.isGoalkeeper && <span className="text-[10px] font-bold" style={{ color: '#facc15' }}>MV</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setPendingOut(null)}
+                      className="w-full mt-3 py-2.5 rounded-xl text-sm border"
+                      style={{ borderColor: 'var(--match-border)', color: 'var(--match-text-muted)', backgroundColor: 'var(--match-dark)' }}
+                    >
+                      ← Takaisin
+                    </button>
+                  </>
+                ) : !isPickingIn ? (
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>
                       {subPairs.length > 0 ? 'Lisää vaihto — kuka lähtee ulos?' : 'Kuka lähtee ulos?'}
@@ -506,13 +541,26 @@ export function MatchLive() {
                     {jokerEligible && (
                       <button
                         onClick={() => setPendingOut('joker')}
-                        className="w-full mb-3 rounded-xl p-3 text-left border-2 flex items-center gap-3 transition-colors"
+                        className="w-full mb-2 rounded-xl p-3 text-left border-2 flex items-center gap-3 transition-colors"
                         style={{ backgroundColor: 'rgba(250,204,21,0.08)', borderColor: '#facc15' }}
                       >
                         <span className="text-xl">⚡</span>
                         <div>
                           <p className="text-sm font-semibold" style={{ color: '#facc15' }}>Jokeri — lisää pelaaja kentälle</p>
                           <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Ei poista ketään, +1 pelaaja kentälle</p>
+                        </div>
+                      </button>
+                    )}
+                    {jokerRemoveEligible && (
+                      <button
+                        onClick={() => setPendingOut('joker-remove')}
+                        className="w-full mb-2 rounded-xl p-3 text-left border-2 flex items-center gap-3 transition-colors"
+                        style={{ backgroundColor: 'rgba(250,204,21,0.05)', borderColor: '#facc15' }}
+                      >
+                        <span className="text-xl">⬇️</span>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: '#facc15' }}>Poista jokeri-pelaaja</p>
+                          <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Ei lisää ketään, -1 pelaaja kentältä</p>
                         </div>
                       </button>
                     )}
