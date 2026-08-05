@@ -122,7 +122,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   }
 
   return (
-    <aside className={`shrink-0 bg-gray-900 dark:bg-slate-950 flex flex-col transition-all duration-200
+    <aside className={`shrink-0 bg-gray-900 dark:bg-slate-950 flex flex-col transition-all duration-200 h-screen
       ${mobileOpen ? 'fixed inset-y-0 left-0 z-40 flex' : 'hidden md:flex'}
       ${collapsed ? 'w-14' : 'w-56'}`}>
 
@@ -216,7 +216,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 py-2 px-2 overflow-y-auto md:overflow-visible">
+      <nav className="flex-1 py-2 px-2 overflow-y-auto overflow-x-visible">
         {navGroups.map((group, gi) => {
           const isGroupCollapsed = collapsedGroups.has(group.label);
           return (

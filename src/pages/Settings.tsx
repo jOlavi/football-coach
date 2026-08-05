@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { TeamFormat, TeamLevel } from '../types';
-import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy, Pencil } from 'lucide-react';
+import { Download, Upload, Trash2, RotateCcw, Check, Save, ChevronDown, Plus, X, Link, Copy, Pencil, FlaskConical } from 'lucide-react';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { usePlayerStore } from '../store/usePlayerStore';
 import { useMatchStore } from '../store/useMatchStore';
@@ -16,6 +16,7 @@ import { Modal } from '../components/ui/Modal';
 import { getCoachProfiles } from '../lib/firestore/userData';
 import { createInvitation } from '../lib/firestore/invitations';
 import { removeCoachFromTeam, deleteFirebaseTeam, updateFirebaseTeamName } from '../lib/firestore/teams';
+import { runSeed } from '../lib/migration';
 
 function CollapsibleCard({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) {
   const [open, setOpen] = useState(true);
@@ -243,6 +244,19 @@ export function Settings() {
   const [clearConfirm, setClearConfirm] = useState(false);
   const [importError, setImportError] = useState('');
   const [importOk, setImportOk] = useState(false);
+  const [seedConfirm, setSeedConfirm] = useState(false);
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedOk, setSeedOk] = useState(false);
+
+  async function handleLoadSeedData() {
+    if (!activeTeamId || !authUser) return;
+    setSeedLoading(true);
+    await runSeed(activeTeamId, authUser.uid, 'football');
+    setSeedLoading(false);
+    setSeedConfirm(false);
+    setSeedOk(true);
+    setTimeout(() => setSeedOk(false), 3000);
+  }
   const fileRef = useRef<HTMLInputElement>(null);
 
   function exportData() {
@@ -654,6 +668,35 @@ export function Settings() {
           Tiedot tallennetaan selaimeen. Varmuuskopioi säännöllisesti.
         </p>
         <div className="space-y-3">
+          {import.meta.env.DEV && (
+            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
+              <div>
+                <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Lataa testidata</p>
+                <p className="text-xs text-gray-400 dark:text-slate-500">Lisää pelaajia, otteluita ja turnauksia testaamista varten</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {seedOk && (
+                  <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                    <Check size={13} /> Ladattu!
+                  </span>
+                )}
+                {seedConfirm ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-600 dark:text-slate-400 font-medium">Oletko varma?</span>
+                    <Button size="sm" onClick={handleLoadSeedData} disabled={seedLoading}>
+                      {seedLoading ? 'Ladataan...' : 'Kyllä'}
+                    </Button>
+                    <Button variant="secondary" size="sm" onClick={() => setSeedConfirm(false)}>Peruuta</Button>
+                  </div>
+                ) : (
+                  <Button variant="secondary" size="sm" icon={<FlaskConical size={14} />} onClick={() => setSeedConfirm(true)}>
+                    Lataa
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-lg">
             <div>
               <p className="text-sm font-medium text-gray-800 dark:text-slate-200">Vie varmuuskopio</p>

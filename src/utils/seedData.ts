@@ -1,9 +1,9 @@
-import type { Player, Match, OwnTeam } from "../types";
+import type { Player, Match, OwnTeam, Tournament } from "../types";
 
 // If seedData.local.ts exists (gitignored), it overrides these example defaults.
-// Create src/utils/seedData.local.ts with your own SEED_PLAYERS / SEED_TEAMS / SEED_MATCHES.
+// Create src/utils/seedData.local.ts with your own SEED_PLAYERS / SEED_TEAMS / SEED_MATCHES / SEED_TOURNAMENTS.
 const localMods = import.meta.glob('./seedData.local.ts', { eager: true });
-const local = localMods['./seedData.local.ts'] as { SEED_PLAYERS?: Player[]; SEED_TEAMS?: OwnTeam[]; SEED_MATCHES?: Match[] } | undefined;
+const local = localMods['./seedData.local.ts'] as { SEED_PLAYERS?: Player[]; SEED_TEAMS?: OwnTeam[]; SEED_MATCHES?: Match[]; SEED_TOURNAMENTS?: Tournament[] } | undefined;
 
 const examplePlayers: Player[] = [
   { id: "example-p1", name: "Pelaaja 1", number: 1, position: "midfielder", skillLevel: 1, dateOfBirth: "", parentName: "", parentContact: "", active: true, createdAt: new Date().toISOString() },
@@ -16,7 +16,9 @@ const exampleTeams: OwnTeam[] = [
 ];
 
 const exampleMatches: Match[] = [];
+const exampleTournaments: Tournament[] = [];
 
 export const SEED_PLAYERS: Player[] = local?.SEED_PLAYERS ?? examplePlayers;
 export const SEED_TEAMS: OwnTeam[] = local?.SEED_TEAMS ?? exampleTeams;
 export const SEED_MATCHES: Match[] = local?.SEED_MATCHES ?? exampleMatches;
+export const SEED_TOURNAMENTS: Tournament[] = local?.SEED_TOURNAMENTS ?? exampleTournaments;

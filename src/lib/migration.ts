@@ -1,6 +1,6 @@
 import { doc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
-import { SEED_PLAYERS, SEED_TEAMS, SEED_MATCHES } from '../utils/seedData';
+import { SEED_PLAYERS, SEED_TEAMS, SEED_MATCHES, SEED_TOURNAMENTS } from '../utils/seedData';
 import { serializeSession, serializeDrill } from './firestore/serialize';
 import type { Player, Match, OwnTeam, TrainingSession, Exercise, Drill } from '../types';
 
@@ -85,6 +85,9 @@ export async function runSeed(
   );
   SEED_MATCHES.forEach((m) =>
     writes.push(setDoc(doc(db, 'teams', teamId, 'matches', m.id), m))
+  );
+  SEED_TOURNAMENTS.forEach((t) =>
+    writes.push(setDoc(doc(db, 'teams', teamId, 'tournaments', t.id), t))
   );
 
   await Promise.all(writes);
