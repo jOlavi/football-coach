@@ -26,8 +26,8 @@ export function MatchLive() {
   const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
   const [selectingNewGk, setSelectingNewGk] = useState(false);
   const [subMode, setSubMode] = useState(false);
-  const [subOut, setSubOut] = useState<MatchPlayer | null>(null);
-  const [subIn, setSubIn] = useState<MatchPlayer | null>(null);
+  const [subPairs, setSubPairs] = useState<{ out: MatchPlayer; in: MatchPlayer }[]>([]);
+  const [pendingOut, setPendingOut] = useState<MatchPlayer | null>(null);
 
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -133,29 +133,41 @@ export function MatchLive() {
   }
 
   function openSubMode(preselectedOut?: MatchPlayer) {
-    setSubOut(preselectedOut ?? null);
-    setSubIn(null);
+    setSubPairs([]);
+    setPendingOut(preselectedOut ?? null);
     setSubMode(true);
   }
 
   function cancelSubMode() {
     setSubMode(false);
-    setSubOut(null);
-    setSubIn(null);
+    setSubPairs([]);
+    setPendingOut(null);
   }
 
-  function confirmSubstitution() {
-    if (!subOut || !subIn) return;
+  function handleSubPickIn(inPlayer: MatchPlayer) {
+    if (!pendingOut) return;
+    setSubPairs((prev) => [...prev, { out: pendingOut, in: inPlayer }]);
+    setPendingOut(null);
+  }
+
+  function removeSubPair(index: number) {
+    setSubPairs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function confirmSubstitutions() {
+    if (subPairs.length === 0) return;
     const minute = Math.floor(matchSeconds / 60);
+    const gkWentOut = subPairs.some((pair) => pair.out.isGoalkeeper);
+    const outIds = new Set(subPairs.map((p) => p.out.id));
+    const inIds = new Set(subPairs.map((p) => p.in.id));
     setSubstitutions((s) => [
       ...s,
-      { outId: subOut.id, inId: subIn.id, matchMinute: minute, period: currentPeriod },
+      ...subPairs.map(({ out, in: inP }) => ({ outId: out.id, inId: inP.id, matchMinute: minute, period: currentPeriod })),
     ]);
-    const gkWentOut = subOut.isGoalkeeper;
     setPlayers((prev) =>
       prev.map((p) => {
-        if (p.id === subOut.id) return { ...p, onField: false };
-        if (p.id === subIn.id) return { ...p, onField: true };
+        if (outIds.has(p.id)) return { ...p, onField: false };
+        if (inIds.has(p.id)) return { ...p, onField: true };
         return p;
       })
     );
@@ -357,99 +369,111 @@ export function MatchLive() {
       )}
 
       {/* Substitution sheet */}
-      {subMode && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
-          <div className="rounded-t-2xl p-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Vaihto</p>
-              <button onClick={cancelSubMode} className="p-1 rounded-lg" style={{ color: 'var(--match-text-muted)' }}>
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Ulos → Sisään indicator */}
-            <div className="flex items-center justify-center gap-3 mb-5">
-              <div className="text-center flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--match-text-muted)' }}>Ulos</p>
-                {subOut ? (
-                  <div className="rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-out-border)', backgroundColor: 'var(--match-out-bg)' }}>
-                    <p className="text-xs font-bold" style={{ color: 'var(--match-out-text)' }}>#{subOut.number}</p>
-                    <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-out-text)' }}>{subOut.name}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
-                    <p className="text-sm" style={{ color: 'var(--match-text-muted)' }}>–</p>
-                  </div>
-                )}
+      {subMode && (() => {
+        const usedOutIds = new Set(subPairs.map((p) => p.out.id));
+        const usedInIds = new Set(subPairs.map((p) => p.in.id));
+        const availableOut = onFieldPlayers.filter((p) => !usedOutIds.has(p.id));
+        const availableIn = benchPlayers.filter((p) => !usedInIds.has(p.id));
+        return (
+          <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+            <div className="rounded-t-2xl p-5 max-h-[85dvh] flex flex-col" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+              {/* Header */}
+              <div className="flex items-center justify-between mb-3 shrink-0">
+                <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Vaihto</p>
+                <button onClick={cancelSubMode} className="p-1 rounded-lg" style={{ color: 'var(--match-text-muted)' }}>
+                  <X size={18} />
+                </button>
               </div>
-              <ArrowRight size={18} className="mt-5 shrink-0" style={{ color: 'var(--match-text-muted)' }} />
-              <div className="text-center flex-1">
-                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--match-text-muted)' }}>Sisään</p>
-                {subIn ? (
-                  <div className="rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }}>
-                    <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{subIn.number}</p>
-                    <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{subIn.name}</p>
-                  </div>
-                ) : (
-                  <div className="rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
-                    <p className="text-sm" style={{ color: 'var(--match-text-muted)' }}>–</p>
-                  </div>
-                )}
-              </div>
-            </div>
 
-            {/* Step content */}
-            {!subOut ? (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Kuka lähtee ulos?</p>
-                <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
-                  {onFieldPlayers.map((p) => (
-                    <button
-                      key={p.id}
-                      onClick={() => setSubOut(p)}
-                      className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
-                      style={{ backgroundColor: 'var(--match-field-bg)', borderColor: 'var(--match-field-border)' }}
-                    >
-                      <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{p.number}</p>
-                      <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{p.name}</p>
-                      {p.isGoalkeeper && <span className="text-[10px] font-bold" style={{ color: '#facc15' }}>MV</span>}
-                    </button>
+              {/* Confirmed pairs list */}
+              {subPairs.length > 0 && (
+                <div className="mb-3 space-y-1.5 shrink-0">
+                  {subPairs.map((pair, i) => (
+                    <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}>
+                      <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--match-out-text)' }}>#{pair.out.number} {pair.out.name}</span>
+                      <ArrowRight size={12} className="shrink-0" style={{ color: 'var(--match-text-muted)' }} />
+                      <span className="text-xs font-semibold flex-1" style={{ color: 'var(--match-field-name)' }}>#{pair.in.number} {pair.in.name}</span>
+                      <button onClick={() => removeSubPair(i)} className="shrink-0 p-0.5 rounded" style={{ color: 'var(--match-text-muted)' }}>
+                        <X size={13} />
+                      </button>
+                    </div>
                   ))}
                 </div>
-              </>
-            ) : !subIn ? (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Kuka tulee sisään?</p>
-                {benchPlayers.length > 0 ? (
-                  <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
-                    {benchPlayers.map((p) => (
-                      <button
-                        key={p.id}
-                        onClick={() => setSubIn(p)}
-                        className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
-                        style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}
-                      >
-                        <p className="text-xs font-bold" style={{ color: 'var(--match-text-muted)' }}>#{p.number}</p>
-                        <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-text-primary)' }}>{p.name}</p>
-                      </button>
-                    ))}
+              )}
+
+              {/* Current pair indicator */}
+              {pendingOut && (
+                <div className="flex items-center gap-3 mb-3 shrink-0">
+                  <div className="flex-1 rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-out-border)', backgroundColor: 'var(--match-out-bg)' }}>
+                    <p className="text-xs font-bold" style={{ color: 'var(--match-out-text)' }}>#{pendingOut.number} {pendingOut.name}</p>
                   </div>
+                  <ArrowRight size={16} className="shrink-0" style={{ color: 'var(--match-text-muted)' }} />
+                  <div className="flex-1 rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
+                    <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Valitse sisään</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Scrollable player grid */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {!pendingOut ? (
+                  <>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>
+                      {subPairs.length > 0 ? 'Lisää vaihto — kuka lähtee ulos?' : 'Kuka lähtee ulos?'}
+                    </p>
+                    {availableOut.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {availableOut.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => setPendingOut(p)}
+                            className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
+                            style={{ backgroundColor: 'var(--match-field-bg)', borderColor: 'var(--match-field-border)' }}
+                          >
+                            <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{p.number}</p>
+                            <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{p.name}</p>
+                            {p.isGoalkeeper && <span className="text-[10px] font-bold" style={{ color: '#facc15' }}>MV</span>}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-sm py-4" style={{ color: 'var(--match-text-muted)' }}>Kaikki kentälliset pelaajat on jo valittu</p>
+                    )}
+                  </>
                 ) : (
-                  <p className="text-center text-sm py-4" style={{ color: 'var(--match-text-muted)' }}>Ei pelaajia penkillä</p>
+                  <>
+                    <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Kuka tulee sisään?</p>
+                    {availableIn.length > 0 ? (
+                      <div className="grid grid-cols-3 gap-2">
+                        {availableIn.map((p) => (
+                          <button
+                            key={p.id}
+                            onClick={() => handleSubPickIn(p)}
+                            className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
+                            style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}
+                          >
+                            <p className="text-xs font-bold" style={{ color: 'var(--match-text-muted)' }}>#{p.number}</p>
+                            <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-text-primary)' }}>{p.name}</p>
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-center text-sm py-4" style={{ color: 'var(--match-text-muted)' }}>Ei pelaajia penkillä</p>
+                    )}
+                    <button
+                      onClick={() => setPendingOut(null)}
+                      className="w-full mt-3 py-2.5 rounded-xl text-sm border"
+                      style={{ borderColor: 'var(--match-border)', color: 'var(--match-text-muted)', backgroundColor: 'var(--match-dark)' }}
+                    >
+                      ← Vaihda ulos lähtevä
+                    </button>
+                  </>
                 )}
-                <button
-                  onClick={() => setSubOut(null)}
-                  className="w-full mt-3 py-2.5 rounded-xl text-sm border"
-                  style={{ borderColor: 'var(--match-border)', color: 'var(--match-text-muted)', backgroundColor: 'var(--match-dark)' }}
-                >
-                  ← Vaihda ulos lähtevä
-                </button>
-              </>
-            ) : (
-              <>
-                <p className="text-xs font-semibold uppercase tracking-wide mb-4 text-center" style={{ color: 'var(--match-text-muted)' }}>Vahvista vaihto</p>
-                <div className="flex gap-3">
+              </div>
+
+              {/* Bottom actions */}
+              {subPairs.length > 0 && !pendingOut && (
+                <div className="flex gap-3 mt-4 shrink-0">
                   <button
                     onClick={cancelSubMode}
                     className="flex-1 py-3 rounded-xl text-sm font-semibold border"
@@ -458,18 +482,18 @@ export function MatchLive() {
                     Peruuta
                   </button>
                   <button
-                    onClick={confirmSubstitution}
+                    onClick={confirmSubstitutions}
                     className="flex-1 py-3 rounded-xl text-sm font-semibold"
                     style={{ backgroundColor: 'var(--match-active)', color: '#fff' }}
                   >
-                    Vahvista vaihto
+                    Vahvista ({subPairs.length})
                   </button>
                 </div>
-              </>
-            )}
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Period end overlay */}
       {showPeriodEnd && (
