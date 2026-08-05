@@ -62,8 +62,8 @@ export function MatchSummaryModal(props: Props) {
   const playerMinutes: Record<string, number> | undefined = isRegular ? props.match.playerMinutes : undefined;
   const scorers = isRegular ? (props.match.result?.scorers ?? []) : [];
 
-  const gf = result ? (location === 'home' ? result.goalsFor : result.goalsAgainst) : null;
-  const ga = result ? (location === 'home' ? result.goalsAgainst : result.goalsFor) : null;
+  const gf = result?.goalsFor ?? null;
+  const ga = result?.goalsAgainst ?? null;
   const homeScore = result ? (location === 'home' ? result.goalsFor : result.goalsAgainst) : null;
   const awayScore = result ? (location === 'home' ? result.goalsAgainst : result.goalsFor) : null;
 
