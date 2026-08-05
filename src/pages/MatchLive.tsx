@@ -26,7 +26,7 @@ export function MatchLive() {
   const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
   const [selectingNewGk, setSelectingNewGk] = useState(false);
   const [trackScorers, setTrackScorers] = useState(session?.config?.trackScorers ?? false);
-  const [jokerActive, setJokerActive] = useState(false);
+  const [jokerActive, setJokerActive] = useState(session?.config?.jokerRule ?? false);
   const [showSettings, setShowSettings] = useState(false);
   const [subMode, setSubMode] = useState(false);
   const [subPairs, setSubPairs] = useState<{ out: MatchPlayer | 'joker'; in: MatchPlayer | 'joker-remove' }[]>([]);
