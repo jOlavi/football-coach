@@ -10,7 +10,7 @@ export function MatchLive() {
   const location = useLocation();
   const { id: matchId } = useParams<{ id: string }>();
 
-  const locationState = location.state as (MatchSessionState & { tournamentId?: string }) | null;
+  const locationState = location.state as (MatchSessionState & { tournamentId?: string; jokerActive?: boolean }) | null;
   const session = locationState;
   const tournamentId = locationState?.tournamentId;
 
@@ -26,7 +26,7 @@ export function MatchLive() {
   const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
   const [selectingNewGk, setSelectingNewGk] = useState(false);
   const [trackScorers, setTrackScorers] = useState(session?.config?.trackScorers ?? false);
-  const [jokerActive, setJokerActive] = useState(session?.config?.jokerRule ?? false);
+  const [jokerActive, setJokerActive] = useState(locationState?.jokerActive ?? session?.config?.jokerRule ?? false);
   const [showSettings, setShowSettings] = useState(false);
   const [subMode, setSubMode] = useState(false);
   const [subPairs, setSubPairs] = useState<{ out: MatchPlayer | 'joker'; in: MatchPlayer | 'joker-remove' }[]>([]);
@@ -101,7 +101,7 @@ export function MatchLive() {
       goalEntries,
       opponentGoalTimes,
     };
-    navigate(`/matches/${matchId}/break`, { state: { ...updatedSession, tournamentId } });
+    navigate(`/matches/${matchId}/break`, { state: { ...updatedSession, tournamentId, jokerActive } });
   }
 
   const isHome = config?.location === 'home';

@@ -13,7 +13,7 @@ export function MatchBreak() {
   const { updateMatch } = useMatchStore();
   const { updateTournamentMatch } = useTournamentStore();
 
-  const session = location.state as (MatchSessionState & { tournamentId?: string }) | null;
+  const session = location.state as (MatchSessionState & { tournamentId?: string; jokerActive?: boolean }) | null;
   const tournamentId = session?.tournamentId;
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -25,6 +25,7 @@ export function MatchBreak() {
   const [goalkeeperIdState, setGoalkeeperIdState] = useState<string | null>(
     () => session?.players.find((p) => p.isGoalkeeper)?.id ?? null
   );
+  const [jokerActive, setJokerActive] = useState(session?.jokerActive ?? false);
   const [error, setError] = useState('');
 
   const required = FORMAT_SIZES[config?.format ?? '7v7'];
@@ -93,7 +94,7 @@ export function MatchBreak() {
       opponentGoalTimes: session!.opponentGoalTimes,
     };
 
-    navigate(`/matches/${matchId}/live`, { state: { ...nextSession, tournamentId } });
+    navigate(`/matches/${matchId}/live`, { state: { ...nextSession, tournamentId, jokerActive } });
   }
 
   async function handleFinish() {
@@ -142,7 +143,7 @@ export function MatchBreak() {
       <div className="px-3 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
         <div className="relative flex items-center justify-center min-h-[48px]">
           <button
-            onClick={() => navigate(`/matches/${matchId}/live`, { state: session, replace: true })}
+            onClick={() => navigate(`/matches/${matchId}/live`, { state: { ...session, jokerActive }, replace: true })}
             className="absolute left-0 flex items-center gap-1.5 min-h-[48px]"
             style={{ color: 'var(--match-text-muted)' }}
           >
@@ -289,6 +290,25 @@ export function MatchBreak() {
                 });
             })()}
           </section>
+        )}
+
+        {/* Joker toggle (non-final break only) */}
+        {!isFinalBreak && (
+          <button
+            onClick={() => setJokerActive((v) => !v)}
+            className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
+            style={{ backgroundColor: jokerActive ? 'rgba(250,204,21,0.08)' : 'var(--match-dark-mid)', borderColor: jokerActive ? '#facc15' : '#334155' }}
+          >
+            <div className="text-left">
+              <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>⚡ Jokeri-pelaaja (+1)</p>
+              <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
+                {jokerActive ? 'Aktiivinen — +1 pelaaja kentälle seuraavassa erässä' : 'Lisää yksi ylimääräinen pelaaja kentälle'}
+              </p>
+            </div>
+            <div className="w-12 h-6 rounded-full flex-shrink-0 ml-4 relative transition-colors" style={{ backgroundColor: jokerActive ? '#facc15' : '#334155' }}>
+              <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: jokerActive ? '28px' : '4px' }} />
+            </div>
+          </button>
         )}
 
         {/* Next lineup (only if not final) */}
