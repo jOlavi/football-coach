@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { StopCircle } from 'lucide-react';
+import { StopCircle, ArrowLeftRight, ArrowRight, X } from 'lucide-react';
 import { useMatchTimer } from '../hooks/useMatchTimer';
 import type { MatchSessionState, MatchPlayer, SubEntry, GoalEntry } from '../types/matchSession';
 import { fmtTime, FORMAT_SIZES } from '../types/matchSession';
@@ -23,9 +23,11 @@ export function MatchLive() {
   const [periodHistory] = useState(session?.periodHistory ?? []);
   const [showPeriodEnd, setShowPeriodEnd] = useState(false);
   const [showEndConfirm, setShowEndConfirm] = useState(false);
-  const [pendingOutIds, setPendingOutIds] = useState<string[]>([]);
   const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
   const [selectingNewGk, setSelectingNewGk] = useState(false);
+  const [subMode, setSubMode] = useState(false);
+  const [subOut, setSubOut] = useState<MatchPlayer | null>(null);
+  const [subIn, setSubIn] = useState<MatchPlayer | null>(null);
 
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -130,33 +132,39 @@ export function MatchLive() {
     setPendingScorerTeam(null);
   }
 
+  function openSubMode(preselectedOut?: MatchPlayer) {
+    setSubOut(preselectedOut ?? null);
+    setSubIn(null);
+    setSubMode(true);
+  }
+
+  function cancelSubMode() {
+    setSubMode(false);
+    setSubOut(null);
+    setSubIn(null);
+  }
+
+  function confirmSubstitution() {
+    if (!subOut || !subIn) return;
+    const minute = Math.floor(matchSeconds / 60);
+    setSubstitutions((s) => [
+      ...s,
+      { outId: subOut.id, inId: subIn.id, matchMinute: minute, period: currentPeriod },
+    ]);
+    const gkWentOut = subOut.isGoalkeeper;
+    setPlayers((prev) =>
+      prev.map((p) => {
+        if (p.id === subOut.id) return { ...p, onField: false };
+        if (p.id === subIn.id) return { ...p, onField: true };
+        return p;
+      })
+    );
+    cancelSubMode();
+    if (gkWentOut) setSelectingNewGk(true);
+  }
+
   function handlePlayerTap(player: MatchPlayer) {
-    if (player.onField) {
-      setPendingOutIds((prev) =>
-        prev.includes(player.id)
-          ? prev.filter((id) => id !== player.id)
-          : [...prev, player.id]
-      );
-    } else {
-      if (pendingOutIds.length > 0) {
-        const outId = pendingOutIds[0];
-        const minute = Math.floor(matchSeconds / 60);
-        setSubstitutions((s) => [
-          ...s,
-          { outId, inId: player.id, matchMinute: minute, period: currentPeriod },
-        ]);
-        const gkWentOut = players.some((p) => p.id === outId && p.isGoalkeeper);
-        setPlayers((prev) =>
-          prev.map((p) => {
-            if (p.id === outId) return { ...p, onField: false };
-            if (p.id === player.id) return { ...p, onField: true };
-            return p;
-          })
-        );
-        setPendingOutIds((prev) => prev.slice(1));
-        if (gkWentOut) setSelectingNewGk(true);
-      }
-    }
+    if (player.onField) openSubMode(player);
   }
 
   function handleEndPeriod() {
@@ -229,20 +237,12 @@ export function MatchLive() {
 
       {/* Players */}
       <div className="flex-1 px-3 pt-4 pb-24 overflow-y-auto">
-        {pendingOutIds.length > 0 && (
-          <div className="mb-3 flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ backgroundColor: 'var(--match-out-bg)', borderColor: 'var(--match-out-border)' }}>
-            <span className="text-xs" style={{ color: 'var(--match-out-text)' }}>
-              {pendingOutIds.length} pelaaja{pendingOutIds.length > 1 ? 'a' : ''} vaihtoon — valitse penkiltä sisään tuleva
-            </span>
-          </div>
-        )}
-
         <p className="text-xs font-semibold uppercase tracking-wide mb-2 px-1" style={{ color: 'var(--match-text-muted)' }}>
           Kentällä ({onFieldPlayers.length}/{FORMAT_SIZES[config.format]})
         </p>
         <div className="grid grid-cols-3 gap-2 mb-4">
           {onFieldPlayers.map((p) => (
-            <LivePlayerCard key={p.id} player={p} variant="onField" isPendingOut={pendingOutIds.includes(p.id)} pendingOutIndex={pendingOutIds.indexOf(p.id)} goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => handlePlayerTap(p)} />
+            <LivePlayerCard key={p.id} player={p} variant="onField" goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => handlePlayerTap(p)} />
           ))}
         </div>
 
@@ -253,7 +253,7 @@ export function MatchLive() {
             </p>
             <div className="grid grid-cols-3 gap-2">
               {benchPlayers.map((p) => (
-                <LivePlayerCard key={p.id} player={p} variant="bench" isPendingOut={false} pendingOutIndex={-1} goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => handlePlayerTap(p)} />
+                <LivePlayerCard key={p.id} player={p} variant="bench" goals={goalEntries.filter((g) => g.playerId === p.id).length} onTap={() => {}} />
               ))}
             </div>
           </>
@@ -261,7 +261,7 @@ export function MatchLive() {
       </div>
 
       {/* Bottom bar */}
-      <div className="fixed bottom-0 left-0 right-0 border-t px-4 py-3 flex gap-3" style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}>
+      <div className="fixed bottom-0 left-0 right-0 border-t px-3 py-3 flex gap-2" style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}>
         <button
           onClick={() => { setIsRunning((r) => !r); setShowEndConfirm(false); }}
           className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px]"
@@ -273,15 +273,23 @@ export function MatchLive() {
           {isRunning ? '⏸ Tauko' : '▶ Jatka'}
         </button>
         <button
+          onClick={() => openSubMode()}
+          className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
+          style={{ backgroundColor: 'var(--match-dark-mid)', color: 'var(--match-text-primary)' }}
+        >
+          <ArrowLeftRight size={15} />
+          Vaihto
+        </button>
+        <button
           onClick={handleEndPeriod}
-          className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-2"
+          className="flex-1 py-3 rounded-xl font-semibold text-sm transition-colors min-h-[48px] flex items-center justify-center gap-1.5"
           style={{
             backgroundColor: showEndConfirm ? 'var(--match-out-border)' : 'var(--match-dark-mid)',
             color: showEndConfirm ? '#fff' : 'var(--match-text-muted)',
           }}
         >
-          <StopCircle size={16} />
-          {showEndConfirm ? 'Vahvista lopetus' : 'Lopeta erä'}
+          <StopCircle size={15} />
+          {showEndConfirm ? 'Vahvista' : 'Lopeta erä'}
         </button>
       </div>
 
@@ -348,6 +356,121 @@ export function MatchLive() {
         </div>
       )}
 
+      {/* Substitution sheet */}
+      {subMode && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-t-2xl p-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+            {/* Header */}
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Vaihto</p>
+              <button onClick={cancelSubMode} className="p-1 rounded-lg" style={{ color: 'var(--match-text-muted)' }}>
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Ulos → Sisään indicator */}
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <div className="text-center flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--match-text-muted)' }}>Ulos</p>
+                {subOut ? (
+                  <div className="rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-out-border)', backgroundColor: 'var(--match-out-bg)' }}>
+                    <p className="text-xs font-bold" style={{ color: 'var(--match-out-text)' }}>#{subOut.number}</p>
+                    <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-out-text)' }}>{subOut.name}</p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
+                    <p className="text-sm" style={{ color: 'var(--match-text-muted)' }}>–</p>
+                  </div>
+                )}
+              </div>
+              <ArrowRight size={18} className="mt-5 shrink-0" style={{ color: 'var(--match-text-muted)' }} />
+              <div className="text-center flex-1">
+                <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'var(--match-text-muted)' }}>Sisään</p>
+                {subIn ? (
+                  <div className="rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-field-border)', backgroundColor: 'var(--match-field-bg)' }}>
+                    <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{subIn.number}</p>
+                    <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{subIn.name}</p>
+                  </div>
+                ) : (
+                  <div className="rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
+                    <p className="text-sm" style={{ color: 'var(--match-text-muted)' }}>–</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Step content */}
+            {!subOut ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Kuka lähtee ulos?</p>
+                <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
+                  {onFieldPlayers.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => setSubOut(p)}
+                      className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
+                      style={{ backgroundColor: 'var(--match-field-bg)', borderColor: 'var(--match-field-border)' }}
+                    >
+                      <p className="text-xs font-bold" style={{ color: 'var(--match-field-num)' }}>#{p.number}</p>
+                      <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-field-name)' }}>{p.name}</p>
+                      {p.isGoalkeeper && <span className="text-[10px] font-bold" style={{ color: '#facc15' }}>MV</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : !subIn ? (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>Kuka tulee sisään?</p>
+                {benchPlayers.length > 0 ? (
+                  <div className="grid grid-cols-3 gap-2 max-h-52 overflow-y-auto">
+                    {benchPlayers.map((p) => (
+                      <button
+                        key={p.id}
+                        onClick={() => setSubIn(p)}
+                        className="rounded-xl p-3 text-left border-2 min-h-[72px] transition-colors"
+                        style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}
+                      >
+                        <p className="text-xs font-bold" style={{ color: 'var(--match-text-muted)' }}>#{p.number}</p>
+                        <p className="text-sm font-semibold leading-tight mt-0.5" style={{ color: 'var(--match-text-primary)' }}>{p.name}</p>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-center text-sm py-4" style={{ color: 'var(--match-text-muted)' }}>Ei pelaajia penkillä</p>
+                )}
+                <button
+                  onClick={() => setSubOut(null)}
+                  className="w-full mt-3 py-2.5 rounded-xl text-sm border"
+                  style={{ borderColor: 'var(--match-border)', color: 'var(--match-text-muted)', backgroundColor: 'var(--match-dark)' }}
+                >
+                  ← Vaihda ulos lähtevä
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-wide mb-4 text-center" style={{ color: 'var(--match-text-muted)' }}>Vahvista vaihto</p>
+                <div className="flex gap-3">
+                  <button
+                    onClick={cancelSubMode}
+                    className="flex-1 py-3 rounded-xl text-sm font-semibold border"
+                    style={{ borderColor: 'var(--match-border)', backgroundColor: 'var(--match-dark)', color: 'var(--match-text-muted)' }}
+                  >
+                    Peruuta
+                  </button>
+                  <button
+                    onClick={confirmSubstitution}
+                    className="flex-1 py-3 rounded-xl text-sm font-semibold"
+                    style={{ backgroundColor: 'var(--match-active)', color: '#fff' }}
+                  >
+                    Vahvista vaihto
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Period end overlay */}
       {showPeriodEnd && (
         <div className="fixed inset-0 flex items-center justify-center z-50" style={{ backgroundColor: 'var(--match-dark)' }}>
@@ -367,32 +490,21 @@ export function MatchLive() {
 interface LivePlayerCardProps {
   player: MatchPlayer;
   variant: 'onField' | 'bench';
-  isPendingOut: boolean;
-  pendingOutIndex: number;
   goals: number;
   onTap: () => void;
 }
 
-function LivePlayerCard({ player, variant, isPendingOut, pendingOutIndex, goals, onTap }: LivePlayerCardProps) {
+function LivePlayerCard({ player, variant, goals, onTap }: LivePlayerCardProps) {
   const mins = Math.floor(player.accumulatedSeconds / 60);
   const secs = player.accumulatedSeconds % 60;
   const timeStr = `${mins}:${String(secs).padStart(2, '0')}`;
 
-  let bgColor: string;
-  let borderColor: string;
-  if (isPendingOut) {
-    bgColor = 'var(--match-out-bg)';
-    borderColor = 'var(--match-out-border)';
-  } else if (variant === 'onField') {
-    bgColor = 'var(--match-field-bg)';
-    borderColor = player.isGoalkeeper ? '#facc15' : 'var(--match-field-border)';
-  } else {
-    bgColor = 'transparent';
-    borderColor = 'var(--match-border)';
-  }
-
-  const textColor = isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-name)' : 'var(--match-text-muted)';
-  const numColor = isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-field-num)' : 'var(--match-text-muted)';
+  const bgColor = variant === 'onField' ? 'var(--match-field-bg)' : 'transparent';
+  const borderColor = variant === 'onField'
+    ? (player.isGoalkeeper ? '#facc15' : 'var(--match-field-border)')
+    : 'var(--match-border)';
+  const textColor = variant === 'onField' ? 'var(--match-field-name)' : 'var(--match-text-muted)';
+  const numColor = variant === 'onField' ? 'var(--match-field-num)' : 'var(--match-text-muted)';
 
   return (
     <button
@@ -401,31 +513,20 @@ function LivePlayerCard({ player, variant, isPendingOut, pendingOutIndex, goals,
       style={{ backgroundColor: bgColor, borderColor }}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className="text-xs font-bold" style={{ color: numColor }}>
-          #{player.number}
-        </span>
-        <div className="flex items-center gap-1">
-          {isPendingOut && pendingOutIndex >= 0 && (
-            <span className="text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center" style={{ backgroundColor: 'var(--match-out-border)', color: '#fff' }}>
-              {pendingOutIndex + 1}
-            </span>
-          )}
-          {player.isGoalkeeper && (
-            <span className="text-xs font-bold rounded px-1 border" style={{ backgroundColor: 'transparent', borderColor: '#facc15', color: '#facc15' }}>MV</span>
-          )}
-        </div>
+        <span className="text-xs font-bold" style={{ color: numColor }}>#{player.number}</span>
+        {player.isGoalkeeper && (
+          <span className="text-xs font-bold rounded px-1 border" style={{ backgroundColor: 'transparent', borderColor: '#facc15', color: '#facc15' }}>MV</span>
+        )}
       </div>
       <p className="text-sm font-semibold leading-tight" style={{ color: textColor }}>
         {player.name}
       </p>
       <div className="flex items-center justify-between mt-1">
-        <p className="text-xs font-mono tabular-nums" style={{ color: isPendingOut ? 'var(--match-out-text)' : variant === 'onField' ? 'var(--match-active)' : 'var(--match-text-muted)' }}>
+        <p className="text-xs font-mono tabular-nums" style={{ color: variant === 'onField' ? 'var(--match-active)' : 'var(--match-text-muted)' }}>
           {timeStr}
         </p>
         {goals > 0 && (
-          <span className="text-xs font-bold" style={{ color: isPendingOut ? 'var(--match-out-text)' : 'var(--match-active)' }}>
-            ⚽ {goals}
-          </span>
+          <span className="text-xs font-bold" style={{ color: 'var(--match-active)' }}>⚽ {goals}</span>
         )}
       </div>
     </button>
