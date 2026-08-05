@@ -359,23 +359,21 @@ export function MatchLive() {
                 </div>
               </button>
               {/* Joker */}
-              {config.jokerRule && (
-                <button
-                  onClick={() => setJokerActive((v) => !v)}
-                  className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
-                  style={{ backgroundColor: jokerActive ? 'rgba(250,204,21,0.08)' : 'var(--match-dark)', borderColor: jokerActive ? '#facc15' : 'var(--match-border)' }}
-                >
-                  <div className="text-left">
-                    <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>⚡ Jokeri-pelaaja (+1)</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
-                      {jokerActive ? `Kentällä max ${fieldLimit} pelaajaa — käytä Vaihto-nappia` : 'Lisää yksi ylimääräinen pelaaja kentälle'}
-                    </p>
-                  </div>
-                  <div className="w-12 h-6 rounded-full flex-shrink-0 ml-4 relative transition-colors" style={{ backgroundColor: jokerActive ? '#facc15' : '#334155' }}>
-                    <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: jokerActive ? '28px' : '4px' }} />
-                  </div>
-                </button>
-              )}
+              <button
+                onClick={() => setJokerActive((v) => !v)}
+                className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
+                style={{ backgroundColor: jokerActive ? 'rgba(250,204,21,0.08)' : 'var(--match-dark)', borderColor: jokerActive ? '#facc15' : 'var(--match-border)' }}
+              >
+                <div className="text-left">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>⚡ Jokeri-pelaaja (+1)</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
+                    {jokerActive ? `Kentällä max ${fieldLimit} pelaajaa — käytä Vaihto-nappia` : 'Lisää yksi ylimääräinen pelaaja kentälle'}
+                  </p>
+                </div>
+                <div className="w-12 h-6 rounded-full flex-shrink-0 ml-4 relative transition-colors" style={{ backgroundColor: jokerActive ? '#facc15' : '#334155' }}>
+                  <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: jokerActive ? '28px' : '4px' }} />
+                </div>
+              </button>
             </div>
           </div>
         </div>
