@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
-import { StopCircle, ArrowLeftRight, ArrowRight, X } from 'lucide-react';
+import { StopCircle, ArrowLeftRight, ArrowRight, X, Settings } from 'lucide-react';
 import { useMatchTimer } from '../hooks/useMatchTimer';
 import type { MatchSessionState, MatchPlayer, SubEntry, GoalEntry } from '../types/matchSession';
 import { fmtTime, FORMAT_SIZES } from '../types/matchSession';
@@ -25,9 +25,12 @@ export function MatchLive() {
   const [showEndConfirm, setShowEndConfirm] = useState(false);
   const [pendingScorerTeam, setPendingScorerTeam] = useState<'home' | 'away' | null>(null);
   const [selectingNewGk, setSelectingNewGk] = useState(false);
+  const [trackScorers, setTrackScorers] = useState(session?.config?.trackScorers ?? false);
+  const [jokerActive, setJokerActive] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [subMode, setSubMode] = useState(false);
-  const [subPairs, setSubPairs] = useState<{ out: MatchPlayer; in: MatchPlayer }[]>([]);
-  const [pendingOut, setPendingOut] = useState<MatchPlayer | null>(null);
+  const [subPairs, setSubPairs] = useState<{ out: MatchPlayer | 'joker'; in: MatchPlayer }[]>([]);
+  const [pendingOut, setPendingOut] = useState<MatchPlayer | 'joker' | null>(null);
 
   const config = session?.config;
   const currentPeriod = session?.currentPeriod ?? 1;
@@ -110,7 +113,7 @@ export function MatchLive() {
       if (!isOurGoal) setOpponentGoalTimes((prev) => prev.slice(0, -1));
       return;
     }
-    if (config?.trackScorers && isOurGoal) {
+    if (trackScorers && isOurGoal) {
       setPendingScorerTeam(team);
     } else {
       setScores((s) => ({ ...s, [team]: s[team] + 1 }));
@@ -145,7 +148,7 @@ export function MatchLive() {
   }
 
   function handleSubPickIn(inPlayer: MatchPlayer) {
-    if (!pendingOut) return;
+    if (pendingOut === null) return;
     setSubPairs((prev) => [...prev, { out: pendingOut, in: inPlayer }]);
     setPendingOut(null);
   }
@@ -157,12 +160,17 @@ export function MatchLive() {
   function confirmSubstitutions() {
     if (subPairs.length === 0) return;
     const minute = Math.floor(matchSeconds / 60);
-    const gkWentOut = subPairs.some((pair) => pair.out.isGoalkeeper);
-    const outIds = new Set(subPairs.map((p) => p.out.id));
+    const gkWentOut = subPairs.some((pair) => pair.out !== 'joker' && (pair.out as MatchPlayer).isGoalkeeper);
+    const outIds = new Set(subPairs.filter((p) => p.out !== 'joker').map((p) => (p.out as MatchPlayer).id));
     const inIds = new Set(subPairs.map((p) => p.in.id));
     setSubstitutions((s) => [
       ...s,
-      ...subPairs.map(({ out, in: inP }) => ({ outId: out.id, inId: inP.id, matchMinute: minute, period: currentPeriod })),
+      ...subPairs.map(({ out, in: inP }) => ({
+        outId: out === 'joker' ? 'joker' : (out as MatchPlayer).id,
+        inId: inP.id,
+        matchMinute: minute,
+        period: currentPeriod,
+      })),
     ]);
     setPlayers((prev) =>
       prev.map((p) => {
@@ -204,12 +212,20 @@ export function MatchLive() {
 
   const onFieldPlayers = players.filter((p) => p.onField).sort((a, b) => a.number - b.number);
   const benchPlayers = players.filter((p) => !p.onField).sort((a, b) => a.number - b.number);
+  const fieldLimit = FORMAT_SIZES[config.format] + (jokerActive ? 1 : 0);
 
   return (
     <div className="min-h-dvh flex flex-col select-none" style={{ backgroundColor: 'var(--match-dark)' }}>
 
       {/* Scoreboard header */}
-      <div className="px-3 pt-10 pb-3" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+      <div className="px-3 pt-10 pb-3 relative" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+        <button
+          onClick={() => setShowSettings(true)}
+          className="absolute top-3 right-3 p-1.5 rounded-lg transition-colors"
+          style={{ color: 'var(--match-text-muted)' }}
+        >
+          <Settings size={16} />
+        </button>
         <div className="relative flex items-center justify-center mb-2 min-h-[36px]">
           <span className="absolute left-0 text-sm font-semibold" style={{ color: 'var(--match-text-muted)' }}>
             {currentPeriod}. erä / {config.periods}
@@ -250,7 +266,7 @@ export function MatchLive() {
       {/* Players */}
       <div className="flex-1 px-3 pt-4 pb-24 overflow-y-auto">
         <p className="text-xs font-semibold uppercase tracking-wide mb-2 px-1" style={{ color: 'var(--match-text-muted)' }}>
-          Kentällä ({onFieldPlayers.length}/{FORMAT_SIZES[config.format]})
+          Kentällä ({onFieldPlayers.length}/{fieldLimit}){jokerActive ? ' ⚡' : ''}
         </p>
         <div className="grid grid-cols-3 gap-2 mb-4">
           {onFieldPlayers.map((p) => (
@@ -304,6 +320,54 @@ export function MatchLive() {
           {showEndConfirm ? 'Vahvista' : 'Lopeta erä'}
         </button>
       </div>
+
+      {/* In-game settings */}
+      {showSettings && (
+        <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <div className="rounded-t-2xl p-5" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Pelinasetukset</p>
+              <button onClick={() => setShowSettings(false)} className="p-1 rounded-lg" style={{ color: 'var(--match-text-muted)' }}>
+                <X size={18} />
+              </button>
+            </div>
+            <div className="space-y-3">
+              {/* Track scorers */}
+              <button
+                onClick={() => setTrackScorers((v) => !v)}
+                className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
+                style={{ backgroundColor: trackScorers ? 'var(--match-field-bg)' : 'var(--match-dark)', borderColor: trackScorers ? 'var(--match-field-border)' : 'var(--match-border)' }}
+              >
+                <div className="text-left">
+                  <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Seuraa maalintekijöitä</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>Valitaan pelaaja aina kun oma joukkue tekee maalin</p>
+                </div>
+                <div className="w-12 h-6 rounded-full flex-shrink-0 ml-4 relative transition-colors" style={{ backgroundColor: trackScorers ? 'var(--match-active)' : '#334155' }}>
+                  <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: trackScorers ? '28px' : '4px' }} />
+                </div>
+              </button>
+              {/* Joker */}
+              {config.jokerRule && (
+                <button
+                  onClick={() => setJokerActive((v) => !v)}
+                  className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
+                  style={{ backgroundColor: jokerActive ? 'rgba(250,204,21,0.08)' : 'var(--match-dark)', borderColor: jokerActive ? '#facc15' : 'var(--match-border)' }}
+                >
+                  <div className="text-left">
+                    <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>⚡ Jokeri-pelaaja (+1)</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
+                      {jokerActive ? `Kentällä max ${fieldLimit} pelaajaa — käytä Vaihto-nappia` : 'Lisää yksi ylimääräinen pelaaja kentälle'}
+                    </p>
+                  </div>
+                  <div className="w-12 h-6 rounded-full flex-shrink-0 ml-4 relative transition-colors" style={{ backgroundColor: jokerActive ? '#facc15' : '#334155' }}>
+                    <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: jokerActive ? '28px' : '4px' }} />
+                  </div>
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* New goalkeeper picker */}
       {selectingNewGk && (
@@ -370,10 +434,13 @@ export function MatchLive() {
 
       {/* Substitution sheet */}
       {subMode && (() => {
-        const usedOutIds = new Set(subPairs.map((p) => p.out.id));
+        const usedOutIds = new Set(subPairs.filter((p) => p.out !== 'joker').map((p) => (p.out as MatchPlayer).id));
         const usedInIds = new Set(subPairs.map((p) => p.in.id));
         const availableOut = onFieldPlayers.filter((p) => !usedOutIds.has(p.id));
         const availableIn = benchPlayers.filter((p) => !usedInIds.has(p.id));
+        const jokerAlreadyInBatch = subPairs.some((p) => p.out === 'joker');
+        const jokerEligible = config.jokerRule && jokerActive && !jokerAlreadyInBatch && onFieldPlayers.length < fieldLimit;
+        const isPickingIn = pendingOut !== null;
         return (
           <div className="fixed inset-0 z-50 flex flex-col justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
             <div className="rounded-t-2xl p-5 max-h-[85dvh] flex flex-col" style={{ backgroundColor: 'var(--match-dark-mid)' }}>
@@ -390,7 +457,9 @@ export function MatchLive() {
                 <div className="mb-3 space-y-1.5 shrink-0">
                   {subPairs.map((pair, i) => (
                     <div key={i} className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{ backgroundColor: 'var(--match-dark)', borderColor: 'var(--match-border)' }}>
-                      <span className="text-xs font-semibold shrink-0" style={{ color: 'var(--match-out-text)' }}>#{pair.out.number} {pair.out.name}</span>
+                      <span className="text-xs font-semibold shrink-0" style={{ color: pair.out === 'joker' ? '#facc15' : 'var(--match-out-text)' }}>
+                        {pair.out === 'joker' ? '⚡ Jokeri' : `#${(pair.out as MatchPlayer).number} ${(pair.out as MatchPlayer).name}`}
+                      </span>
                       <ArrowRight size={12} className="shrink-0" style={{ color: 'var(--match-text-muted)' }} />
                       <span className="text-xs font-semibold flex-1" style={{ color: 'var(--match-field-name)' }}>#{pair.in.number} {pair.in.name}</span>
                       <button onClick={() => removeSubPair(i)} className="shrink-0 p-0.5 rounded" style={{ color: 'var(--match-text-muted)' }}>
@@ -402,11 +471,17 @@ export function MatchLive() {
               )}
 
               {/* Current pair indicator */}
-              {pendingOut && (
+              {isPickingIn && (
                 <div className="flex items-center gap-3 mb-3 shrink-0">
-                  <div className="flex-1 rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-out-border)', backgroundColor: 'var(--match-out-bg)' }}>
-                    <p className="text-xs font-bold" style={{ color: 'var(--match-out-text)' }}>#{pendingOut.number} {pendingOut.name}</p>
-                  </div>
+                  {pendingOut === 'joker' ? (
+                    <div className="flex-1 rounded-xl px-3 py-2 border-2" style={{ borderColor: '#facc15', backgroundColor: 'rgba(250,204,21,0.08)' }}>
+                      <p className="text-xs font-bold" style={{ color: '#facc15' }}>⚡ Jokeri</p>
+                    </div>
+                  ) : (
+                    <div className="flex-1 rounded-xl px-3 py-2 border-2" style={{ borderColor: 'var(--match-out-border)', backgroundColor: 'var(--match-out-bg)' }}>
+                      <p className="text-xs font-bold" style={{ color: 'var(--match-out-text)' }}>#{(pendingOut as MatchPlayer).number} {(pendingOut as MatchPlayer).name}</p>
+                    </div>
+                  )}
                   <ArrowRight size={16} className="shrink-0" style={{ color: 'var(--match-text-muted)' }} />
                   <div className="flex-1 rounded-xl px-3 py-2.5 border-2 border-dashed" style={{ borderColor: 'var(--match-border)' }}>
                     <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Valitse sisään</p>
@@ -416,11 +491,24 @@ export function MatchLive() {
 
               {/* Scrollable player grid */}
               <div className="flex-1 overflow-y-auto min-h-0">
-                {!pendingOut ? (
+                {!isPickingIn ? (
                   <>
                     <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: 'var(--match-text-muted)' }}>
                       {subPairs.length > 0 ? 'Lisää vaihto — kuka lähtee ulos?' : 'Kuka lähtee ulos?'}
                     </p>
+                    {jokerEligible && (
+                      <button
+                        onClick={() => setPendingOut('joker')}
+                        className="w-full mb-3 rounded-xl p-3 text-left border-2 flex items-center gap-3 transition-colors"
+                        style={{ backgroundColor: 'rgba(250,204,21,0.08)', borderColor: '#facc15' }}
+                      >
+                        <span className="text-xl">⚡</span>
+                        <div>
+                          <p className="text-sm font-semibold" style={{ color: '#facc15' }}>Jokeri — lisää pelaaja kentälle</p>
+                          <p className="text-xs" style={{ color: 'var(--match-text-muted)' }}>Ei poista ketään, +1 pelaaja kentälle</p>
+                        </div>
+                      </button>
+                    )}
                     {availableOut.length > 0 ? (
                       <div className="grid grid-cols-3 gap-2">
                         {availableOut.map((p) => (
@@ -465,14 +553,14 @@ export function MatchLive() {
                       className="w-full mt-3 py-2.5 rounded-xl text-sm border"
                       style={{ borderColor: 'var(--match-border)', color: 'var(--match-text-muted)', backgroundColor: 'var(--match-dark)' }}
                     >
-                      ← Vaihda ulos lähtevä
+                      ← Takaisin
                     </button>
                   </>
                 )}
               </div>
 
               {/* Bottom actions */}
-              {subPairs.length > 0 && !pendingOut && (
+              {subPairs.length > 0 && !isPickingIn && (
                 <div className="flex gap-3 mt-4 shrink-0">
                   <button
                     onClick={cancelSubMode}

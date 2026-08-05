@@ -34,6 +34,7 @@ export function MatchSetup() {
   const [periods, setPeriods] = useState(2);
   const [periodLength, setPeriodLength] = useState(15);
   const [trackScorers, setTrackScorers] = useState(false);
+  const [jokerRule, setJokerRule] = useState(false);
 
   const pool = useMemo(() => {
     const lineup = match?.lineup ?? [];
@@ -114,6 +115,7 @@ export function MatchSetup() {
         location: match?.location ?? 'home',
         opponent: match?.opponent ?? 'Vastustaja',
         trackScorers,
+        jokerRule,
         teamName,
       },
       currentPeriod: 1,
@@ -259,32 +261,33 @@ export function MatchSetup() {
           </div>
         </section>
 
-        {/* Track scorers toggle */}
-        <section>
-          <button
-            onClick={() => setTrackScorers((v) => !v)}
-            className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
-            style={{
-              backgroundColor: trackScorers ? 'var(--match-field-bg)' : 'var(--match-dark-mid)',
-              borderColor: trackScorers ? 'var(--match-field-border)' : '#334155',
-            }}
-          >
-            <div className="text-left">
-              <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>Seuraa maalintekijöitä</p>
-              <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>
-                Valitaan pelaaja aina kun oma joukkue tekee maalin
-              </p>
-            </div>
-            <div
-              className="w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-4 relative"
-              style={{ backgroundColor: trackScorers ? 'var(--match-active)' : '#334155' }}
+        {/* Toggles */}
+        <section className="space-y-3">
+          {[
+            { value: trackScorers, set: setTrackScorers, label: 'Seuraa maalintekijöitä', desc: 'Valitaan pelaaja aina kun oma joukkue tekee maalin', color: 'var(--match-active)', border: 'var(--match-field-border)', bg: 'var(--match-field-bg)' },
+            { value: jokerRule, set: setJokerRule, label: 'Jokeri-sääntö käytössä', desc: 'Mahdollistaa +1 pelaajan kentälle pelin aikana (aktivoidaan pelinhallinnassa)', color: '#facc15', border: '#facc15', bg: 'rgba(250,204,21,0.08)' },
+          ].map(({ value, set, label, desc, color, border, bg }) => (
+            <button
+              key={label}
+              onClick={() => set((v: boolean) => !v)}
+              className="w-full flex items-center justify-between rounded-xl border p-4 transition-colors"
+              style={{
+                backgroundColor: value ? bg : 'var(--match-dark-mid)',
+                borderColor: value ? border : '#334155',
+              }}
             >
+              <div className="text-left">
+                <p className="text-sm font-semibold" style={{ color: 'var(--match-text-primary)' }}>{label}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'var(--match-text-muted)' }}>{desc}</p>
+              </div>
               <div
-                className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all"
-                style={{ left: trackScorers ? '28px' : '4px' }}
-              />
-            </div>
-          </button>
+                className="w-12 h-6 rounded-full transition-colors flex-shrink-0 ml-4 relative"
+                style={{ backgroundColor: value ? color : '#334155' }}
+              >
+                <div className="absolute top-1 w-4 h-4 rounded-full bg-white transition-all" style={{ left: value ? '28px' : '4px' }} />
+              </div>
+            </button>
+          ))}
         </section>
 
         {error && (

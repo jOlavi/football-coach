@@ -8,6 +8,7 @@ export interface MatchConfig {
   location: 'home' | 'away';
   opponent: string;
   trackScorers: boolean;
+  jokerRule: boolean;
   teamName?: string;
 }
 
